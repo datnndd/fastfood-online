@@ -155,4 +155,4 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-CORS_ALLOWED_ORIGINS = [os.getenv("CORS_ALLOW","http://localhost:3000")]
+CORS_ALLOWED_ORIGINS = [os.getenv("CORS_ALLOW","http://localhost:5173")]

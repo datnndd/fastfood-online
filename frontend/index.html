@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FastFood One - Đồ ăn nhanh tươi ngon</title>
+    <meta name="description" content="FastFood One - Đồ ăn nhanh tươi ngon, giao hàng siêu tốc. Đặt hàng online dễ dàng." />
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="FastFood One - Đồ ăn nhanh tươi ngon" />
+    <meta property="og:description" content="Giao hàng siêu tốc, nguyên liệu tươi sạch, giá cả hợp lý." />
+    <meta property="og:type" content="website" />
+    
+    <!-- Theme color -->
+    <meta name="theme-color" content="#dc2626" />
+    
+    <!-- Preconnect to improve performance -->
+    <link rel="preconnect" href="https://via.placeholder.com">
+  </head>
+  <body class="antialiased bg-gray-50 text-gray-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Global event listeners -->
+    <script>
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-container')) {
+          window.dispatchEvent(new CustomEvent('closeDropdowns'))
+        }
+      })
+      
+      // Custom cart update event handler
+      window.addEventListener('cartUpdated', function() {
+        // This event can be listened to by NavBar to refresh cart count
+        // Components can dispatch this event when cart is updated
+      })
+      
+      // Prevent zoom on double tap (mobile)
+      let lastTouchEnd = 0
+      document.addEventListener('touchend', function (event) {
+        const now = (new Date()).getTime()
+        if (now - lastTouchEnd <= 300) {
+          event.preventDefault()
+        }
+        lastTouchEnd = now
+      }, false)
+    </script>
+  </body>
+</html>
