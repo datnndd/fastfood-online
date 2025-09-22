@@ -29,6 +29,8 @@ class OptionGroup(models.Model):
     min_select = models.PositiveIntegerField(default=0)
     max_select = models.PositiveIntegerField(default=1)
     menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="option_groups")
+    def __str__(self):
+        return f"{self.name} ({self.menu_item.name})"
 
 class Option(models.Model):
     group = models.ForeignKey(OptionGroup, on_delete=models.CASCADE, related_name="options")

@@ -8,7 +8,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username","password","email","phone","role"]
-        extra_kwargs = {"role": {"read_only": True}}  # khách tự đăng ký luôn là customer
+        extra_kwargs = {"role": {"read_only": True}}
 
     def create(self, validated):
         pwd = validated.pop("password")
@@ -17,6 +17,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(pwd)
         user.save()
         return user
+    
+    def validate_password(self, value):
+        validate_password(value)
+        return value
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
