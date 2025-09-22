@@ -1,6 +1,8 @@
+// pages/MenuPage.jsx
 import { useState, useEffect } from 'react'
-import { CatalogAPI } from '../lib/api'
+import { CatalogAPI, CartAPI } from '../lib/api'
 import ItemCard from '../components/ItemCard'
+import ItemDetailPopup from '../components/ItemDetailPopup'
 
 export default function MenuPage() {
   const [categories, setCategories] = useState([])
@@ -8,7 +10,10 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [pick, setPick] = useState({})
+  
+  // State cho popup
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [showPopup, setShowPopup] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +38,37 @@ export default function MenuPage() {
     return matchesCategory && matchesSearch
   })
 
+  const handleAddToCartClick = (item) => {
+    if (item.option_groups && item.option_groups.length > 0) {
+      // Có options, hiển thị popup
+      setSelectedItem(item)
+      setShowPopup(true)
+    } else {
+      // Không có options, thêm trực tiếp
+      handleAddToCart({
+        menu_item_id: item.id,
+        quantity: 1,
+        option_ids: []
+      })
+    }
+  }
+
+  const handleAddToCart = async (cartItem) => {
+    try {
+      await CartAPI.addItem(cartItem)
+      
+      // Dispatch event để cập nhật cart count trên navbar
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      
+      // Hiển thị thông báo thành công
+      alert('Đã thêm vào giỏ hàng!')
+      
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+      alert('Có lỗi xảy ra khi thêm vào giỏ hàng')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -48,7 +84,7 @@ export default function MenuPage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Thực đơn</h1>
-        <p className="mt-2 text-gray-600">Khám phá những món ngon tại FastFood One</p>
+        <p className="mt-2 text-gray-600">Khám phá những món ngon tại McDono</p>
       </div>
 
       {/* Search */}
@@ -91,19 +127,14 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Items grid */}
+      {/* Items Grid - 3 cột */}
       {filteredItems.length > 0 ? (
-        <div className="grid gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map(item => (
             <ItemCard
               key={item.id}
               item={item}
-              pick={pick}
-              setPick={setPick}
-              onAddToCart={() => {
-                // Refresh cart count in navbar - có thể emit event hoặc use context
-                window.dispatchEvent(new CustomEvent('cartUpdated'))
-              }}
+              onAddToCart={handleAddToCartClick}
             />
           ))}
         </div>
@@ -112,6 +143,14 @@ export default function MenuPage() {
           <p className="text-gray-500">Không tìm thấy món ăn nào.</p>
         </div>
       )}
+
+      {/* Popup chi tiết */}
+      <ItemDetailPopup
+        item={selectedItem}
+        isOpen={showPopup}
+        onClose={() => setShowPopup(false)}
+        onAddToCart={handleAddToCart}
+      />
     </div>
   )
 }

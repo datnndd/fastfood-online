@@ -136,13 +136,23 @@ export const CartAPI = {
   getCart: () => api.get('/cart/'),
   
   // Thêm item vào cart
-  addItem: (itemData) => api.post('/cart/items/', itemData),
-  
+  addItem: ({ menu_item_id, quantity = 1, option_ids = [] }) =>
+    api.post('/cart/items/', { 
+      menu_item_id, 
+      quantity, 
+      option_ids 
+    }),
+
   // Cập nhật item trong cart
-  updateItem: (itemId, itemData) => api.put(`/cart/items/${itemId}/`, itemData),
+  updateItem: (itemId, { menu_item_id, quantity, option_ids }) => 
+    api.put(`/cart/items/${itemId}/`, { 
+      menu_item_id, 
+      quantity, 
+      option_ids 
+    }),
   
   // Cập nhật item trong cart (partial)
-  patchItem: (itemId, itemData) => api.patch(`/cart/items/${itemId}/`, itemData),
+  patchItem: (itemId, data) => api.patch(`/cart/items/${itemId}/`, data),
   
   // Xóa item khỏi cart
   removeItem: (itemId) => api.delete(`/cart/items/${itemId}/`)
@@ -152,31 +162,54 @@ export const CartAPI = {
 // ORDERS APIs
 // =============================================================================
 export const OrderAPI = {
-  // Checkout - tạo đơn hàng từ cart
-  checkout: (orderData) => api.post('/orders/checkout/', orderData),
-  
-  // Lấy đơn hàng của user hiện tại
-  getMyOrders: (params = {}) => api.get('/orders/my/', { params }),
-  
-  // APIs cho Staff/Manager
   work: {
-    // Lấy tất cả đơn hàng (staff/manager)
-    list: (params = {}) => api.get('/orders/work/', { params }),
+    list: async (params = {}) => {
+      const searchParams = new URLSearchParams()
+      
+      if (params.status) searchParams.append('status', params.status)
+      if (params.page) searchParams.append('page', params.page.toString())
+      if (params.limit) searchParams.append('limit', params.limit.toString())
+      if (params.date) searchParams.append('date', params.date)
+      if (params.ordering) searchParams.append('ordering', params.ordering)
+      
+      const response = await api.get(`/orders/work/?${searchParams.toString()}`)
+      return response
+    },
     
-    // Tạo đơn hàng (staff/manager)
-    create: (orderData) => api.post('/orders/work/', orderData),
+    updateStatus: async (orderId, newStatus) => {
+      const response = await api.patch(`/orders/work/${orderId}/update_status/`, {
+        status: newStatus
+      })
+      return response
+    },
     
-    // Lấy chi tiết đơn hàng
-    get: (orderId) => api.get(`/orders/work/${orderId}/`),
+    getStats: async (date = null) => {
+      const params = date ? `?date=${date}` : ''
+      const response = await api.get(`/orders/admin/stats/${params}`)
+      return response
+    }
+  },
+  
+  my: {
+    list: async (page = 1, status = null) => {
+      const searchParams = new URLSearchParams()
+      
+      if (page) searchParams.append('page', page.toString())
+      if (status) searchParams.append('status', status)
+
+      const response = await api.get(`/orders/my/?${searchParams.toString()}`)
+      return response
+    },
     
-    // Cập nhật đơn hàng
-    update: (orderId, orderData) => api.put(`/orders/work/${orderId}/`, orderData),
-    
-    // Cập nhật trạng thái đơn hàng
-    updateStatus: (orderId, status) => api.patch(`/orders/work/${orderId}/`, { status }),
-    
-    // Xóa đơn hàng
-    delete: (orderId) => api.delete(`/orders/work/${orderId}/`)
+    cancel: async (orderId) => {
+      const response = await api.patch(`/orders/my/${orderId}/cancel/`)
+      return response
+    }
+  },
+  
+  checkout: async (data) => {
+    const response = await api.post('/orders/checkout/', data)
+    return response
   }
 }
 
@@ -205,50 +238,3 @@ export const getUserRole = async () => {
 
 // Export default
 export default api
-
-// =============================================================================
-// USAGE EXAMPLES
-// =============================================================================
-
-/*
-// Đăng ký tài khoản mới
-try {
-  const userData = {
-    username: 'newuser',
-    password: 'securepassword',
-    email: 'user@example.com',
-    phone: '0123456789'
-  }
-  const response = await AuthAPI.register(userData)
-  console.log('Đăng ký thành công:', response.data)
-} catch (error) {
-  console.error('Lỗi đăng ký:', error.response?.data)
-}
-
-// Đăng nhập
-try {
-  const response = await AuthAPI.login({
-    username: 'newuser',
-    password: 'securepassword'
-  })
-  console.log('Đăng nhập thành công')
-} catch (error) {
-  console.error('Lỗi đăng nhập:', error.response?.data)
-}
-
-// Lấy danh sách món ăn
-const items = await CatalogAPI.listItems({ search: 'pizza', page: 1 })
-
-// Thêm vào giỏ hàng
-await CartAPI.addItem({
-  menu_item_id: 1,
-  quantity: 2,
-  option_ids: [1, 3] // các option được chọn
-})
-
-// Checkout
-await OrderAPI.checkout({
-  payment_method: 'cash',
-  note: 'Giao hàng tại cổng chính'
-})
-*/

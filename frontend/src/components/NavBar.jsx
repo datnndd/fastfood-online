@@ -29,9 +29,9 @@ export default function NavBar() {
       <div className="bg-red-600 text-white text-sm">
         <div className="max-w-6xl mx-auto px-4 py-1 flex items-center gap-3">
           <span>🔥 Fast & Fresh</span>
-          <span className="opacity-75">Mở cửa 9:00–22:00</span>
+          <span className="opacity-75">Mở cửa 24/7</span>
           <div className="ml-auto flex items-center gap-4">
-            <span className="opacity-75">Giao hàng miễn phí cho đơn từ 100k</span>
+            <span className="opacity-75">Giao hàng miễn phí khu vực Hà Nội</span>
           </div>
         </div>
       </div>
@@ -43,9 +43,9 @@ export default function NavBar() {
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">F</span>
+                <span className="text-white font-bold text-lg">D</span>
               </div>
-              <span className="font-bold text-xl text-gray-900">FastFood One</span>
+              <span className="font-bold text-xl text-gray-900">McDono</span>
             </Link>
 
             {/* Navigation Links */}

@@ -1,35 +1,29 @@
-import OptionPicker from './OptionPicker.jsx'
-
-export default function ItemCard({ item, pick, setPick }){
-// pick shape: { [itemId]: [optionId, ...] }
-const chosen = pick[item.id] || []
-
-
-return (
-<div className="border rounded-xl bg-white p-4 flex gap-4">
-<img src={item.image_url || 'https://via.placeholder.com/96'} alt={item.name} className="w-24 h-24 object-cover rounded-lg" />
-<div className="flex-1">
-<div className="flex items-center justify-between">
-<div>
-<h3 className="font-semibold">{item.name}</h3>
-<p className="text-sm text-gray-500">{item.category}</p>
-</div>
-<div className="font-semibold">{Number(item.price).toLocaleString()} đ</div>
-</div>
-{Array.isArray(item.option_groups) && item.option_groups.map((g) => (
-  <div key={g.id} className="mt-2">
-    <div className="text-sm font-medium">
-      {g.name}{g.required ? ' *' : ''}
+// components/ItemCard.jsx
+export default function ItemCard({ item, onAddToCart }) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+      <div className="aspect-[3/2] overflow-hidden">
+        <img 
+          src={item.image_url || 'https://via.placeholder.com/300x200'} 
+          alt={item.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="p-4">
+        <h3 className="font-semibold text-gray-900 mb-1">{item.name}</h3>
+        <p className="text-sm text-gray-500 mb-3">{item.category}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-bold text-red-600">
+            {Number(item.price).toLocaleString()}₫
+          </span>
+          <button
+            onClick={() => onAddToCart(item)}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
     </div>
-    <OptionPicker
-      group={g}
-      value={pick[item.id] || []}
-      onChange={(ids) => setPick({ ...pick, [item.id]: ids })}
-    />
-  </div>
-))}
-
-</div>
-</div>
-)
+  )
 }

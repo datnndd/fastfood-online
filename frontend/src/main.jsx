@@ -45,6 +45,9 @@ const router = createBrowserRouter([
         path: 'staff/orders', 
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
+
+      // >>> Thêm dòng này
+      // { path: 'profile', element: <Protected><Profile /></Protected> },
       
       // Manager only routes
       { 

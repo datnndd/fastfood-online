@@ -9,14 +9,14 @@ export default function RegisterPage() {
     email: '',
     phone: ''
   })
-  const [error, setError] = useState('')
+  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+    setErrors({})
     setLoading(true)
 
     try {
@@ -25,14 +25,11 @@ export default function RegisterPage() {
       navigate('/login')
     } catch (error) {
       const errorData = error.response?.data
-      if (typeof errorData === 'object') {
-        const errorMessages = Object.entries(errorData)
-          .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-          .join('\n')
-        setError(errorMessages)
-      } else {
-        setError(errorData?.detail || 'Đăng ký thất bại')
-      }
+        if (errorData && typeof errorData === 'object') {
+          setErrors(errorData)
+        } else {
+          setErrors({ general: errorData?.detail || 'Đăng ký thất bại' })
+        }
     } finally {
       setLoading(false)
     }
@@ -47,9 +44,9 @@ export default function RegisterPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {error && (
+          {errors.general && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded whitespace-pre-line">
-              {error}
+              {errors.general}
             </div>
           )}
 
@@ -64,6 +61,11 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            {errors.username && (
+              <ul className="text-red-500 text-sm mt-1">
+                {errors.username.map((msg, i) => <li key={i}>{msg}</li>)}
+              </ul>
+            )}
           </div>
 
           <div>
@@ -101,6 +103,14 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            
+            {errors.password && (
+              <ul className="text-red-500 text-sm mt-1">
+                {errors.password.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <button
