@@ -7,18 +7,14 @@ from .models import Order, OrderItem
 
 @transaction.atomic
 def create_order_from_cart(user, payment_method="cash", note=""):
-    """
-    Tạo order từ cart của user, tính toán đúng giá với options
-    """
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
         raise ValueError("Cart không tồn tại")
     
-    if not cart.items.exists():
+    if not cart.items.exists() and not cart.combos.exists():
         raise ValueError("Cart trống")
     
-    # Tạo order
     order = Order.objects.create(
         user=user, 
         payment_method=payment_method, 
@@ -27,12 +23,8 @@ def create_order_from_cart(user, payment_method="cash", note=""):
     
     total = Decimal("0.00")
     
-    # Duyệt qua từng cart item
     for cart_item in cart.items.select_related("menu_item").prefetch_related("selected_options"):
-        # Tính giá base của menu item
         base_price = cart_item.menu_item.price
-        
-        # Tính tổng price_delta của các options
         options_price = Decimal("0.00")
         selected_options_names = []
         
@@ -41,39 +33,80 @@ def create_order_from_cart(user, payment_method="cash", note=""):
                 options_price += option.price_delta
                 selected_options_names.append(option.name)
         
-        # Giá cuối cùng cho một đơn vị
         unit_price = base_price + options_price
         
-        # Tạo OrderItem
+        options_display = ", ".join(selected_options_names)
+        if cart_item.note:
+            options_display += f" | Ghi chú: {cart_item.note}"
+        
         OrderItem.objects.create(
             order=order,
             menu_item=cart_item.menu_item,
             quantity=cart_item.quantity,
             unit_price=unit_price,
-            options_text=", ".join(selected_options_names)
+            options_text=options_display
         )
         
-        # Cộng vào tổng tiền
         total += unit_price * cart_item.quantity
     
-    # Cập nhật total_amount của order
+    for cart_combo in cart.combos.select_related("combo").prefetch_related(
+        "combo__items__menu_item",
+        "combo__items__selected_options"
+    ):
+        combo = cart_combo.combo
+        
+        combo_description = f"COMBO: {combo.name}"
+        combo_items_list = []
+        
+        for combo_item in combo.items.all():
+            item_desc = f"{combo_item.menu_item.name} x{combo_item.quantity}"
+            
+            if combo_item.selected_options.exists():
+                opts = [opt.name for opt in combo_item.selected_options.all()]
+                item_desc += f" ({', '.join(opts)})"
+            
+            combo_items_list.append(item_desc)
+        
+        combo_description += f" | {'; '.join(combo_items_list)}"
+        combo_description += f" | Giảm {combo.discount_percentage}%"
+        
+        if cart_combo.note:
+            combo_description += f" | Ghi chú: {cart_combo.note}"
+        
+        combo_unit_price = combo.calculate_final_price()
+        
+        first_menu_item = combo.items.first().menu_item
+        
+        OrderItem.objects.create(
+            order=order,
+            menu_item=first_menu_item,  # Reference item
+            quantity=cart_combo.quantity,
+            unit_price=combo_unit_price,
+            options_text=combo_description
+        )
+        
+        total += combo_unit_price * cart_combo.quantity
+    
     order.total_amount = total
     order.save()
     
-    # Xóa cart sau khi đặt hàng thành công
     cart.items.all().delete()
+    cart.combos.all().delete()
     
     return order
 
 def calculate_cart_total(cart):
-    """
-    Tính tổng tiền của cart (utility function)
-    """
     total = Decimal("0.00")
     
     for item in cart.items.select_related('menu_item').prefetch_related('selected_options'):
         base_price = item.menu_item.price
         options_price = sum(opt.price_delta for opt in item.selected_options.all())
         total += (base_price + options_price) * item.quantity
+    
+    for combo_item in cart.combos.select_related('combo').prefetch_related(
+        'combo__items__menu_item',
+        'combo__items__selected_options'
+    ):
+        total += combo_item.get_total_price()
     
     return total

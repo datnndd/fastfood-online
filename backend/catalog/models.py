@@ -1,6 +1,7 @@
 # catalog/models.py
 from django.db import models
 from django.utils.text import slugify
+from decimal import Decimal
 
 class Category(models.Model):
     name = models.CharField(max_length=120, unique=True)
@@ -39,4 +40,55 @@ class Option(models.Model):
 
 class Inventory(models.Model):
     item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="inventory")
-    stock = models.PositiveIntegerField(default=9999)  # single-store: đơn giản
+    stock = models.PositiveIntegerField(default=9999)
+
+class Combo(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    discount_percentage = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2,
+        help_text="Phần trăm giảm giá (0-100)"
+    )
+    is_available = models.BooleanField(default=True)
+    image_url = models.URLField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+    
+    def calculate_original_price(self):
+        total = Decimal('0.00')
+        for item in self.items.all():
+            total += item.get_item_price()
+        return total
+    
+    def calculate_final_price(self):
+        original = self.calculate_original_price()
+        discount = original * (self.discount_percentage / Decimal('100'))
+        return original - discount
+    
+    def __str__(self):
+        return self.name
+
+class ComboItem(models.Model):
+    combo = models.ForeignKey(Combo, on_delete=models.CASCADE, related_name="items")
+    menu_item = models.ForeignKey(MenuItem, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField(default=1)
+    selected_options = models.ManyToManyField(Option, blank=True)
+    
+    class Meta:
+        unique_together = ['combo', 'menu_item']
+    
+    def get_item_price(self):
+        price = self.menu_item.price
+        for option in self.selected_options.all():
+            price += option.price_delta
+        return price * self.quantity
+    
+    def __str__(self):
+        return f"{self.menu_item.name} x{self.quantity} in {self.combo.name}"
