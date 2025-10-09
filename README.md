@@ -3,7 +3,8 @@ docker compose up -d
 ## 2) Backend
 cd backend
 python -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
+source .venv/bin/activate            # Windows: Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+                                                .venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt      
 ### Migrate, seed, tạo admin
@@ -14,6 +15,11 @@ python manage.py createsuperuser
 python manage.py runserver 8000
 
 ## 3) frontend:
+cài node.js
+
+cd frontend
+gõ thêm lệnh này khi tạo một terminal mới với frontend: $env:Path += ';C:\Program Files\nodejs;C:\Users\ddat2\AppData\Roaming\npm'
+npm install
 dùng 2 terminal
     npm run css:dev
     npm run dev
