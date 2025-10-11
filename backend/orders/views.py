@@ -3,10 +3,9 @@ from rest_framework import generics, permissions, viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Q
 from datetime import datetime, timedelta
+from accounts.models import DeliveryAddress
 from .models import Order
 from .serializers import OrderSerializer
 from .permissions import IsStaffOrManager
@@ -23,7 +22,15 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
     pagination_class = OrdersPagination
     
     def get_queryset(self):
-        queryset = Order.objects.filter(user=self.request.user)
+        queryset = (
+            Order.objects.filter(user=self.request.user)
+            .select_related(
+                "delivery_address__province",
+                "delivery_address__district",
+                "delivery_address__ward",
+            )
+            .prefetch_related("items__menu_item")
+        )
         
         # Lọc theo status nếu có
         status_param = self.request.query_params.get('status')
@@ -37,11 +44,9 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
         """Hủy đơn hàng (chỉ trong vòng 60 giây và trạng thái PREPARING)"""
         order = self.get_object()
         
-        # Kiểm tra đơn hàng thuộc về user hiện tại
         if order.user != request.user:
             return Response({'error': 'Bạn không có quyền hủy đơn hàng này'}, status=403)
         
-        # Kiểm tra trạng thái đơn hàng
         if order.status != 'PREPARING':
             return Response({'error': 'Chỉ có thể hủy đơn hàng đang chờ xác nhận'}, status=400)
         
@@ -57,21 +62,24 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response(OrderSerializer(order).data)
 
 class OrdersWorkViewSet(viewsets.ModelViewSet):
-    """
-    Staff/Manager: chỉ xem đơn hàng SAU 60 giây từ khi tạo
-    """
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsStaffOrManager]
     pagination_class = OrdersPagination
 
     def get_queryset(self):
-        queryset = Order.objects.select_related("user").prefetch_related("items__menu_item")
+        queryset = (
+            Order.objects.select_related(
+                "user",
+                "delivery_address__province",
+                "delivery_address__district",
+                "delivery_address__ward",
+            )
+            .prefetch_related("items__menu_item")
+        )
         
-        # Chỉ hiển thị đơn hàng sau 60 giây (để khách hàng có thời gian hủy)
         cutoff_time = timezone.now() - timedelta(seconds=60)
         queryset = queryset.filter(created_at__lte=cutoff_time)
         
-        # Lọc theo status nếu có
         status_param = self.request.query_params.get('status')
         if status_param and status_param in ['PREPARING', 'READY', 'DELIVERING', 'COMPLETED']:
             queryset = queryset.filter(status=status_param)
@@ -82,27 +90,22 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
             try:
                 selected_date = datetime.strptime(date_param, '%Y-%m-%d').date()
                 
-                # Thời gian bắt đầu: 23:30 đêm hôm trước
                 start_time = timezone.make_aware(
                     datetime.combine(selected_date - timedelta(days=1), datetime.min.time().replace(hour=23, minute=30))
                 )
                 
-                # Thời gian kết thúc: 23:29:59 hôm sau
                 end_time = timezone.make_aware(
                     datetime.combine(selected_date + timedelta(days=1), datetime.min.time().replace(hour=23, minute=29, second=59))
                 )
                 
                 queryset = queryset.filter(created_at__range=(start_time, end_time))
             except ValueError:
-                # Nếu format ngày không đúng, bỏ qua filter
                 pass
         
-        # Sắp xếp theo ordering parameter
         ordering_param = self.request.query_params.get('ordering', '-created_at')
         if ordering_param in ['created_at', '-created_at']:
             queryset = queryset.order_by(ordering_param)
         else:
-            # Default ordering
             queryset = queryset.order_by("-created_at")
             
         return queryset
@@ -116,7 +119,6 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
         if new_status not in ['PREPARING', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED']:
             return Response({'error': 'Trạng thái không hợp lệ'}, status=400)
         
-        # Kiểm tra đơn hàng đã qua 60 giây chưa
         time_diff = timezone.now() - order.created_at
         if time_diff.total_seconds() <= 60:
             return Response({'error': 'Đơn hàng chưa đủ thời gian xử lý (cần chờ 60 giây)'}, status=400)
@@ -126,21 +128,25 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
         
         return Response(OrderSerializer(order).data)
 
-# Cập nhật OrdersAdminViewSet cũng cần logic tương tự
 class OrdersAdminViewSet(viewsets.ModelViewSet):
-    """Dành cho Staff/Manager: xem & cập nhật trạng thái đơn."""
     serializer_class = OrderSerializer
     permission_classes = [IsStaffOrManager]
     pagination_class = OrdersPagination
 
     def get_queryset(self):
-        # Chỉ hiển thị đơn hàng sau 60 giây
         cutoff_time = timezone.now() - timedelta(seconds=60)
-        return Order.objects.filter(created_at__lte=cutoff_time).order_by("-created_at")
+        return (
+            Order.objects.select_related(
+                "delivery_address__province",
+                "delivery_address__district",
+                "delivery_address__ward",
+            )
+            .filter(created_at__lte=cutoff_time)
+            .order_by("-created_at")
+        )
 
     @action(detail=False, methods=["get"])
     def today(self, request):
-        """Lấy tất cả đơn hàng hôm nay (sau 60 giây)"""
         today = timezone.now().date()
         start_time = timezone.make_aware(
             datetime.combine(today - timedelta(days=1), datetime.min.time().replace(hour=23, minute=30))
@@ -149,7 +155,6 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
             datetime.combine(today + timedelta(days=1), datetime.min.time().replace(hour=23, minute=29, second=59))
         )
         
-        # Chỉ lấy đơn sau 60 giây
         cutoff_time = timezone.now() - timedelta(seconds=60)
         qs = self.get_queryset().filter(
             created_at__range=(start_time, end_time),
@@ -166,7 +171,6 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def stats(self, request):
-        """Thống kê đơn hàng theo trạng thái trong ngày (sau 60 giây)"""
         date_param = request.query_params.get('date')
         if date_param:
             try:
@@ -183,7 +187,6 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
             datetime.combine(selected_date + timedelta(days=1), datetime.min.time().replace(hour=23, minute=29, second=59))
         )
         
-        # Chỉ tính đơn sau 60 giây
         cutoff_time = timezone.now() - timedelta(seconds=60)
         base_qs = Order.objects.filter(
             created_at__range=(start_time, end_time),
@@ -206,9 +209,34 @@ class CheckoutView(generics.CreateAPIView):
     serializer_class = OrderSerializer
     
     def create(self, request, *args, **kwargs):
-        order = create_order_from_cart(
-            request.user, 
-            request.data.get("payment_method", "cash"), 
-            request.data.get("note", "")
-        )
-        return Response(OrderSerializer(order).data, status=201)
+        delivery_address = None
+        address_id = request.data.get("delivery_address_id")
+
+        if address_id:
+            try:
+                delivery_address = DeliveryAddress.objects.select_related(
+                    "province", "district", "ward"
+                ).get(pk=address_id, user=request.user)
+            except DeliveryAddress.DoesNotExist:
+                return Response({"detail": "Địa chỉ giao hàng không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            delivery_address = (
+                request.user.delivery_addresses.select_related(
+                    "province", "district", "ward"
+                ).filter(is_default=True).first()
+            )
+            if delivery_address is None:
+                return Response({"detail": "Vui lòng chọn địa chỉ giao hàng"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            order = create_order_from_cart(
+                request.user,
+                request.data.get("payment_method", "cash"),
+                request.data.get("note", ""),
+                delivery_address=delivery_address,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

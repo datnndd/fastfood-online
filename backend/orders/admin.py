@@ -8,8 +8,16 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "status", "total_amount", "payment_method", "created_at")
-    list_filter  = ("status", "payment_method", "created_at")
+    list_display = (
+        "id",
+        "user",
+        "status",
+        "total_amount",
+        "payment_method",
+        "delivery_address",
+        "created_at",
+    )
+    list_filter  = ("status", "payment_method", "created_at", "delivery_address__province")
     search_fields = ("user__username", "user__email")
     inlines = [OrderItemInline]
 

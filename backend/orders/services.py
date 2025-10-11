@@ -6,18 +6,25 @@ from catalog.models import Option
 from .models import Order, OrderItem
 
 @transaction.atomic
-def create_order_from_cart(user, payment_method="cash", note=""):
+def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None):
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
         raise ValueError("Cart không tồn tại")
-    
+
     if not cart.items.exists() and not cart.combos.exists():
         raise ValueError("Cart trống")
-    
+
+    if delivery_address is None:
+        raise ValueError("Vui lòng chọn địa chỉ giao hàng")
+
+    if delivery_address.user_id != user.id:
+        raise ValueError("Địa chỉ giao hàng không hợp lệ")
+
     order = Order.objects.create(
-        user=user, 
-        payment_method=payment_method, 
+        user=user,
+        delivery_address=delivery_address,
+        payment_method=payment_method,
         note=note
     )
     

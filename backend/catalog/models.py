@@ -38,20 +38,21 @@ class Option(models.Model):
     name = models.CharField(max_length=120)
     price_delta = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
-class Inventory(models.Model):
-    item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="inventory")
-    stock = models.PositiveIntegerField(default=9999)
-
 class Combo(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(blank=True)
     discount_percentage = models.DecimalField(
-        max_digits=5, 
+        max_digits=5,
         decimal_places=2,
         help_text="Phần trăm giảm giá (0-100)"
     )
     is_available = models.BooleanField(default=True)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="combos"
+    )
     image_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,6 +1,6 @@
 # catalog/admin.py
 from django.contrib import admin
-from .models import Category, MenuItem, OptionGroup, Option, Inventory, Combo, ComboItem
+from .models import Category, MenuItem, OptionGroup, Option, Combo, ComboItem
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -23,11 +23,6 @@ class OptionAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "group", "price_delta")
     list_filter  = ("group",)
 
-@admin.register(Inventory)
-class InventoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "item", "stock")
-    search_fields = ("item__name",)
-
 class ComboItemInline(admin.TabularInline):
     model = ComboItem
     extra = 1
@@ -36,8 +31,17 @@ class ComboItemInline(admin.TabularInline):
 
 @admin.register(Combo)
 class ComboAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "discount_percentage", "is_available", "original_price_display", "final_price_display", "created_at")
-    list_filter = ("is_available", "created_at")
+    list_display = (
+        "id",
+        "name",
+        "category",
+        "discount_percentage",
+        "is_available",
+        "original_price_display",
+        "final_price_display",
+        "created_at",
+    )
+    list_filter = ("category", "is_available", "created_at")
     search_fields = ("name", "description")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [ComboItemInline]

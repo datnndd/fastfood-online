@@ -8,7 +8,11 @@ from .serializers import (
 )
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all().prefetch_related("items")
+    queryset = Category.objects.all().prefetch_related(
+        "items__option_groups__options",
+        "combos__items__menu_item",
+        "combos__items__selected_options",
+    )
     serializer_class = CategorySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
@@ -32,9 +36,9 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 class ComboViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "description"]
-    
+
     def get_queryset(self):
-        queryset = Combo.objects.prefetch_related(
+        queryset = Combo.objects.select_related("category").prefetch_related(
             'items__menu_item__category',
             'items__menu_item__option_groups__options',
             'items__selected_options'
