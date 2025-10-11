@@ -104,7 +104,27 @@ export const AccountsAPI = {
   updateUserRole: (userId, role) => api.put(`/accounts/users/${userId}/role/`, { role }),
 
   // Cập nhật role của user (partial)
-  patchUserRole: (userId, role) => api.patch(`/accounts/users/${userId}/role/`, { role })
+  patchUserRole: (userId, role) => api.patch(`/accounts/users/${userId}/role/`, { role }),
+
+  // Địa lý
+  listProvinces: () => api.get('/accounts/locations/provinces/'),
+  listDistricts: (provinceId) =>
+    api.get('/accounts/locations/districts/', {
+      params: provinceId ? { province_id: provinceId } : {}
+    }),
+  listWards: (districtId) =>
+    api.get('/accounts/locations/wards/', {
+      params: districtId ? { district_id: districtId } : {}
+    }),
+
+  // Địa chỉ giao hàng
+  addresses: {
+    list: () => api.get('/accounts/addresses/'),
+    create: (data) => api.post('/accounts/addresses/', data),
+    update: (id, data) => api.put(`/accounts/addresses/${id}/`, data),
+    patch: (id, data) => api.patch(`/accounts/addresses/${id}/`, data),
+    remove: (id) => api.delete(`/accounts/addresses/${id}/`)
+  }
 }
 
 // =============================================================================
@@ -125,7 +145,11 @@ export const CatalogAPI = {
   createItem: (data) => api.post('/catalog/items/', data),
   updateItem: (id, data) => api.put(`/catalog/items/${id}/`, data),
   patchItem: (id, data) => api.patch(`/catalog/items/${id}/`, data),
-  deleteItem: (id) => api.delete(`/catalog/items/${id}/`)
+  deleteItem: (id) => api.delete(`/catalog/items/${id}/`),
+
+  // Combos
+  listCombos: (params = {}) => api.get('/catalog/combos/', { params }),
+  getCombo: (id) => api.get(`/catalog/combos/${id}/`)
 }
 
 // =============================================================================
@@ -155,7 +179,26 @@ export const CartAPI = {
   patchItem: (itemId, data) => api.patch(`/cart/items/${itemId}/`, data),
   
   // Xóa item khỏi cart
-  removeItem: (itemId) => api.delete(`/cart/items/${itemId}/`)
+  removeItem: (itemId) => api.delete(`/cart/items/${itemId}/`),
+
+  // Combos
+  addCombo: ({ combo_id, quantity = 1, note = '' }) =>
+    api.post('/cart/combos/', {
+      combo_id,
+      quantity,
+      note
+    }),
+  updateCombo: (comboId, { combo_id, quantity, note }) =>
+    api.put(`/cart/combos/${comboId}/`, {
+      combo_id,
+      quantity,
+      note
+    }),
+  patchCombo: (comboId, data) => api.patch(`/cart/combos/${comboId}/`, data),
+  removeCombo: (comboId) => api.delete(`/cart/combos/${comboId}/`),
+
+  // Tiện ích
+  clear: () => api.delete('/cart/clear/')
 }
 
 // =============================================================================
