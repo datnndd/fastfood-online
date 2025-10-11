@@ -12,7 +12,7 @@ class ProvinceSerializer(serializers.ModelSerializer):
 
 
 class DistrictSerializer(serializers.ModelSerializer):
-    province_id = serializers.IntegerField(source="province_id", read_only=True)
+    province_id = serializers.IntegerField(source="province.id", read_only=True)
 
     class Meta:
         model = District
@@ -20,7 +20,7 @@ class DistrictSerializer(serializers.ModelSerializer):
 
 
 class WardSerializer(serializers.ModelSerializer):
-    district_id = serializers.IntegerField(source="district_id", read_only=True)
+    district_id = serializers.IntegerField(source="district.id", read_only=True)
 
     class Meta:
         model = Ward

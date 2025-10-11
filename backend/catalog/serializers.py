@@ -17,7 +17,7 @@ class OptionGroupSerializer(serializers.ModelSerializer):
 class MenuItemSerializer(serializers.ModelSerializer):
     option_groups = OptionGroupSerializer(many=True, read_only=True)
     category = serializers.StringRelatedField()
-    category_id = serializers.IntegerField(source="category_id", read_only=True)
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
 
     class Meta:
         model = MenuItem
@@ -76,7 +76,7 @@ class ComboListSerializer(serializers.ModelSerializer):
     original_price = serializers.SerializerMethodField()
     final_price = serializers.SerializerMethodField()
     category = serializers.StringRelatedField()
-    category_id = serializers.IntegerField(source="category_id", read_only=True)
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
 
     class Meta:
@@ -108,7 +108,7 @@ class ComboDetailSerializer(serializers.ModelSerializer):
     final_price = serializers.SerializerMethodField()
     savings = serializers.SerializerMethodField()
     category = serializers.StringRelatedField()
-    category_id = serializers.IntegerField(source="category_id", read_only=True)
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
 
     class Meta:
