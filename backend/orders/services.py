@@ -82,11 +82,9 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
         
         combo_unit_price = combo.calculate_final_price()
         
-        first_menu_item = combo.items.first().menu_item
-        
         OrderItem.objects.create(
             order=order,
-            menu_item=first_menu_item,  # Reference item
+            combo=combo,
             quantity=cart_combo.quantity,
             unit_price=combo_unit_price,
             options_text=combo_description

@@ -29,7 +29,7 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
                 "delivery_address__district",
                 "delivery_address__ward",
             )
-            .prefetch_related("items__menu_item")
+            .prefetch_related("items__menu_item", "items__combo")
         )
         
         # Lọc theo status nếu có
@@ -74,7 +74,7 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
                 "delivery_address__district",
                 "delivery_address__ward",
             )
-            .prefetch_related("items__menu_item")
+            .prefetch_related("items__menu_item", "items__combo")
         )
         
         cutoff_time = timezone.now() - timedelta(seconds=60)
@@ -141,6 +141,7 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
                 "delivery_address__district",
                 "delivery_address__ward",
             )
+            .prefetch_related("items__menu_item", "items__combo")
             .filter(created_at__lte=cutoff_time)
             .order_by("-created_at")
         )

@@ -23,5 +23,5 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ("id", "order", "menu_item", "quantity", "unit_price")
-    search_fields = ("order__id", "menu_item__name")
+    list_display = ("id", "order", "menu_item", "combo", "quantity", "unit_price")
+    search_fields = ("order__id", "menu_item__name", "combo__name")
