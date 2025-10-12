@@ -4,6 +4,7 @@ from django.db import transaction
 from cart.models import Cart
 from catalog.models import Option
 from .models import Order, OrderItem
+from decimal import Decimal, ROUND_HALF_UP
 
 @transaction.atomic
 def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None):
@@ -50,7 +51,7 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
             order=order,
             menu_item=cart_item.menu_item,
             quantity=cart_item.quantity,
-            unit_price=unit_price,
+            unit_price=Decimal(unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             options_text=options_display
         )
         
@@ -86,7 +87,7 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
             order=order,
             combo=combo,
             quantity=cart_combo.quantity,
-            unit_price=combo_unit_price,
+            unit_price=Decimal(combo_unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             options_text=combo_description
         )
         
