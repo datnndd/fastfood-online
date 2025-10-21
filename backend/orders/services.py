@@ -4,20 +4,28 @@ from django.db import transaction
 from cart.models import Cart
 from catalog.models import Option
 from .models import Order, OrderItem
+from decimal import Decimal, ROUND_HALF_UP
 
 @transaction.atomic
-def create_order_from_cart(user, payment_method="cash", note=""):
+def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None):
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
         raise ValueError("Cart không tồn tại")
-    
+
     if not cart.items.exists() and not cart.combos.exists():
         raise ValueError("Cart trống")
-    
+
+    if delivery_address is None:
+        raise ValueError("Vui lòng chọn địa chỉ giao hàng")
+
+    if delivery_address.user_id != user.id:
+        raise ValueError("Địa chỉ giao hàng không hợp lệ")
+
     order = Order.objects.create(
-        user=user, 
-        payment_method=payment_method, 
+        user=user,
+        delivery_address=delivery_address,
+        payment_method=payment_method,
         note=note
     )
     
@@ -43,7 +51,7 @@ def create_order_from_cart(user, payment_method="cash", note=""):
             order=order,
             menu_item=cart_item.menu_item,
             quantity=cart_item.quantity,
-            unit_price=unit_price,
+            unit_price=Decimal(unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             options_text=options_display
         )
         
@@ -75,13 +83,11 @@ def create_order_from_cart(user, payment_method="cash", note=""):
         
         combo_unit_price = combo.calculate_final_price()
         
-        first_menu_item = combo.items.first().menu_item
-        
         OrderItem.objects.create(
             order=order,
-            menu_item=first_menu_item,  # Reference item
+            combo=combo,
             quantity=cart_combo.quantity,
-            unit_price=combo_unit_price,
+            unit_price=Decimal(combo_unit_price).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
             options_text=combo_description
         )
         

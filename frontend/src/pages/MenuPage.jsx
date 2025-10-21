@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import ItemCard from '../components/ItemCard'
 import ItemDetailPopup from '../components/ItemDetailPopup'
+import ComboCard from '../components/ComboCard'
 
 export default function MenuPage() {
   const [categories, setCategories] = useState([])
   const [items, setItems] = useState([])
+  const [combos, setCombos] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -15,14 +17,27 @@ export default function MenuPage() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [showPopup, setShowPopup] = useState(false)
 
+  const unwrapList = (response) => {
+    const data = response?.data
+    if (!data) return []
+    if (Array.isArray(data)) return data
+    if (Array.isArray(data.results)) return data.results
+    return []
+  }
+
   useEffect(() => {
     Promise.all([
       CatalogAPI.listCategories(),
-      CatalogAPI.listItems()
+      CatalogAPI.listItems(),
+      CatalogAPI.listCombos({ available: true })
     ])
-      .then(([categoriesRes, itemsRes]) => {
-        setCategories(categoriesRes.data.results || [])
-        setItems(itemsRes.data.results || [])
+      .then(([categoriesRes, itemsRes, combosRes]) => {
+        const categoriesData = unwrapList(categoriesRes)
+        const itemsData = unwrapList(itemsRes)
+        const combosData = unwrapList(combosRes)
+        setCategories(categoriesData)
+        setItems(itemsData)
+        setCombos(combosData)
       })
       .catch(error => {
         console.error('Failed to load menu:', error)
@@ -35,6 +50,14 @@ export default function MenuPage() {
     const matchesSearch = !searchTerm || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+
+  const filteredCombos = combos.filter(combo => {
+    const matchesCategory = !selectedCategory || combo.category === selectedCategory
+    const matchesSearch = !searchTerm ||
+      combo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      combo.description?.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
@@ -66,6 +89,18 @@ export default function MenuPage() {
     } catch (error) {
       console.error('Failed to add to cart:', error)
       alert('Có lỗi xảy ra khi thêm vào giỏ hàng')
+    }
+  }
+
+  const handleAddComboToCart = async (combo) => {
+    try {
+      await CartAPI.addCombo({ combo_id: combo.id, quantity: 1 })
+      
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
+      alert('Đã thêm combo vào giỏ hàng!')
+    } catch (error) {
+      console.error('Failed to add combo:', error)
+      alert('Có lỗi xảy ra khi thêm combo vào giỏ hàng')
     }
   }
 
@@ -126,6 +161,26 @@ export default function MenuPage() {
           ))}
         </div>
       </div>
+
+      {filteredCombos.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold text-gray-900">Combo ưu đãi</h2>
+            <span className="text-sm text-gray-500">
+              Tiết kiệm với các gói combo dành riêng cho bạn
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCombos.map(combo => (
+              <ComboCard
+                key={combo.id}
+                combo={combo}
+                onAddToCart={handleAddComboToCart}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Items Grid - 3 cột */}
       {filteredItems.length > 0 ? (

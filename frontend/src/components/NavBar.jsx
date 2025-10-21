@@ -11,15 +11,25 @@ export default function NavBar() {
 
   // Lấy số lượng items trong cart
   useEffect(() => {
-    if (user) {
+    if (!user) {
+      setCartCount(0)
+      return
+    }
+
+    const refreshCartCount = () => {
       CartAPI.getCart()
         .then(({ data }) => {
-          const count = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0
-          setCartCount(count)
+          const itemCount = (data.items ?? []).reduce((sum, item) => sum + (item.quantity ?? 0), 0)
+          const comboCount = (data.combos ?? []).reduce((sum, combo) => sum + (combo.quantity ?? 0), 0)
+          setCartCount(itemCount + comboCount)
         })
         .catch(() => setCartCount(0))
-    } else {
-      setCartCount(0)
+    }
+
+    refreshCartCount()
+    window.addEventListener('cartUpdated', refreshCartCount)
+    return () => {
+      window.removeEventListener('cartUpdated', refreshCartCount)
     }
   }, [user])
 
