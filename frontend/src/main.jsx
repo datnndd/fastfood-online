@@ -11,8 +11,11 @@ import CartPage from './pages/CartPage.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
+import Promotions from './pages/Promotions.jsx'
+import StoresPage from './pages/StoresPage.jsx'
+import ContactPage from './pages/ContactPage.jsx' // ✅ thêm trang Liên hệ
 import Protected from './components/Protected.jsx'
-import './styles/tw.css' // Sử dụng file CSS đã có
+import './styles/tw.css'
 
 const router = createBrowserRouter([
   {
@@ -25,7 +28,10 @@ const router = createBrowserRouter([
       { path: 'menu', element: <MenuPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
-      
+      { path: 'promotions', element: <Promotions /> },
+      { path: 'stores', element: <StoresPage /> },
+      { path: 'contact', element: <ContactPage /> }, // ✅ thêm route Liên hệ
+
       // Protected routes
       { 
         path: 'cart', 
@@ -35,7 +41,7 @@ const router = createBrowserRouter([
         path: 'orders', 
         element: <Protected><OrdersPage /></Protected>
       },
-      
+
       // Staff/Manager routes
       { 
         path: 'work', 
@@ -46,18 +52,17 @@ const router = createBrowserRouter([
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
 
-      // >>> Thêm dòng này
-      // { path: 'profile', element: <Protected><Profile /></Protected> },
-      
       // Manager only routes
       { 
         path: 'manager/menu', 
-        element: <Protected roles={['manager']}>
-          <div className="p-8">
-            <h1 className="text-2xl font-bold">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Coming soon...</p>
-          </div>
-        </Protected>
+        element: (
+          <Protected roles={['manager']}>
+            <div className="p-8">
+              <h1 className="text-2xl font-bold">Menu Management</h1>
+              <p className="text-gray-600 mt-2">Coming soon...</p>
+            </div>
+          </Protected>
+        ),
       },
     ],
   },
