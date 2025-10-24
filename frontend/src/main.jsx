@@ -12,7 +12,13 @@ import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Protected from './components/Protected.jsx'
-import './styles/tw.css' // Sử dụng file CSS đã có
+
+// Admin pages
+import DashboardPage from './pages/admin/DashboardPage.jsx'
+import ProductsPage from './pages/admin/ProductsPage.jsx'
+import AdminOrdersPage from './pages/admin/OrdersPage.jsx'
+
+import './styles/tw.css'
 
 const router = createBrowserRouter([
   {
@@ -25,33 +31,30 @@ const router = createBrowserRouter([
       { path: 'menu', element: <MenuPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
-      
+
       // Protected routes
-      { 
-        path: 'cart', 
+      {
+        path: 'cart',
         element: <Protected><CartPage /></Protected>
       },
-      { 
-        path: 'orders', 
+      {
+        path: 'orders',
         element: <Protected><OrdersPage /></Protected>
       },
-      
+
       // Staff/Manager routes
-      { 
-        path: 'work', 
+      {
+        path: 'work',
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
-      { 
-        path: 'staff/orders', 
+      {
+        path: 'staff/orders',
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
 
-      // >>> Thêm dòng này
-      // { path: 'profile', element: <Protected><Profile /></Protected> },
-      
       // Manager only routes
-      { 
-        path: 'manager/menu', 
+      {
+        path: 'manager/menu',
         element: <Protected roles={['manager']}>
           <div className="p-8">
             <h1 className="text-2xl font-bold">Menu Management</h1>
@@ -60,6 +63,23 @@ const router = createBrowserRouter([
         </Protected>
       },
     ],
+  },
+
+  // Admin routes - hoàn toàn tách biệt, không có NavBar
+  {
+    path: '/admin',
+    element: <DashboardPage />,
+    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
+  },
+  {
+    path: '/admin/products',
+    element: <ProductsPage />,
+    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
+  },
+  {
+    path: '/admin/orders',
+    element: <AdminOrdersPage />,
+    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
   },
 ])
 
