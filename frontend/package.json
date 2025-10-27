@@ -12,6 +12,7 @@
     "css:build": "tailwindcss -i ./src/styles/index.css -o ./src/styles/tw.css --minify"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
     "axios": "^1.12.2",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",

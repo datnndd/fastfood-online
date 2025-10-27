@@ -1,18 +1,116 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { AccountsAPI } from '../lib/api'
+
+const INITIAL_FORM = {
+  username: '',
+  password: '',
+  email: '',
+  phone: '',
+  address_line: '',
+  province_id: '',
+  ward_id: '',
+  set_default_address: true
+}
+
+const unwrapList = (response) => {
+  const data = response?.data
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data.results)) return data.results
+  return []
+}
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    email: '',
-    phone: ''
-  })
+  const [formData, setFormData] = useState(INITIAL_FORM)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [provinceLoading, setProvinceLoading] = useState(false)
+  const [wardLoading, setWardLoading] = useState(false)
+  const [locations, setLocations] = useState({ provinces: [], wards: [] })
   const { register } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    let mounted = true
+    const fetchProvinces = async () => {
+      setProvinceLoading(true)
+      try {
+        const response = await AccountsAPI.listProvinces()
+        const provinces = unwrapList(response)
+        if (mounted) {
+          setLocations((prev) => ({ ...prev, provinces }))
+        }
+      } catch (error) {
+        console.error('Không thể tải danh sách tỉnh/thành phố', error)
+      } finally {
+        if (mounted) setProvinceLoading(false)
+      }
+    }
+
+    fetchProvinces()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const handleProvinceChange = async (value) => {
+    setFormData((prev) => ({ ...prev, province_id: value, ward_id: '' }))
+    setLocations((prev) => ({ ...prev, wards: [] }))
+    if (!value) return
+
+    setWardLoading(true)
+    try {
+      const response = await AccountsAPI.listWards(value)
+      const wards = unwrapList(response)
+      setLocations((prev) => ({ ...prev, wards }))
+    } catch (error) {
+      console.error('Không thể tải danh sách phường/xã', error)
+      setLocations((prev) => ({ ...prev, wards: [] }))
+    } finally {
+      setWardLoading(false)
+    }
+  }
+
+  const toggleDefaultAddress = () => {
+    setFormData((prev) => ({
+      ...prev,
+      set_default_address: !prev.set_default_address
+    }))
+  }
+
+  const selectedProvince = useMemo(
+    () => locations.provinces.find((prov) => String(prov.id) === String(formData.province_id)),
+    [locations.provinces, formData.province_id]
+  )
+
+  const selectedWard = useMemo(
+    () => locations.wards.find((ward) => String(ward.id) === String(formData.ward_id)),
+    [locations.wards, formData.ward_id]
+  )
+
+  const detailRows = [
+    { label: 'Tên đăng nhập', value: formData.username || '—' },
+    { label: 'Email', value: formData.email || '—' },
+    { label: 'Số điện thoại', value: formData.phone || '—' },
+    { label: 'Địa chỉ', value: formData.address_line || '—' },
+    { label: 'Tỉnh/Thành phố', value: selectedProvince?.name || '—' },
+    { label: 'Phường/Xã', value: selectedWard?.name || '—' }
+  ]
+
+  const renderFieldErrors = (field) => {
+    const fieldError = errors?.[field]
+    if (!fieldError) return null
+    const list = Array.isArray(fieldError) ? fieldError : [fieldError]
+    return (
+      <ul className="text-red-500 text-sm mt-1 space-y-1">
+        {list.map((msg, index) => (
+          <li key={`${field}-${index}`}>{msg}</li>
+        ))}
+      </ul>
+    )
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,16 +118,21 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await register(formData)
-      alert('Đăng ký thành công! Vui lòng đăng nhập.')
+      const result = await register(formData)
+      if (result?.profileSynced === false) {
+        alert('Đăng ký thành công nhưng không thể đặt địa chỉ mặc định. Vui lòng cập nhật trong hồ sơ sau khi đăng nhập.')
+      } else {
+        alert('Đăng ký thành công! Vui lòng đăng nhập.')
+      }
+      setFormData(INITIAL_FORM)
       navigate('/login')
     } catch (error) {
       const errorData = error.response?.data
-        if (errorData && typeof errorData === 'object') {
-          setErrors(errorData)
-        } else {
-          setErrors({ general: errorData?.detail || 'Đăng ký thất bại' })
-        }
+      if (errorData && typeof errorData === 'object') {
+        setErrors(errorData)
+      } else {
+        setErrors({ general: error.message || errorData?.detail || 'Đăng ký thất bại' })
+      }
     } finally {
       setLoading(false)
     }
@@ -61,11 +164,7 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
-            {errors.username && (
-              <ul className="text-red-500 text-sm mt-1">
-                {errors.username.map((msg, i) => <li key={i}>{msg}</li>)}
-              </ul>
-            )}
+            {renderFieldErrors('username')}
           </div>
 
           <div>
@@ -78,6 +177,7 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            {renderFieldErrors('email')}
           </div>
 
           <div>
@@ -90,6 +190,7 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            {renderFieldErrors('phone')}
           </div>
 
           <div>
@@ -103,14 +204,103 @@ export default function RegisterPage() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
-            
-            {errors.password && (
-              <ul className="text-red-500 text-sm mt-1">
-                {errors.password.map((err, i) => (
-                  <li key={i}>{err}</li>
+            {renderFieldErrors('password')}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Địa chỉ chi tiết
+            </label>
+            <textarea
+              rows={3}
+              value={formData.address_line}
+              onChange={(e) => setFormData({ ...formData, address_line: e.target.value })}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              placeholder="Số nhà, đường, khu vực..."
+            />
+            {renderFieldErrors('address_line')}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Tỉnh/Thành phố
+              </label>
+              <select
+                value={formData.province_id}
+                onChange={(e) => handleProvinceChange(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="">
+                  {provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}
+                </option>
+                {locations.provinces.map((province) => (
+                  <option key={province.id} value={province.id}>
+                    {province.name}
+                  </option>
                 ))}
-              </ul>
+              </select>
+              {renderFieldErrors('province_id')}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Phường/Xã
+              </label>
+              <select
+                value={formData.ward_id}
+                onChange={(e) => setFormData({ ...formData, ward_id: e.target.value })}
+                disabled={!formData.province_id}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-gray-50"
+              >
+                <option value="">
+                  {!formData.province_id ? 'Chọn tỉnh trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
+                </option>
+                {locations.wards.map((ward) => (
+                  <option key={ward.id} value={ward.id}>
+                    {ward.name}
+                  </option>
+                ))}
+              </select>
+              {renderFieldErrors('ward_id')}
+            </div>
+          </div>
+
+          <div className="bg-white border rounded-lg p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Thông tin đăng ký chi tiết</h3>
+                <p className="text-sm text-gray-500">Kiểm tra lại thông tin, bạn có thể dùng để tạo địa chỉ giao hàng mặc định.</p>
+              </div>
+              <button
+                type="button"
+                onClick={toggleDefaultAddress}
+                className={`px-3 py-1 rounded-md text-sm font-medium ${
+                  formData.set_default_address
+                    ? 'bg-green-100 text-green-800 border border-green-200'
+                    : 'bg-gray-100 text-gray-700 border border-gray-200'
+                }`}
+              >
+                {formData.set_default_address ? 'Đã chọn làm địa chỉ mặc định' : 'Đặt làm địa chỉ mặc định'}
+              </button>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+              {detailRows.map((row) => (
+                <div key={row.label}>
+                  <dt className="text-gray-500">{row.label}</dt>
+                  <dd className="font-medium text-gray-900">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {formData.set_default_address && (
+              <p className="mt-4 text-sm text-gray-600">
+                Chúng tôi sẽ tạo một địa chỉ giao hàng mặc định từ thông tin bên trên sau khi đăng ký thành công.
+              </p>
             )}
+
+            {renderFieldErrors('set_default_address')}
           </div>
 
           <button

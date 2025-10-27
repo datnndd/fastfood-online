@@ -1,141 +1,175 @@
-// ============================================
-// lib/auth.jsx - FIXED VERSION
-// ============================================
-import { createContext, useContext, useEffect, useState, useMemo } from 'react'
-import { AuthAPI, isAuthenticated, getCurrentTokens } from './api'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { supabase, subscribeToSession, getCurrentSession } from './supabaseClient'
+import { AuthAPI, setApiAccessToken } from './api'
 
-const Ctx = createContext()
-export const useAuth = () => useContext(Ctx)
+const AuthContext = createContext(null)
+const defaultRedirect = typeof window !== 'undefined' ? window.location.origin : undefined
+const oauthRedirectTo = import.meta.env.VITE_SUPABASE_REDIRECT_URL || defaultRedirect
 
 export function AuthProvider({ children }) {
+  const [session, setSession] = useState(getCurrentSession())
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Auto-login khi component mount
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Kiểm tra có tokens không
-        if (!isAuthenticated()) {
-          setLoading(false)
-          return
-        }
-
-        // Lấy profile từ server để verify token và lấy thông tin user
-        const response = await AuthAPI.profile()
-        setUser(response.data)
-      } catch (error) {
-        // Token invalid hoặc expired, API client sẽ tự động handle
-        console.error('Auth init failed:', error)
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initAuth()
-  }, [])
-
-  // Login function - sử dụng API client
-  const login = async (username, password) => {
-    try {
-      setLoading(true)
-      // API client sẽ tự động lưu tokens
-      await AuthAPI.login({ username, password })
-      
-      // Lấy thông tin user sau khi login thành công
-      const profileResponse = await AuthAPI.profile()
-      setUser(profileResponse.data)
-      
-      return profileResponse.data
-    } catch (error) {
-      throw error // Re-throw để component có thể handle error
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Register function - thêm mới
-  const register = async (userData) => {
-    try {
-      const response = await AuthAPI.register(userData)
-      return response.data
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Logout function - sử dụng API client
-  const logout = () => {
-    AuthAPI.logout() // API client sẽ handle việc xóa tokens và redirect
-    setUser(null)
-  }
-
-  // Update user profile sau khi edit
-  const updateUser = (userData) => {
-    setUser(prevUser => ({ ...prevUser, ...userData }))
-  }
-
-  // Refresh user data from server
-  const refreshUser = async () => {
-    try {
-      if (!isAuthenticated()) return null
-      
-      const response = await AuthAPI.profile()
-      setUser(response.data)
-      return response.data
-    } catch (error) {
-      console.error('Failed to refresh user:', error)
+  const fetchProfile = useCallback(async () => {
+    const activeSession = getCurrentSession()
+    if (!activeSession?.access_token) {
       setUser(null)
       return null
     }
-  }
 
-  // Memoize computed values để tránh re-render không cần thiết
-  const authState = useMemo(() => ({
-    isAuthenticated: !!user && isAuthenticated(), // Reactive value
-    tokens: getCurrentTokens()
-  }), [user])
+    try {
+      const { data } = await AuthAPI.profile()
+      setUser(data)
+      return data
+    } catch (error) {
+      console.warn('Không thể tải thông tin người dùng', error)
+      setUser(null)
+      throw error
+    }
+  }, [])
 
-  const value = {
+  useEffect(() => {
+    let mounted = true
+
+    const unsubscribe = subscribeToSession((nextSession) => {
+      if (!mounted) return
+      setSession(nextSession)
+      setApiAccessToken(nextSession?.access_token)
+      if (nextSession?.access_token) {
+        setLoading(true)
+        fetchProfile()
+          .catch(() => {})
+          .finally(() => {
+            if (mounted) {
+              setLoading(false)
+            }
+          })
+      } else {
+        setUser(null)
+        setLoading(false)
+      }
+    })
+
+    return () => {
+      mounted = false
+      unsubscribe()
+    }
+  }, [fetchProfile])
+
+  const login = useCallback(async (email, password) => {
+    const cleanedEmail = (email || '').trim().toLowerCase()
+    if (!cleanedEmail) {
+      throw new Error('Vui lòng nhập email')
+    }
+    if (!cleanedEmail.includes('@')) {
+      throw new Error('Email không hợp lệ')
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: cleanedEmail, password })
+    if (error) {
+      throw error
+    }
+    setSession(data.session)
+    setApiAccessToken(data.session?.access_token)
+    await fetchProfile()
+  }, [fetchProfile])
+
+  const register = useCallback(async (formValues) => {
+    const payload = {
+      username: formValues.username?.trim() || '',
+      password: formValues.password,
+      email: formValues.email?.trim() || '',
+      phone: formValues.phone?.trim() || '',
+      address_line: formValues.address_line?.trim() || '',
+      province_id: formValues.province_id ? Number(formValues.province_id) : null,
+      ward_id: formValues.ward_id ? Number(formValues.ward_id) : null,
+      set_default_address: Boolean(formValues.set_default_address)
+    }
+
+    await AuthAPI.register(payload, { dryRun: true })
+
+    const { data, error } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      options: {
+        data: {
+          username: payload.username,
+          phone: payload.phone
+        }
+      }
+    })
+    if (error) {
+      throw error
+    }
+
+    let profileSynced = true
+    try {
+      await AuthAPI.register({ ...payload, supabase_id: data.user?.id })
+    } catch (syncError) {
+      console.error('Không thể đồng bộ hồ sơ với backend', syncError)
+      profileSynced = false
+    }
+
+    return { data, profileSynced }
+  }, [])
+
+  const loginWithProvider = useCallback(async (provider) => {
+    const options = {}
+    if (oauthRedirectTo) {
+      options.redirectTo = oauthRedirectTo
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options,
+    })
+    if (error) {
+      throw error
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
+    setApiAccessToken(null)
+    setSession(null)
+    setUser(null)
+  }, [])
+
+  const refreshProfile = useCallback(() => fetchProfile(), [fetchProfile])
+
+  const value = useMemo(() => ({
     user,
+    session,
     loading,
     login,
-    register,
+    loginWithProvider,
     logout,
-    updateUser,
-    refreshUser,
-    ...authState
-  }
+    register,
+    refreshProfile
+  }), [user, session, loading, login, loginWithProvider, logout, register, refreshProfile])
 
   return (
-    <Ctx.Provider value={value}>
+    <AuthContext.Provider value={value}>
       {children}
-    </Ctx.Provider>
+    </AuthContext.Provider>
   )
 }
 
-// Hook để kiểm tra role
-export const useRole = () => {
-  const { user } = useAuth()
-  
-  return useMemo(() => ({
-    role: user?.role,
-    isCustomer: user?.role === 'customer',
-    isStaff: user?.role === 'staff', 
-    isManager: user?.role === 'manager',
-    hasStaffAccess: ['staff', 'manager'].includes(user?.role),
-    hasManagerAccess: user?.role === 'manager'
-  }), [user?.role])
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }
 
-// Hook để check authentication status
-export const useAuthStatus = () => {
-  const { user, loading } = useAuth()
-  
-  return useMemo(() => ({
-    isLoggedIn: !!user,
-    isLoading: loading,
-    isGuest: !user && !loading
-  }), [user, loading])
+export const useRole = () => {
+  const { user } = useAuth()
+  const role = user?.role
+  const hasStaffAccess = role === 'staff' || role === 'manager'
+  return {
+    role,
+    hasStaffAccess,
+    isManager: role === 'manager'
+  }
 }

@@ -12,7 +12,6 @@ const EMPTY_ADDRESS_FORM = {
   street_address: '',
   additional_info: '',
   province_id: '',
-  district_id: '',
   ward_id: '',
   is_default: true
 }
@@ -49,10 +48,8 @@ export default function CartPage() {
 
   const [locations, setLocations] = useState({
     provinces: [],
-    districts: [],
     wards: []
   })
-  const [isFetchingDistricts, setIsFetchingDistricts] = useState(false)
   const [isFetchingWards, setIsFetchingWards] = useState(false)
 
   const loadCart = async (syncBadge = false) => {
@@ -92,7 +89,6 @@ export default function CartPage() {
       setLocations((prev) => ({
         ...prev,
         provinces,
-        districts: prev.districts,
         wards: prev.wards
       }))
 
@@ -175,34 +171,8 @@ export default function CartPage() {
     setAddressForm((prev) => ({
       ...prev,
       province_id: value,
-      district_id: '',
       ward_id: ''
     }))
-    if (!value) {
-      setLocations((prev) => ({ ...prev, districts: [], wards: [] }))
-      return
-    }
-
-    setIsFetchingDistricts(true)
-    try {
-      const res = await AccountsAPI.listDistricts(value)
-      const districts = unwrapList(res)
-      setLocations((prev) => ({ ...prev, districts, wards: [] }))
-    } catch (error) {
-      console.error('Failed to load districts:', error)
-      setLocations((prev) => ({ ...prev, districts: [], wards: [] }))
-    } finally {
-      setIsFetchingDistricts(false)
-    }
-  }
-
-  const onDistrictChange = async (value) => {
-    setAddressForm((prev) => ({
-      ...prev,
-      district_id: value,
-      ward_id: ''
-    }))
-
     if (!value) {
       setLocations((prev) => ({ ...prev, wards: [] }))
       return
@@ -238,8 +208,8 @@ export default function CartPage() {
     event.preventDefault()
     setAddressErrors({})
 
-    if (!addressForm.province_id || !addressForm.district_id || !addressForm.ward_id) {
-      setAddressErrors({ general: 'Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện và Phường/Xã.' })
+    if (!addressForm.province_id || !addressForm.ward_id) {
+      setAddressErrors({ general: 'Vui lòng chọn đầy đủ Tỉnh/Thành phố và Phường/Xã.' })
       return
     }
 
@@ -252,7 +222,6 @@ export default function CartPage() {
         street_address: addressForm.street_address.trim(),
         additional_info: addressForm.additional_info.trim(),
         province_id: Number(addressForm.province_id),
-        district_id: Number(addressForm.district_id),
         ward_id: Number(addressForm.ward_id),
         is_default: Boolean(addressForm.is_default)
       }
@@ -261,7 +230,7 @@ export default function CartPage() {
 
       setAddressFormOpen(false)
       setAddressForm(EMPTY_ADDRESS_FORM)
-      setLocations((prev) => ({ ...prev, districts: [], wards: [] }))
+      setLocations((prev) => ({ ...prev, wards: [] }))
 
       await loadAddresses(data?.id)
       setAddressErrors({})
@@ -503,7 +472,7 @@ export default function CartPage() {
                           ...EMPTY_ADDRESS_FORM,
                           is_default: addresses.length === 0
                         })
-                        setLocations((prev) => ({ ...prev, districts: [], wards: [] }))
+                        setLocations((prev) => ({ ...prev, wards: [] }))
                         setAddressFormOpen(true)
                       }}
                       className="text-sm text-red-600 hover:text-red-700 font-medium"
@@ -556,7 +525,6 @@ export default function CartPage() {
                           <p className="text-xs text-gray-500 mt-1">
                             {[
                               address.ward_name,
-                              address.district_name,
                               address.province_name
                             ]
                               .filter(Boolean)
@@ -620,51 +588,26 @@ export default function CartPage() {
                       {renderFieldErrors('contact_name')}
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-medium text-gray-700">
-                            Tỉnh / Thành phố *
-                          </label>
-                          <select
-                            value={addressForm.province_id}
-                            onChange={(e) => onProvinceChange(e.target.value)}
-                            className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                            required
-                          >
-                            <option value="">Chọn tỉnh/thành</option>
-                            {locations.provinces.map((province) => (
-                              <option key={province.id} value={province.id}>
-                                {province.name}
-                              </option>
-                            ))}
-                          </select>
-                          {renderFieldErrors('province_id')}
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-700">
-                            Quận / Huyện *
-                          </label>
-                          <select
-                            value={addressForm.district_id}
-                            onChange={(e) => onDistrictChange(e.target.value)}
-                            className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                            disabled={!addressForm.province_id || isFetchingDistricts}
-                            required
-                          >
-                            <option value="">
-                              {isFetchingDistricts ? 'Đang tải...' : 'Chọn quận/huyện'}
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">
+                          Tỉnh / Thành phố *
+                        </label>
+                        <select
+                          value={addressForm.province_id}
+                          onChange={(e) => onProvinceChange(e.target.value)}
+                          className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          required
+                        >
+                          <option value="">Chọn tỉnh/thành</option>
+                          {locations.provinces.map((province) => (
+                            <option key={province.id} value={province.id}>
+                              {province.name}
                             </option>
-                            {locations.districts.map((district) => (
-                              <option key={district.id} value={district.id}>
-                                {district.name}
-                              </option>
-                            ))}
-                          </select>
-                          {renderFieldErrors('district_id')}
-                        </div>
+                          ))}
+                        </select>
+                        {renderFieldErrors('province_id')}
                       </div>
-
                       <div>
                         <label className="text-sm font-medium text-gray-700">
                           Phường / Xã *
@@ -673,7 +616,7 @@ export default function CartPage() {
                           value={addressForm.ward_id}
                           onChange={(e) => setAddressForm((prev) => ({ ...prev, ward_id: e.target.value }))}
                           className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          disabled={!addressForm.district_id || isFetchingWards}
+                          disabled={!addressForm.province_id || isFetchingWards}
                           required
                         >
                           <option value="">
@@ -734,7 +677,7 @@ export default function CartPage() {
                           setAddressFormOpen(false)
                           setAddressErrors({})
                           setAddressForm(EMPTY_ADDRESS_FORM)
-                          setLocations((prev) => ({ ...prev, districts: [], wards: [] }))
+                          setLocations((prev) => ({ ...prev, wards: [] }))
                         }}
                         className="rounded border px-4 py-2 text-sm hover:bg-gray-100"
                         disabled={savingAddress}
