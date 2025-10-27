@@ -26,7 +26,6 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
             Order.objects.filter(user=self.request.user)
             .select_related(
                 "delivery_address__province",
-                "delivery_address__district",
                 "delivery_address__ward",
             )
             .prefetch_related("items__menu_item", "items__combo")
@@ -71,7 +70,6 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
             Order.objects.select_related(
                 "user",
                 "delivery_address__province",
-                "delivery_address__district",
                 "delivery_address__ward",
             )
             .prefetch_related("items__menu_item", "items__combo")
@@ -138,7 +136,6 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
         return (
             Order.objects.select_related(
                 "delivery_address__province",
-                "delivery_address__district",
                 "delivery_address__ward",
             )
             .prefetch_related("items__menu_item", "items__combo")
@@ -216,14 +213,14 @@ class CheckoutView(generics.CreateAPIView):
         if address_id:
             try:
                 delivery_address = DeliveryAddress.objects.select_related(
-                    "province", "district", "ward"
+                    "province", "ward"
                 ).get(pk=address_id, user=request.user)
             except DeliveryAddress.DoesNotExist:
                 return Response({"detail": "Địa chỉ giao hàng không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             delivery_address = (
                 request.user.delivery_addresses.select_related(
-                    "province", "district", "ward"
+                    "province", "ward"
                 ).filter(is_default=True).first()
             )
             if delivery_address is None:

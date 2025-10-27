@@ -8,7 +8,6 @@ from .views import (
     CreateStaffView,
     UpdateUserRoleView,
     ProvinceListView,
-    DistrictListView,
     WardListView,
     DeliveryAddressViewSet,
 )
@@ -22,7 +21,6 @@ urlpatterns = [
     path("staff/create/", CreateStaffView.as_view()),
     path("users/<int:pk>/role/", UpdateUserRoleView.as_view()),
     path("locations/provinces/", ProvinceListView.as_view()),
-    path("locations/districts/", DistrictListView.as_view()),
     path("locations/wards/", WardListView.as_view()),
     path("", include(router.urls)),
 ]
