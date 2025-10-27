@@ -1,4 +1,11 @@
 # catalog/views.py
+import os
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
+from core.utils.supabase_storage import upload_and_get_public_url
 from rest_framework import viewsets, permissions, filters
 from accounts.permissions import IsManager
 from .models import Category, MenuItem, Combo
@@ -21,6 +28,27 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated(), IsManager()]
+    
+    @action(
+        detail=True,
+        methods=["POST"],
+        parser_classes=[MultiPartParser, FormParser],
+        permission_classes=[permissions.IsAuthenticated, IsManager],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        obj = self.get_object()
+        if "file" not in request.FILES:
+            return Response({"detail": "Thiếu file"}, status=400)
+
+        f = request.FILES["file"]
+        ext = os.path.splitext(f.name)[1].lower() or ".jpg"
+        dest_path = f"categories/{obj.id}{ext}"
+
+        public_url = upload_and_get_public_url(f, dest_path, f.content_type or "image/jpeg")
+        obj.image_url = public_url
+        obj.save(update_fields=["image_url"])
+        return Response({"image_url": public_url}, status=200)
 
 class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.select_related("category").all()
@@ -32,6 +60,27 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated(), IsManager()]
+    
+    @action(
+        detail=True,
+        methods=["POST"],
+        parser_classes=[MultiPartParser, FormParser],
+        permission_classes=[permissions.IsAuthenticated, IsManager],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        obj = self.get_object()
+        if "file" not in request.FILES:
+            return Response({"detail": "Thiếu file"}, status=400)
+
+        f = request.FILES["file"]
+        ext = os.path.splitext(f.name)[1].lower() or ".jpg"
+        dest_path = f"items/{obj.id}{ext}"
+
+        public_url = upload_and_get_public_url(f, dest_path, f.content_type or "image/jpeg")
+        obj.image_url = public_url
+        obj.save(update_fields=["image_url"])
+        return Response({"image_url": public_url}, status=200)
     
 class ComboViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
@@ -63,3 +112,24 @@ class ComboViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated(), IsManager()]
+    
+    @action(
+        detail=True,
+        methods=["POST"],
+        parser_classes=[MultiPartParser, FormParser],
+        permission_classes=[permissions.IsAuthenticated, IsManager],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None):
+        obj = self.get_object()
+        if "file" not in request.FILES:
+            return Response({"detail": "Thiếu file"}, status=400)
+
+        f = request.FILES["file"]
+        ext = os.path.splitext(f.name)[1].lower() or ".jpg"
+        dest_path = f"combos/{obj.id}{ext}"
+
+        public_url = upload_and_get_public_url(f, dest_path, f.content_type or "image/jpeg")
+        obj.image_url = public_url
+        obj.save(update_fields=["image_url"])
+        return Response({"image_url": public_url}, status=200)

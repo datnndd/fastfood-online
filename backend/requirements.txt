@@ -3,7 +3,6 @@ attrs==25.3.0
 Django==5.2.6
 django-cors-headers==4.8.0
 djangorestframework==3.16.1
-djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.28.0
 drf-spectacular-sidecar==2025.9.1
 inflection==0.5.1
@@ -17,3 +16,4 @@ referencing==0.36.2
 rpds-py==0.27.1
 sqlparse==0.5.3
 uritemplate==4.2.0
+supabase

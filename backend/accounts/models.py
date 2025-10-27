@@ -15,8 +15,8 @@ class Province(models.Model):
         return self.name
 
 
-class District(models.Model):
-    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name="districts")
+class Ward(models.Model):
+    province = models.ForeignKey(Province, on_delete=models.CASCADE, related_name="wards")
     name = models.CharField(max_length=120)
     code = models.CharField(max_length=20)
 
@@ -26,19 +26,6 @@ class District(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}, {self.province.name}"
-
-
-class Ward(models.Model):
-    district = models.ForeignKey(District, on_delete=models.CASCADE, related_name="wards")
-    name = models.CharField(max_length=120)
-    code = models.CharField(max_length=20)
-
-    class Meta:
-        ordering = ["name"]
-        unique_together = ("district", "code")
-
-    def __str__(self) -> str:
-        return f"{self.name}, {self.district.name}"
 
 
 class User(AbstractUser):
@@ -51,26 +38,30 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     address_line = models.CharField(max_length=255, blank=True)
     province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
-    district = models.ForeignKey(District, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
     ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
+
+    supabase_id = models.UUIDField(null=True, blank=True, unique=True, db_index=True)
+    auth_provider = models.CharField(max_length=30, blank=True)
+    email_verified = models.BooleanField(default=False)
+    phone_verified = models.BooleanField(default=False)
+
+    def set_unusable_password_if_oauth(self):
+        if self.auth_provider and self.auth_provider != "email":
+            self.set_unusable_password()
 
     def is_staff_like(self) -> bool:
         return self.role in {self.Role.STAFF, self.Role.MANAGER}
 
     def clean(self):
         super().clean()
-
-        if self.district and self.province and self.district.province_id != self.province_id:
-            raise ValidationError({
-                "district": "Quận/Huyện không thuộc tỉnh đã chọn",
-                "province": "Vui lòng chọn tỉnh phù hợp với quận/huyện",
-            })
-
-        if self.ward and self.district and self.ward.district_id != self.district_id:
-            raise ValidationError({
-                "ward": "Phường/Xã không thuộc quận/huyện đã chọn",
-                "district": "Vui lòng chọn quận/huyện phù hợp với phường/xã",
-            })
+        if self.ward:
+            if not self.province:
+                self.province = self.ward.province
+            elif self.ward.province_id != self.province_id:
+                raise ValidationError({
+                    "ward": "Phường/Xã không thuộc tỉnh/thành phố đã chọn",
+                    "province": "Vui lòng chọn tỉnh/thành phố phù hợp với phường/xã",
+                })
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -84,9 +75,20 @@ class DeliveryAddress(models.Model):
     contact_phone = models.CharField(max_length=20)
     street_address = models.CharField(max_length=255)
     additional_info = models.CharField(max_length=255, blank=True)
-    province = models.ForeignKey(Province, on_delete=models.PROTECT, related_name="delivery_addresses")
-    district = models.ForeignKey(District, on_delete=models.PROTECT, related_name="delivery_addresses")
-    ward = models.ForeignKey(Ward, on_delete=models.PROTECT, related_name="delivery_addresses")
+    province = models.ForeignKey(
+        Province,
+        on_delete=models.PROTECT,
+        related_name="delivery_addresses",
+        null=True,
+        blank=True,
+    )
+    ward = models.ForeignKey(
+        Ward,
+        on_delete=models.PROTECT,
+        related_name="delivery_addresses",
+        null=True,
+        blank=True,
+    )
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -98,17 +100,19 @@ class DeliveryAddress(models.Model):
         return f"{self.contact_name} - {self.street_address}"
 
     def clean(self):
-        if self.district and self.province and self.district.province_id != self.province_id:
-            raise ValidationError({
-                "district": "Quận/Huyện không thuộc tỉnh đã chọn",
-                "province": "Vui lòng chọn tỉnh phù hợp với quận/huyện",
-            })
+        if self.ward:
+            if not self.province:
+                self.province = self.ward.province
+            elif self.ward.province_id != self.province_id:
+                raise ValidationError({
+                    "ward": "Phường/Xã không thuộc tỉnh/thành phố đã chọn",
+                    "province": "Vui lòng chọn tỉnh/thành phố phù hợp với phường/xã",
+                })
 
-        if self.ward and self.district and self.ward.district_id != self.district_id:
-            raise ValidationError({
-                "ward": "Phường/Xã không thuộc quận/huyện đã chọn",
-                "district": "Vui lòng chọn quận/huyện phù hợp với phường/xã",
-            })
+        if not self.province:
+            raise ValidationError({"province": "Vui lòng chọn tỉnh/thành phố"})
+        if not self.ward:
+            raise ValidationError({"ward": "Vui lòng chọn phường/xã"})
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -6,6 +6,7 @@ from decimal import Decimal
 class Category(models.Model):
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
+    image_url = models.URLField(blank=True)
     def save(self,*a,**kw):
         if not self.slug: self.slug = slugify(self.name)
         return super().save(*a,**kw)
