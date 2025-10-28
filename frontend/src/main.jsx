@@ -13,6 +13,7 @@ import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Protected from './components/Protected.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
+import ProfilePage from './pages/ProfilePage.jsx'
 
 const router = createBrowserRouter([
   {
@@ -47,7 +48,7 @@ const router = createBrowserRouter([
       },
 
       // >>> Thêm dòng này
-      // { path: 'profile', element: <Protected><Profile /></Protected> },
+      { path: 'profile', element: <Protected><ProfilePage /></Protected> },
       
       // Manager only routes
       { 
