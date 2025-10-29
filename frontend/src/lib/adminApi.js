@@ -45,10 +45,10 @@ export const AdminAPI = {
         getRecentOrders: (limit = 5) => api.get(`/orders/?limit=${limit}&ordering=-created_at`),
     },
 
-    // Menu Items (Products)
+    // Menu Items (Products) - Cập nhật đúng endpoint
     menuItems: {
-        list: (params = {}) => api.get('/menu-items/', { params }),
-        get: (id) => api.get(`/menu-items/${id}/`),
+        list: (params = {}) => api.get('/catalog/items/', { params }),
+        get: (id) => api.get(`/catalog/items/${id}/`),
         create: (data) => {
             const formData = new FormData()
             Object.keys(data).forEach(key => {
@@ -56,7 +56,7 @@ export const AdminAPI = {
                     formData.append(key, data[key])
                 }
             })
-            return api.post('/menu-items/', formData, {
+            return api.post('/catalog/items/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
         },
@@ -67,19 +67,28 @@ export const AdminAPI = {
                     formData.append(key, data[key])
                 }
             })
-            return api.patch(`/menu-items/${id}/`, formData, {
+            return api.patch(`/catalog/items/${id}/`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
         },
-        delete: (id) => api.delete(`/menu-items/${id}/`),
+        delete: (id) => api.delete(`/catalog/items/${id}/`),
     },
 
-    // Categories
+    // Categories - Cập nhật đúng endpoint
     categories: {
-        list: () => api.get('/categories/'),
-        create: (data) => api.post('/categories/', data),
-        update: (id, data) => api.patch(`/categories/${id}/`, data),
-        delete: (id) => api.delete(`/categories/${id}/`),
+        list: () => api.get('/catalog/categories/'),
+        create: (data) => api.post('/catalog/categories/', data),
+        update: (id, data) => api.patch(`/catalog/categories/${id}/`, data),
+        delete: (id) => api.delete(`/catalog/categories/${id}/`),
+    },
+
+    // Combos - Cập nhật đúng endpoint
+    combos: {
+        list: (params = {}) => api.get('/catalog/combos/', { params }),
+        get: (id) => api.get(`/catalog/combos/${id}/`),
+        create: (data) => api.post('/catalog/combos/', data),
+        update: (id, data) => api.patch(`/catalog/combos/${id}/`, data),
+        delete: (id) => api.delete(`/catalog/combos/${id}/`),
     },
 
     // Orders Management

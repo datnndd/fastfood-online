@@ -42,6 +42,7 @@ export default function ProductsPage() {
         setLoading(true)
         try {
             const response = await AdminAPI.menuItems.list()
+            console.log('Products response:', response.data) // Debug log
             setProducts(response.data?.results || response.data || [])
         } catch (error) {
             console.error('Failed to load products:', error)
@@ -54,6 +55,7 @@ export default function ProductsPage() {
     const loadCategories = async () => {
         try {
             const response = await AdminAPI.categories.list()
+            console.log('Categories response:', response.data) // Debug log
             setCategories(response.data?.results || response.data || [])
         } catch (error) {
             console.error('Failed to load categories:', error)

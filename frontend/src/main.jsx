@@ -17,6 +17,7 @@ import Protected from './components/Protected.jsx'
 import DashboardPage from './pages/admin/DashboardPage.jsx'
 import ProductsPage from './pages/admin/ProductsPage.jsx'
 import AdminOrdersPage from './pages/admin/OrdersPage.jsx'
+import UsersPage from './pages/admin/UsersPage.jsx'
 
 import './styles/tw.css'
 
@@ -79,6 +80,11 @@ const router = createBrowserRouter([
   {
     path: '/admin/orders',
     element: <AdminOrdersPage />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: '/admin/users',
+    element: <UsersPage />,
     errorElement: <NotFound />,
   },
 ])

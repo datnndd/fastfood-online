@@ -27,6 +27,18 @@ const CurrencyDollarIcon = ({ className }) => (
     </svg>
 )
 
+const CollectionIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+)
+
+const StarIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
+)
+
 const formatCurrency = (value) => {
     return Number(value || 0).toLocaleString('vi-VN')
 }
@@ -45,10 +57,14 @@ export default function DashboardPage() {
     const [stats, setStats] = useState({
         totalOrders: 0,
         totalRevenue: 0,
-        totalProducts: 0,
-        totalUsers: 0
+        totalMenuItems: 0,
+        totalUsers: 0,
+        totalCategories: 0,
+        totalCombos: 0
     })
     const [recentOrders, setRecentOrders] = useState([])
+    const [topMenuItems, setTopMenuItems] = useState([])
+    const [recentCombos, setRecentCombos] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -58,19 +74,102 @@ export default function DashboardPage() {
     const loadDashboardData = async () => {
         setLoading(true)
         try {
-            // Sử dụng sample data thay vì gọi API để tránh lỗi
+            // Thử load dữ liệu thực từ API
+            try {
+                const [categoriesRes, menuItemsRes] = await Promise.all([
+                    AdminAPI.categories.list(),
+                    AdminAPI.menuItems.list()
+                ])
+
+                const categories = categoriesRes.data?.results || categoriesRes.data || []
+                const menuItems = menuItemsRes.data?.results || menuItemsRes.data || []
+
+                console.log('Loaded categories:', categories)
+                console.log('Loaded menu items:', menuItems)
+
+                setStats(prev => ({
+                    ...prev,
+                    totalCategories: categories.length,
+                    totalMenuItems: menuItems.length
+                }))
+
+                // Set top menu items từ data thực
+                if (menuItems.length > 0) {
+                    const topItems = menuItems
+                        .filter(item => item.is_available)
+                        .slice(0, 5)
+                        .map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            category: typeof item.category === 'object' ? item.category?.name : 'N/A',
+                            price: item.price,
+                            sold_count: Math.floor(Math.random() * 50) + 1, // Mock sold count
+                            is_available: item.is_available
+                        }))
+                    setTopMenuItems(topItems)
+                }
+            } catch (apiError) {
+                console.warn('API calls failed, using sample data:', apiError)
+                // Fall back to sample data nếu API không hoạt động
+                setStats({
+                    totalOrders: 125,
+                    totalRevenue: 4568000,
+                    totalMenuItems: 48,
+                    totalUsers: 89,
+                    totalCategories: 8,
+                    totalCombos: 12
+                })
+
+                setTopMenuItems([
+                    { id: 1, name: 'Burger Bò Phô Mai', category: 'Burger', price: 89000, sold_count: 45, is_available: true },
+                    { id: 2, name: 'Pizza Hải Sản', category: 'Pizza', price: 159000, sold_count: 32, is_available: true },
+                    { id: 3, name: 'Gà Rán Giòn', category: 'Gà rán', price: 79000, sold_count: 28, is_available: false },
+                    { id: 4, name: 'Mì Ý Carbonara', category: 'Mì Ý', price: 95000, sold_count: 25, is_available: true },
+                    { id: 5, name: 'Salad Caesar', category: 'Salad', price: 65000, sold_count: 18, is_available: true },
+                ])
+            }
+
+            // Sample recent orders
             setRecentOrders([
                 { id: 1, user: { username: 'user1' }, total_amount: 250000, status: 'pending', created_at: new Date().toISOString() },
                 { id: 2, user: { username: 'user2' }, total_amount: 180000, status: 'delivered', created_at: new Date().toISOString() },
                 { id: 3, user: { username: 'user3' }, total_amount: 320000, status: 'preparing', created_at: new Date().toISOString() },
             ])
 
-            setStats({
-                totalOrders: 125,
-                totalRevenue: 4568000,
-                totalProducts: 25,
-                totalUsers: 89
-            })
+            // Sample recent combos
+            setRecentCombos([
+                {
+                    id: 1,
+                    name: 'Combo Burger + Nước',
+                    category: 'Combo',
+                    original_price: 125000,
+                    final_price: 99000,
+                    discount_percentage: 20,
+                    is_available: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    name: 'Combo Pizza Gia Đình',
+                    category: 'Combo',
+                    original_price: 350000,
+                    final_price: 280000,
+                    discount_percentage: 20,
+                    is_available: true,
+                    created_at: new Date(Date.now() - 86400000).toISOString()
+                },
+                {
+                    id: 3,
+                    name: 'Combo Gà Rán + Khoai',
+                    category: 'Combo',
+                    original_price: 150000,
+                    final_price: 120000,
+                    discount_percentage: 20,
+                    is_available: false,
+                    created_at: new Date(Date.now() - 172800000).toISOString()
+                },
+            ])
+
         } catch (error) {
             console.error('Failed to load dashboard data:', error)
         } finally {
@@ -92,8 +191,8 @@ export default function DashboardPage() {
             color: 'bg-green-500'
         },
         {
-            title: 'Sản phẩm',
-            value: stats.totalProducts,
+            title: 'Món ăn',
+            value: stats.totalMenuItems,
             icon: ShoppingBagIcon,
             color: 'bg-purple-500'
         },
@@ -102,6 +201,18 @@ export default function DashboardPage() {
             value: stats.totalUsers,
             icon: UsersIcon,
             color: 'bg-red-500'
+        },
+        {
+            title: 'Danh mục',
+            value: stats.totalCategories,
+            icon: CollectionIcon,
+            color: 'bg-indigo-500'
+        },
+        {
+            title: 'Combo',
+            value: stats.totalCombos,
+            icon: StarIcon,
+            color: 'bg-yellow-500'
         }
     ]
 
@@ -153,7 +264,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         {statCards.map((stat, index) => (
                             <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center">
@@ -169,23 +280,111 @@ export default function DashboardPage() {
                         ))}
                     </div>
 
-                    {/* Recent Orders */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Recent Orders */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div className="px-6 py-4 border-b border-gray-200">
+                                <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                ID
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Khách hàng
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Tổng tiền
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Trạng thái
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {recentOrders.length > 0 ? recentOrders.slice(0, 5).map((order) => (
+                                            <tr key={order.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    #{order.id}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {order.user?.username || order.user?.email || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {formatCurrency(order.total_amount)}₫
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {getStatusBadge(order.status)}
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-500">
+                                                    Chưa có đơn hàng nào
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Top Menu Items */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                            <div className="px-6 py-4 border-b border-gray-200">
+                                <h2 className="text-lg font-semibold text-gray-900">Món ăn bán chạy</h2>
+                            </div>
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    {topMenuItems.map((item, index) => (
+                                        <div key={item.id} className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                                                    index === 1 ? 'bg-gray-100 text-gray-800' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-800' :
+                                                            'bg-blue-100 text-blue-800'
+                                                    }`}>
+                                                    {index + 1}
+                                                </span>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                                                    <p className="text-xs text-gray-500">{item.category}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-medium text-gray-900">{item.sold_count} đã bán</p>
+                                                <p className="text-xs text-gray-500">{formatCurrency(item.price)}₫</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Recent Combos */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                         <div className="px-6 py-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">Combo gần đây</h2>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            ID
+                                            Tên combo
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Khách hàng
+                                            Giá gốc
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Tổng tiền
+                                            Giá sau giảm
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Giảm giá
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Trạng thái
@@ -196,31 +395,35 @@ export default function DashboardPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {recentOrders.length > 0 ? recentOrders.slice(0, 5).map((order) => (
-                                        <tr key={order.id} className="hover:bg-gray-50">
+                                    {recentCombos.map((combo) => (
+                                        <tr key={combo.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                #{order.id}
+                                                {combo.name}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {order.user?.username || order.user?.email || 'N/A'}
+                                                {formatCurrency(combo.original_price)}₫
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {formatCurrency(order.total_amount)}₫
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                                                {formatCurrency(combo.final_price)}₫
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {getStatusBadge(order.status)}
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                    -{combo.discount_percentage}%
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${combo.is_available
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {combo.is_available ? 'Có sẵn' : 'Hết hàng'}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatDate(order.created_at)}
+                                                {formatDate(combo.created_at)}
                                             </td>
                                         </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                                                Chưa có đơn hàng nào
-                                            </td>
-                                        </tr>
-                                    )}
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

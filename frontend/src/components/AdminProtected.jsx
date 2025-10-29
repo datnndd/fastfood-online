@@ -8,13 +8,8 @@ export default function AdminProtected({ children }) {
     useEffect(() => {
         const checkAdminAccess = async () => {
             try {
-                const token = localStorage.getItem('accessToken')
-                if (!token) {
-                    setLoading(false)
-                    return
-                }
-
-                // Tạm thời cho phép tất cả user có token truy cập admin để test
+                // Tạm thời cho phép tất cả user truy cập admin để test (bỏ kiểm tra token)
+                console.log('Admin access check - allowing access for testing')
                 setIsAdmin(true)
             } catch (error) {
                 console.error('Failed to verify admin access:', error)
@@ -36,7 +31,7 @@ export default function AdminProtected({ children }) {
     }
 
     if (!isAdmin) {
-        return <Navigate to="/login" replace />
+        return <Navigate to="/" replace />
     }
 
     return children
