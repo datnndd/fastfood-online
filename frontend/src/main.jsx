@@ -65,21 +65,21 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Admin routes - hoàn toàn tách biệt, không có NavBar
+  // Admin routes - separate from main app layout (no NavBar)
   {
     path: '/admin',
     element: <DashboardPage />,
-    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
+    errorElement: <NotFound />,
   },
   {
     path: '/admin/products',
     element: <ProductsPage />,
-    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
+    errorElement: <NotFound />,
   },
   {
     path: '/admin/orders',
     element: <AdminOrdersPage />,
-    errorElement: <div className="p-8"><h1 className="text-2xl font-bold text-red-600">Admin Page Not Found</h1></div>,
+    errorElement: <NotFound />,
   },
 ])
 

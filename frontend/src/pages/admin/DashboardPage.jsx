@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-// import AdminProtected from '../../components/AdminProtected'
+import AdminProtected from '../../components/AdminProtected'
 import AdminLayout from '../../components/AdminLayout'
 
 // Icons thủ công
@@ -133,100 +133,100 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            // <AdminProtected>
-            <AdminLayout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-                </div>
-            </AdminLayout>
-            // </AdminProtected>
+            <AdminProtected>
+                <AdminLayout>
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                    </div>
+                </AdminLayout>
+            </AdminProtected>
         )
     }
 
     return (
-        // <AdminProtected>
-        <AdminLayout>
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-gray-600">Tổng quan hệ thống quản lý FastFood Online</p>
-                </div>
+        <AdminProtected>
+            <AdminLayout>
+                <div className="space-y-6">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                        <p className="text-gray-600">Tổng quan hệ thống quản lý FastFood Online</p>
+                    </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {statCards.map((stat, index) => (
-                        <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <div className="flex items-center">
-                                <div className={`p-3 rounded-lg ${stat.color}`}>
-                                    <stat.icon className="h-6 w-6 text-white" />
-                                </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {statCards.map((stat, index) => (
+                            <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <div className="flex items-center">
+                                    <div className={`p-3 rounded-lg ${stat.color}`}>
+                                        <stat.icon className="h-6 w-6 text-white" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
 
-                {/* Recent Orders */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                        <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Khách hàng
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Tổng tiền
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Trạng thái
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ngày tạo
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {recentOrders.length > 0 ? recentOrders.slice(0, 5).map((order) => (
-                                    <tr key={order.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            #{order.id}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {order.user?.username || order.user?.email || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {formatCurrency(order.total_amount)}₫
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {getStatusBadge(order.status)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(order.created_at)}
-                                        </td>
-                                    </tr>
-                                )) : (
+                    {/* Recent Orders */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                                            Chưa có đơn hàng nào
-                                        </td>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            ID
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Khách hàng
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Tổng tiền
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Trạng thái
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Ngày tạo
+                                        </th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {recentOrders.length > 0 ? recentOrders.slice(0, 5).map((order) => (
+                                        <tr key={order.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                #{order.id}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {order.user?.username || order.user?.email || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {formatCurrency(order.total_amount)}₫
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {getStatusBadge(order.status)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {formatDate(order.created_at)}
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                                                Chưa có đơn hàng nào
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </AdminLayout>
-        // </AdminProtected>
+            </AdminLayout>
+        </AdminProtected>
     )
 }

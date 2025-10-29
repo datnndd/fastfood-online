@@ -56,9 +56,6 @@ export default function AdminLayout({ children }) {
     const location = useLocation()
     const navigate = useNavigate()
 
-    // Debug log
-    console.log('AdminLayout rendered, current path:', location.pathname)
-
     const handleLogout = () => {
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')

@@ -9,19 +9,16 @@ export default function AdminProtected({ children }) {
         const checkAdminAccess = async () => {
             try {
                 const token = localStorage.getItem('accessToken')
+                if (!token) {
+                    setLoading(false)
+                    return
+                }
 
-                // Tạm thời bỏ qua kiểm tra token để test admin
-                // if (!token) {
-                //   setLoading(false)
-                //   return
-                // }
-
-                // Tạm thời cho phép tất cả user truy cập admin để test
-                console.log('Admin access granted for testing')
+                // Tạm thời cho phép tất cả user có token truy cập admin để test
                 setIsAdmin(true)
             } catch (error) {
                 console.error('Failed to verify admin access:', error)
-                setIsAdmin(true) // Vẫn cho phép để test
+                setIsAdmin(false)
             } finally {
                 setLoading(false)
             }
