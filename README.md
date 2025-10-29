@@ -40,6 +40,16 @@ Chạy server backend:
 python manage.py runserver 8000
 ```
 
+### Supabase Auth
+
+Backend hiện xác thực thông qua Supabase JWT. Trong file `.env` của backend bổ sung:
+
+```
+SUPABASE_PROJECT_ID=<ma-project>
+```
+
+Giá trị `<ma-project>` chính là phần subdomain trong `https://<ma-project>.supabase.co`. Biến này được dùng để lấy khóa JWKS phục vụ việc verify token.
+
 ## 3. Frontend Setup
 Cài đặt Node.js nếu chưa có.
 
@@ -52,6 +62,16 @@ npm install
 $env:Path += ';C:\Program Files\nodejs;C:\Users\<username>\AppData\Roaming\npm'
 ```
 Thay `<username>` bằng tên user của bạn.
+
+Tạo file môi trường cho frontend (`frontend/.env.local` hoặc `.env`) với các biến:
+
+```
+VITE_API_BASE=http://localhost:8000/api
+VITE_SUPABASE_URL=https://<ma-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key>
+```
+
+`<anon-key>` lấy trong Supabase dashboard (Project Settings → API).
 
 Chạy frontend (dùng 2 terminal):
 ```bash
@@ -81,7 +101,6 @@ python manage.py migrate
 ### Frontend
 ```bash
 cd frontend
-npm install
 npm run css:dev
 npm run dev
 ```
@@ -98,4 +117,3 @@ Nếu lỗi Path, chỉnh lại `$env:Path` như hướng dẫn trên.
 
 **Lưu ý:**  
 Ảnh logo, banner lưu trong thư mục `frontend/src/assets`.
-
