@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime, timezone
 import re
 import uuid
 from typing import Any, Dict, Optional
@@ -75,6 +76,25 @@ def _extract_phone(payload: Dict[str, Any]) -> Optional[str]:
     return user_meta.get("phone")
 
 
+def _parse_date(value: Any) -> Optional[date]:
+    if value in (None, "", False):
+        return None
+    if isinstance(value, date):
+        return value
+    if isinstance(value, (int, float)):  # unix timestamp
+        try:
+            return datetime.fromtimestamp(value, timezone.utc).date()
+        except (OverflowError, OSError, ValueError):
+            return None
+    if isinstance(value, str):
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
 def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
     supabase_uuid = _parse_uuid(payload.get("sub"))
     if not supabase_uuid:
@@ -86,6 +106,9 @@ def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
     provider = (app_meta.get("provider") or "email").lower()
     username_hint = user_meta.get("username") or (email.split("@")[0] if email else None)
     phone = _extract_phone(payload)
+    full_name = (user_meta.get("full_name") or user_meta.get("name") or "").strip()
+    raw_gender = (user_meta.get("gender") or "").strip().lower()
+    dob = _parse_date(user_meta.get("date_of_birth") or user_meta.get("dob"))
 
     user = User.objects.filter(supabase_id=supabase_uuid).first()
     if not user and email:
@@ -102,6 +125,12 @@ def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
         )
         if phone:
             user.phone = phone
+        if full_name:
+            user.full_name = full_name
+        if raw_gender in {choice[0] for choice in User.Gender.choices}:
+            user.gender = raw_gender
+        if dob:
+            user.date_of_birth = dob
         user.set_unusable_password()
         user.save()
         return user
@@ -124,6 +153,13 @@ def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
     _set("email_verified", bool(payload.get("email_confirmed_at")))
     _set("phone_verified", bool(payload.get("phone_confirmed_at")))
     _set("phone", phone, allow_blank=True)
+    _set("full_name", full_name, allow_blank=True)
+
+    valid_genders = {choice[0] for choice in User.Gender.choices}
+    if raw_gender in valid_genders:
+        _set("gender", raw_gender)
+    if dob:
+        _set("date_of_birth", dob)
 
     desired_username = user_meta.get("username")
     if desired_username:

@@ -10,6 +10,8 @@ from .views import (
     ProvinceListView,
     WardListView,
     DeliveryAddressViewSet,
+    get_email_for_username,
+    set_password,
 )
 
 router = DefaultRouter()
@@ -22,5 +24,7 @@ urlpatterns = [
     path("users/<int:pk>/role/", UpdateUserRoleView.as_view()),
     path("locations/provinces/", ProvinceListView.as_view()),
     path("locations/wards/", WardListView.as_view()),
+    path("get-email/", get_email_for_username, name="get-email-for-username"),
+    path("set-password/", set_password, name="set-password"),
     path("", include(router.urls)),
 ]

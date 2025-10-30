@@ -7,12 +7,22 @@ const INITIAL_FORM = {
   username: '',
   password: '',
   email: '',
+  full_name: '',
   phone: '',
+  gender: 'unspecified',
+  date_of_birth: '',
   address_line: '',
   province_id: '',
   ward_id: '',
   set_default_address: true
 }
+
+const GENDER_OPTIONS = [
+  { value: 'unspecified', label: 'Không xác định' },
+  { value: 'male', label: 'Nam' },
+  { value: 'female', label: 'Nữ' },
+  { value: 'other', label: 'Khác' }
+]
 
 const unwrapList = (response) => {
   const data = response?.data
@@ -90,10 +100,18 @@ export default function RegisterPage() {
     [locations.wards, formData.ward_id]
   )
 
+  const genderLabel = useMemo(() => {
+    const found = GENDER_OPTIONS.find((option) => option.value === formData.gender)
+    return found ? found.label : 'Không xác định'
+  }, [formData.gender])
+
   const detailRows = [
     { label: 'Tên đăng nhập', value: formData.username || '—' },
     { label: 'Email', value: formData.email || '—' },
+    { label: 'Họ và tên', value: formData.full_name || '—' },
     { label: 'Số điện thoại', value: formData.phone || '—' },
+    { label: 'Giới tính', value: genderLabel },
+    { label: 'Ngày sinh', value: formData.date_of_birth || '—' },
     { label: 'Địa chỉ', value: formData.address_line || '—' },
     { label: 'Tỉnh/Thành phố', value: selectedProvince?.name || '—' },
     { label: 'Phường/Xã', value: selectedWard?.name || '—' }
@@ -182,6 +200,19 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
+              Họ và tên
+            </label>
+            <input
+              type="text"
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+            />
+            {renderFieldErrors('full_name')}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
               Số điện thoại
             </label>
             <input
@@ -191,6 +222,40 @@ export default function RegisterPage() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
             {renderFieldErrors('phone')}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Giới tính
+              </label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              >
+                {GENDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {renderFieldErrors('gender')}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Ngày sinh
+              </label>
+              <input
+                type="date"
+                value={formData.date_of_birth}
+                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                max={new Date().toISOString().split('T')[0]}
+              />
+              {renderFieldErrors('date_of_birth')}
+            </div>
           </div>
 
           <div>

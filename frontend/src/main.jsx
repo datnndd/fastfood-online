@@ -12,6 +12,8 @@ import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Protected from './components/Protected.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
+import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
 
 const router = createBrowserRouter([
@@ -48,6 +50,10 @@ const router = createBrowserRouter([
 
       // >>> Thêm dòng này
       // { path: 'profile', element: <Protected><Profile /></Protected> },
+
+      // Forgot Password
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'update-password', element: <UpdatePasswordPage /> },
       
       // Manager only routes
       { 

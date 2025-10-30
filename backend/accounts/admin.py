@@ -10,13 +10,13 @@ class UserAdmin(BaseUserAdmin):
             "fields": ("supabase_id", "auth_provider", "email_verified", "phone_verified"),
         }),
         ("Profile", {
-            "fields": ("role", "phone", "address_line", "province", "ward"),
+            "fields": ("role", "full_name", "gender", "date_of_birth", "phone", "address_line", "province", "ward"),
         }),
     )
     readonly_fields = ("supabase_id", "auth_provider", "email_verified", "phone_verified")
-    list_display = ("username", "email", "role", "auth_provider", "email_verified", "is_active", "is_staff")
+    list_display = ("username", "email", "full_name", "role", "auth_provider", "email_verified", "is_active", "is_staff")
     list_filter = ("role", "auth_provider", "email_verified", "is_active", "is_staff")
-    search_fields = ("username", "email")
+    search_fields = ("username", "email", "full_name")
 
 @admin.register(Province)
 class ProvinceAdmin(admin.ModelAdmin):
