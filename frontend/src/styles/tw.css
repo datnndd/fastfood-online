@@ -282,6 +282,9 @@
   .col-span-12 {
     grid-column: span 12 / span 12;
   }
+  .mx-2 {
+    margin-inline: calc(var(--spacing) * 2);
+  }
   .mx-4 {
     margin-inline: calc(var(--spacing) * 4);
   }
@@ -303,9 +306,6 @@
   .mt-6 {
     margin-top: calc(var(--spacing) * 6);
   }
-  .mt-8 {
-    margin-top: calc(var(--spacing) * 8);
-  }
   .mt-12 {
     margin-top: calc(var(--spacing) * 12);
   }
@@ -317,12 +317,6 @@
   }
   .mr-3 {
     margin-right: calc(var(--spacing) * 3);
-  }
-  .mr-4 {
-    margin-right: calc(var(--spacing) * 4);
-  }
-  .mr-6 {
-    margin-right: calc(var(--spacing) * 6);
   }
   .mb-1 {
     margin-bottom: calc(var(--spacing) * 1);
@@ -543,6 +537,9 @@
   .items-center {
     align-items: center;
   }
+  .items-end {
+    align-items: flex-end;
+  }
   .items-start {
     align-items: flex-start;
   }
@@ -596,13 +593,6 @@
       --tw-space-y-reverse: 0;
       margin-block-start: calc(calc(var(--spacing) * 4) * var(--tw-space-y-reverse));
       margin-block-end: calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-y-reverse)));
-    }
-  }
-  .space-y-5 {
-    :where(& > :not(:last-child)) {
-      --tw-space-y-reverse: 0;
-      margin-block-start: calc(calc(var(--spacing) * 5) * var(--tw-space-y-reverse));
-      margin-block-end: calc(calc(var(--spacing) * 5) * calc(1 - var(--tw-space-y-reverse)));
     }
   }
   .space-y-6 {
@@ -805,12 +795,6 @@
   .bg-green-500 {
     background-color: var(--color-green-500);
   }
-  .bg-green-600 {
-    background-color: var(--color-green-600);
-  }
-  .bg-purple-50 {
-    background-color: var(--color-purple-50);
-  }
   .bg-purple-100 {
     background-color: var(--color-purple-100);
   }
@@ -959,9 +943,6 @@
   }
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
-  }
-  .px-5 {
-    padding-inline: calc(var(--spacing) * 5);
   }
   .px-6 {
     padding-inline: calc(var(--spacing) * 6);
@@ -1171,9 +1152,6 @@
   .opacity-25 {
     opacity: 25%;
   }
-  .opacity-70 {
-    opacity: 70%;
-  }
   .opacity-75 {
     opacity: 75%;
   }
@@ -1289,13 +1267,6 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-gray-800);
-      }
-    }
-  }
-  .hover\:bg-green-700 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-green-700);
       }
     }
   }
@@ -1538,11 +1509,6 @@
   .md\:grid-cols-3 {
     @media (width >= 48rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  .md\:grid-cols-4 {
-    @media (width >= 48rem) {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .md\:flex-row {

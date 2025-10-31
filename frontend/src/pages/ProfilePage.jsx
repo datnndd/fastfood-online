@@ -237,6 +237,16 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSetDefaultAddress = async (addressId) => {
+    try {
+      await AccountsAPI.addresses.patch(addressId, { is_default: true })
+      await loadAddresses()
+    } catch (error) {
+      console.error('Failed to set default address:', error)
+      alert('Không thể đặt địa chỉ mặc định')
+    }
+  }
+
   const handlePasswordChange = async (e) => {
     e.preventDefault()
     if (passwordForm.new_password !== passwordForm.confirm_password) {
@@ -686,52 +696,65 @@ export default function ProfilePage() {
             <div key={address.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{address.label || 'Địa chỉ'}</h3>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="text-base font-semibold text-gray-900">{address.label || 'Địa chỉ'}</h3>
                     {address.is_default && (
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
                         Mặc định
                       </span>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-gray-700 font-medium">{address.contact_name}</p>
-                    <p className="text-gray-600">{address.contact_phone}</p>
-                    <p className="text-gray-600">{address.street_address}</p>
+                  <div className="space-y-1">
+                    <p className="text-gray-800 text-sm font-medium">
+                      {address.contact_name}
+                      <span className="mx-2">|</span>
+                      <span className="text-gray-600">{address.contact_phone}</span>
+                    </p>
+                    <p className="text-gray-700 text-sm">{address.street_address}</p>
                     {address.additional_info && (
-                      <p className="text-gray-500 text-sm">{address.additional_info}</p>
+                      <p className="text-gray-500 text-xs">{address.additional_info}</p>
                     )}
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-500 text-xs">
                       {address.ward_name || address.ward?.name}, {address.province_name || address.province?.name}
                     </p>
                   </div>
                 </div>
-                <div className="flex space-x-2 ml-4">
-                  <button
-                    onClick={() => {
-                      setEditingAddress(address)
-                      setAddressForm({
-                        label: address.label,
-                        contact_name: address.contact_name,
-                        contact_phone: address.contact_phone,
-                        street_address: address.street_address,
-                        additional_info: address.additional_info,
-                        province_id: address.province_id || address.province?.id || '',
-                        ward_id: address.ward_id || address.ward?.id || '',
-                        is_default: address.is_default
-                      })
-                      setShowAddAddress(true)
-                    }}
-                    className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 font-medium"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAddress(address.id)}
-                    className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium"
-                  >
-                    Xóa
-                  </button>
+                <div className="flex flex-col items-end space-y-2 ml-4">
+                  {!address.is_default && (
+                    <button
+                      onClick={() => handleSetDefaultAddress(address.id)}
+                      className="px-3 py-1 text-gray-700 border border-gray-300 hover:bg-gray-50 rounded transition-all duration-200 text-sm"
+                    >
+                      Thiết lập mặc định
+                    </button>
+                  )}
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setEditingAddress(address)
+                        setAddressForm({
+                          label: address.label,
+                          contact_name: address.contact_name,
+                          contact_phone: address.contact_phone,
+                          street_address: address.street_address,
+                          additional_info: address.additional_info,
+                          province_id: address.province_id || address.province?.id || '',
+                          ward_id: address.ward_id || address.ward?.id || '',
+                          is_default: address.is_default
+                        })
+                        setShowAddAddress(true)
+                      }}
+                      className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 font-medium"
+                    >
+                      Cập nhật
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAddress(address.id)}
+                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium"
+                    >
+                      Xóa
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

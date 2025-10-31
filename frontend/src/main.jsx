@@ -5,6 +5,8 @@ import { AuthProvider } from './lib/auth.jsx'
 import App from './App.jsx'
 import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import MenuPage from './pages/MenuPage.jsx'
 import CartPage from './pages/CartPage.jsx'
@@ -26,6 +28,8 @@ const router = createBrowserRouter([
       { path: 'menu', element: <MenuPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'reset-password', element: <ResetPasswordPage /> },
       
       // Protected routes
       { 

@@ -114,6 +114,23 @@ export function AuthProvider({ children }) {
     return { data, profileSynced }
   }, [])
 
+  const requestPasswordReset = useCallback(async (email) => {
+    const cleanedEmail = (email || '').trim().toLowerCase()
+    if (!cleanedEmail) throw new Error('Vui lòng nhập email')
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+    if (error) throw error
+  }, [])
+
+  const updatePassword = useCallback(async (newPassword) => {
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Mật khẩu mới phải từ 6 ký tự')
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }, [])
+
   const loginWithProvider = useCallback(async (provider) => {
     const options = {}
     if (oauthRedirectTo) {

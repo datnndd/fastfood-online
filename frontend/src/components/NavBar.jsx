@@ -2,12 +2,16 @@ import { Link } from 'react-router-dom'
 import { useAuth, useRole } from '../lib/auth'
 import { CartAPI } from '../lib/api'
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useRef } from 'react'
 
 export default function NavBar() {
   const { user, logout } = useAuth()
   const { hasStaffAccess } = useRole()
   const [cartCount, setCartCount] = useState(0)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const menuRef = useRef(null)
+  const location = useLocation()
 
   // Lấy số lượng items trong cart
   useEffect(() => {
@@ -32,6 +36,29 @@ export default function NavBar() {
       window.removeEventListener('cartUpdated', refreshCartCount)
     }
   }, [user])
+
+  // Đóng menu khi điều hướng hoặc click ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscapeKey)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [location.pathname])
 
   return (
     <>
@@ -93,7 +120,7 @@ export default function NavBar() {
                   </Link>
 
                   {/* User menu */}
-                  <div className="relative">
+                  <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setShowUserMenu(!showUserMenu)}
                       className="flex items-center space-x-2 text-gray-700 hover:text-red-600 transition-colors"
