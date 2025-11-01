@@ -33,7 +33,13 @@ export const AuthAPI = {
     const url = dryRun ? '/accounts/register/?dry_run=1' : '/accounts/register/'
     return api.post(url, userData)
   },
-  profile: () => api.get('/accounts/me/')
+  profile: () => api.get('/accounts/me/'),
+  getEmailForUsername: (username) => {
+    return api.post('/accounts/get-email/', { username })
+  },
+  setPassword: (password) => {
+    return api.post('/accounts/set-password/', { password })
+  }
 }
 
 // =============================================================================
