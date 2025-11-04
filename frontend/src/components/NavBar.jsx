@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 
 export default function NavBar() {
   const { user, logout } = useAuth()
-  const { hasStaffAccess } = useRole()
+  const { hasStaffAccess, isManager } = useRole()
   const [cartCount, setCartCount] = useState(0)
   const [showUserMenu, setShowUserMenu] = useState(false)
 
@@ -85,6 +85,11 @@ export default function NavBar() {
                   Quản lý
                 </Link>
               )}
+              {isManager && (
+                <Link to="/manager/accounts" className="text-gray-700 hover:text-red-600 transition-colors">
+                  Tài khoản
+                </Link>
+              )}
             </div>
 
             {/* User actions */}
@@ -139,6 +144,14 @@ export default function NavBar() {
                           >
                             Đơn hàng của tôi
                           </Link>
+                          {isManager && (
+                            <Link
+                              to="/manager/accounts"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Quản lý tài khoản
+                            </Link>
+                          )}
                           <button
                             onClick={() => {
                               logout()
