@@ -21,9 +21,17 @@ class Order(models.Model):
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PREPARING)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
-    payment_method = models.CharField(max_length=20, default="cash")  # temporary cash
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
+    payment_method = models.CharField(max_length=20, default="cash")  # cash, card
+    payment_status = models.CharField(max_length=50, default="pending")  # pending, paid, failed
     note = models.CharField(max_length=255, blank=True)
+    stripe_checkout_session_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_status = models.CharField(max_length=50, blank=True, null=True)
+    payment_completed_at = models.DateTimeField(null=True, blank=True)  # Thời gian thanh toán hoàn tất
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")

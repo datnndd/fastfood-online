@@ -4,6 +4,7 @@ from datetime import date
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q, UniqueConstraint
 
 
 class Province(models.Model):
@@ -25,6 +26,10 @@ class Ward(models.Model):
     class Meta:
         ordering = ["name"]
         unique_together = ("province", "code")
+        indexes = [
+            models.Index(fields=["province", "name"]),
+            models.Index(fields=["province", "code"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.name}, {self.province.name}"
@@ -42,20 +47,23 @@ class User(AbstractUser):
         OTHER = "other", "Other"
         UNSPECIFIED = "unspecified", "Không xác định"
 
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)
+    email = models.EmailField(blank=True, db_index=True)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER, db_index=True)
     full_name = models.CharField(max_length=255, blank=True)
     gender = models.CharField(max_length=20, choices=Gender.choices, default=Gender.UNSPECIFIED, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     address_line = models.CharField(max_length=255, blank=True)
-    province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
-    ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
+    province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
+    ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
 
     
     supabase_id = models.UUIDField(null=True, blank=True, unique=True, db_index=True)
     auth_provider = models.CharField(max_length=30, blank=True)
     email_verified = models.BooleanField(default=False)
     phone_verified = models.BooleanField(default=False)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Stripe Customer ID
+    stripe_payment_method_id = models.CharField(max_length=255, blank=True, null=True)  # Saved payment method ID
 
     def set_unusable_password_if_oauth(self):
         if self.auth_provider and self.auth_provider != "email":
@@ -113,6 +121,18 @@ class DeliveryAddress(models.Model):
 
     class Meta:
         ordering = ["-is_default", "-updated_at"]
+        indexes = [
+            models.Index(fields=["user", "is_default"]),
+            models.Index(fields=["user", "updated_at"]),
+            models.Index(fields=["province", "ward"]),
+        ]
+        constraints = [
+            UniqueConstraint(
+                fields=["user"],
+                condition=Q(is_default=True),
+                name="unique_default_address_per_user",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.contact_name} - {self.street_address}"

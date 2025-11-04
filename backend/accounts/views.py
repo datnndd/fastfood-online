@@ -1,10 +1,12 @@
 # accounts/views.py
-from rest_framework import generics, permissions, viewsets, status
+from rest_framework import generics, permissions, viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 
 from .models import User, Province, Ward, DeliveryAddress
 from .permissions import IsManager
@@ -16,6 +18,7 @@ from .serializers import (
     ProvinceSerializer,
     WardSerializer,
     DeliveryAddressSerializer,
+    ManageUserListSerializer,
 )
 
 class RegisterView(generics.CreateAPIView):
@@ -51,22 +54,42 @@ class UpdateUserRoleView(generics.UpdateAPIView):
     lookup_field = "pk"
 
 
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all().order_by("-date_joined")
+    serializer_class = ManageUserListSerializer
+    permission_classes = [permissions.IsAuthenticated, IsManager]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["username", "full_name", "email"]
+    ordering_fields = ["date_joined", "username", "role"]
+    ordering = ["-date_joined"]
+
+
 class ProvinceListView(generics.ListAPIView):
-    queryset = Province.objects.all()
-    serializer_class = ProvinceSerializer
     permission_classes = [permissions.AllowAny]
+    serializer_class = ProvinceSerializer
+    @method_decorator(cache_page(60 * 60 * 24))  # 24h
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get_queryset(self):
+        # chỉ các cột cần
+        return Province.objects.all().only("id", "name", "code")
 
 
 class WardListView(generics.ListAPIView):
-    serializer_class = WardSerializer
     permission_classes = [permissions.AllowAny]
+    serializer_class = WardSerializer
+
+    @method_decorator(cache_page(60 * 60 * 24))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        queryset = Ward.objects.select_related("province")
-        province_id = self.request.query_params.get("province_id")
-        if province_id:
-            queryset = queryset.filter(province_id=province_id)
-        return queryset
+        qs = Ward.objects.select_related("province").only("id", "name", "code", "province_id")
+        pid = self.request.query_params.get("province_id")
+        if pid:
+            qs = qs.filter(province_id=pid)
+        return qs
 
 
 class DeliveryAddressViewSet(viewsets.ModelViewSet):
@@ -77,37 +100,26 @@ class DeliveryAddressViewSet(viewsets.ModelViewSet):
         return (
             DeliveryAddress.objects.filter(user=self.request.user)
             .select_related("province", "ward")
+            .only(
+                "id", "label", "contact_name", "contact_phone",
+                "street_address", "additional_info", "province_id",
+                "ward_id", "is_default", "created_at", "updated_at",
+                "province__name", "ward__name"
+            )
             .order_by("-is_default", "-updated_at")
         )
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-    def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
-
-@api_view(['POST'])
-@permission_classes([AllowAny]) #Cho phép truy cập không cần token
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def get_email_for_username(request):
-    """
-    Lấy email của người dùng dựa trên username.
-    """
-    username = request.data.get('username')
+    username = request.data.get("username")
     if not username:
-        return Response(
-            {'detail': 'Username is required.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
+        return Response({"detail": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        # Dùng 'iexact' để tìm kiếm không phân biệt hoa thường
-        user = User.objects.get(username__iexact=username)
-        return Response({'email': user.email}, status=status.HTTP_200_OK)
+        user = User.objects.only("email").get(username__iexact=username)
+        return Response({"email": user.email}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
-        return Response(
-            {'detail': 'Username not found.'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Username not found."}, status=status.HTTP_404_NOT_FOUND)
     
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])

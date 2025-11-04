@@ -27,13 +27,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     set_default_address = serializers.BooleanField(default=False, write_only=True)
     province_id = serializers.PrimaryKeyRelatedField(
         source="province",
-        queryset=Province.objects.all(),
+        queryset=Province.objects.only("id").all(),
         required=False,
         allow_null=True,
     )
     ward_id = serializers.PrimaryKeyRelatedField(
         source="ward",
-        queryset=Ward.objects.select_related("province"),
+        queryset=Ward.objects.select_related("province").only("id", "province_id"),
         required=False,
         allow_null=True,
     )
@@ -169,6 +169,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     province = ProvinceSerializer(read_only=True)
     ward = WardSerializer(read_only=True)
+    has_saved_card = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -188,8 +189,12 @@ class ProfileSerializer(serializers.ModelSerializer):
             "address_line",
             "province",
             "ward",
+            "has_saved_card",
         ]
         read_only_fields = fields
+    
+    def get_has_saved_card(self, obj):
+        return bool(obj.stripe_customer_id and obj.stripe_payment_method_id)
 
 
 class CreateStaffSerializer(serializers.ModelSerializer):
@@ -198,15 +203,27 @@ class CreateStaffSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "email", "password", "role"]
-        extra_kwargs = {"role": {"default": "staff"}}
 
-    def create(self, data):
-        pwd = data.pop("password")
-        user = User(**data)
-        validate_password(pwd, user)
-        user.set_password(pwd)
-        user.save()
-        return user
+
+class ManageUserListSerializer(serializers.ModelSerializer):
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "full_name",
+            "email",
+            "role",
+            "role_display",
+            "phone",
+            "gender",
+            "is_active",
+            "date_joined",
+            "last_login",
+        ]
+        read_only_fields = fields
 
 
 class UpdateRoleSerializer(serializers.ModelSerializer):
@@ -218,13 +235,13 @@ class UpdateRoleSerializer(serializers.ModelSerializer):
 class DeliveryAddressSerializer(serializers.ModelSerializer):
     province_id = serializers.PrimaryKeyRelatedField(
         source="province",
-        queryset=Province.objects.all(),
+        queryset=Province.objects.only("id").all(),
         required=False,
         allow_null=True,
     )
     ward_id = serializers.PrimaryKeyRelatedField(
         source="ward",
-        queryset=Ward.objects.select_related("province"),
+        queryset=Ward.objects.select_related("province").only("id", "province_id"),
     )
     province_name = serializers.CharField(source="province.name", read_only=True)
     ward_name = serializers.CharField(source="ward.name", read_only=True)

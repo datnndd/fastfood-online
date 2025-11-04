@@ -14,6 +14,7 @@ from rest_framework import exceptions
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
 
 from .models import User
+from django.db.models import Q, Case, When, IntegerField
 
 
 def _get_supabase_secret() -> str:

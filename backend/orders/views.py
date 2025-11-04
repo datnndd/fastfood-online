@@ -4,12 +4,23 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import HttpResponse
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
+import stripe
+
 from accounts.models import DeliveryAddress
+from cart.models import Cart
 from .models import Order
 from .serializers import OrderSerializer
 from .permissions import IsStaffOrManager
-from .services import create_order_from_cart
+from .services import create_order_from_cart, calculate_cart_total
+
+# Initialize Stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class OrdersPagination(PageNumberPagination):
     page_size = 10
@@ -40,7 +51,7 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
     
     @action(detail=True, methods=['patch'])
     def cancel(self, request, pk=None):
-        """Hủy đơn hàng (chỉ trong vòng 60 giây và trạng thái PREPARING)"""
+        """Hủy đơn hàng (chỉ trong vòng 60 giây sau khi thanh toán và trạng thái PREPARING)"""
         order = self.get_object()
         
         if order.user != request.user:
@@ -49,10 +60,33 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
         if order.status != 'PREPARING':
             return Response({'error': 'Chỉ có thể hủy đơn hàng đang chờ xác nhận'}, status=400)
         
-        # Kiểm tra thời gian (60 giây)
-        time_diff = timezone.now() - order.created_at
-        if time_diff.total_seconds() > 60:
-            return Response({'error': 'Đã hết thời gian hủy đơn hàng (60 giây)'}, status=400)
+        # Kiểm tra thời gian từ khi thanh toán hoàn tất (60 giây)
+        if not order.payment_completed_at:
+            # Nếu chưa thanh toán (tiền mặt/chuyển khoản), kiểm tra từ lúc tạo đơn
+            time_diff = timezone.now() - order.created_at
+            if time_diff.total_seconds() > 60:
+                return Response({'error': 'Đã hết thời gian hủy đơn hàng (60 giây)'}, status=400)
+        else:
+            # Nếu đã thanh toán bằng thẻ, kiểm tra từ lúc thanh toán hoàn tất
+            time_diff = timezone.now() - order.payment_completed_at
+            if time_diff.total_seconds() > 60:
+                return Response({'error': 'Đã hết thời gian hủy đơn hàng (60 giây sau khi thanh toán)'}, status=400)
+            
+            # Nếu thanh toán bằng thẻ, tự động hoàn tiền
+            if order.payment_method == 'card' and order.stripe_payment_intent_id:
+                try:
+                    # Tạo refund tự động
+                    refund = stripe.Refund.create(
+                        payment_intent=order.stripe_payment_intent_id,
+                        reason='requested_by_customer'
+                    )
+                    order.stripe_payment_status = 'refunded'
+                except stripe.error.StripeError as e:
+                    # Log error nhưng vẫn cho phép hủy đơn
+                    print(f"Error creating refund: {e}")
+                    return Response({
+                        'error': f'Không thể hoàn tiền tự động. Vui lòng liên hệ hỗ trợ. Lỗi: {str(e)}'
+                    }, status=500)
         
         # Cập nhật trạng thái
         order.status = 'CANCELLED'
@@ -202,11 +236,148 @@ class OrdersAdminViewSet(viewsets.ModelViewSet):
         
         return Response(stats)
 
+def create_stripe_checkout_session(request):
+    """Helper function để tạo Stripe checkout session"""
+    delivery_address = None
+    address_id = request.data.get("delivery_address_id")
+
+    if address_id:
+        try:
+            delivery_address = DeliveryAddress.objects.select_related(
+                "province", "ward"
+            ).get(pk=address_id, user=request.user)
+        except DeliveryAddress.DoesNotExist:
+            return Response({"detail": "Địa chỉ giao hàng không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        delivery_address = (
+            request.user.delivery_addresses.select_related(
+                "province", "ward"
+            ).filter(is_default=True).first()
+        )
+        if delivery_address is None:
+            return Response({"detail": "Vui lòng chọn địa chỉ giao hàng"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra giỏ hàng
+    try:
+        cart = Cart.objects.get(user=request.user)
+    except Cart.DoesNotExist:
+        return Response({"detail": "Giỏ hàng không tồn tại"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not cart.items.exists() and not cart.combos.exists():
+        return Response({"detail": "Giỏ hàng trống"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tính tổng tiền
+    total_amount = calculate_cart_total(cart)
+    
+    if total_amount <= 0:
+        return Response({"detail": "Tổng tiền không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tạo đơn hàng tạm (chưa thanh toán, chưa xóa giỏ hàng)
+    try:
+        order = create_order_from_cart(
+            request.user,
+            payment_method="card",
+            note=request.data.get("note", ""),
+            delivery_address=delivery_address,
+            clear_cart=False,  # Chưa xóa giỏ hàng cho đến khi thanh toán thành công
+        )
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra Stripe configuration
+    if not settings.STRIPE_SECRET_KEY:
+        order.delete()
+        return Response({"detail": "Stripe chưa được cấu hình. Vui lòng liên hệ quản trị viên."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Tạo Stripe Checkout Session
+    try:
+        frontend_url = request.META.get('HTTP_ORIGIN', 'http://localhost:5173')
+        success_url = f"{frontend_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{frontend_url}/payment/cancel?order_id={order.id}"
+
+        # Nếu user đã có Stripe customer, sử dụng customer đó
+        checkout_params = {
+            'payment_method_types': ['card'],
+            'line_items': [{
+                'price_data': {
+                    'currency': 'vnd',
+                    'product_data': {
+                        'name': f'Đơn hàng #{order.id}',
+                        'description': f'Đơn hàng từ FastFood Online',
+                    },
+                    'unit_amount': int(total_amount.quantize(Decimal('1'), rounding=ROUND_HALF_UP)),  # VND không có đơn vị phụ
+                },
+                'quantity': 1,
+            }],
+            'mode': 'payment',
+            'success_url': success_url,
+            'cancel_url': cancel_url,
+            'client_reference_id': str(order.id),
+            'metadata': {
+                'order_id': str(order.id),
+                'user_id': str(request.user.id),
+            }
+        }
+        
+        # Nếu user đã có Stripe customer, attach vào checkout session để lưu payment method
+        if request.user.stripe_customer_id:
+            checkout_params['customer'] = request.user.stripe_customer_id
+        
+        checkout_session = stripe.checkout.Session.create(**checkout_params)
+
+        # Lưu checkout session ID vào order
+        order.stripe_checkout_session_id = checkout_session.id
+        order.save()
+
+        # Xóa giỏ hàng sau khi tạo checkout session thành công
+        try:
+            cart = Cart.objects.get(user=request.user)
+            cart.items.all().delete()
+            cart.combos.all().delete()
+        except Cart.DoesNotExist:
+            pass
+
+        return Response({
+            'checkout_url': checkout_session.url,
+            'session_id': checkout_session.id,
+            'order_id': order.id
+        }, status=status.HTTP_201_CREATED)
+
+    except stripe.error.StripeError as e:
+        # Nếu tạo checkout session thất bại, xóa order (giỏ hàng vẫn còn)
+        order.delete()
+        return Response({"detail": f"Lỗi tạo phiên thanh toán: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        # Nếu có lỗi khác, xóa order (giỏ hàng vẫn còn)
+        order.delete()
+        return Response({"detail": f"Lỗi không xác định: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CreateStripeCheckoutView(generics.CreateAPIView):
+    """Tạo Stripe Checkout Session cho đơn hàng"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        return create_stripe_checkout_session(request)
+
+
 class CheckoutView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
     
     def create(self, request, *args, **kwargs):
+        payment_method = request.data.get("payment_method", "cash")
+        use_saved_card = request.data.get("use_saved_card", False)
+        
+        # Nếu thanh toán bằng thẻ đã lưu, dùng Payment Intent
+        if payment_method == "card" and use_saved_card:
+            return create_payment_intent_with_saved_card(request)
+        
+        # Nếu thanh toán bằng thẻ mới, redirect đến Stripe checkout
+        if payment_method == "card":
+            return create_stripe_checkout_session(request)
+        
+        # Thanh toán tiền mặt hoặc chuyển khoản - xử lý như cũ
         delivery_address = None
         address_id = request.data.get("delivery_address_id")
 
@@ -229,8 +400,8 @@ class CheckoutView(generics.CreateAPIView):
         try:
             order = create_order_from_cart(
                 request.user,
-                request.data.get("payment_method", "cash"),
-                request.data.get("note", ""),
+                payment_method=payment_method,
+                note=request.data.get("note", ""),
                 delivery_address=delivery_address,
             )
         except ValueError as exc:
@@ -238,3 +409,263 @@ class CheckoutView(generics.CreateAPIView):
 
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+def create_payment_intent_with_saved_card(request):
+    """Tạo Payment Intent với thẻ đã lưu (chỉ cần CVV)"""
+    # Kiểm tra user có thẻ đã lưu không
+    if not request.user.stripe_customer_id or not request.user.stripe_payment_method_id:
+        return Response({
+            "detail": "Bạn chưa có thẻ đã lưu. Vui lòng thanh toán bằng thẻ mới."
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    delivery_address = None
+    address_id = request.data.get("delivery_address_id")
+
+    if address_id:
+        try:
+            delivery_address = DeliveryAddress.objects.select_related(
+                "province", "ward"
+            ).get(pk=address_id, user=request.user)
+        except DeliveryAddress.DoesNotExist:
+            return Response({"detail": "Địa chỉ giao hàng không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        delivery_address = (
+            request.user.delivery_addresses.select_related(
+                "province", "ward"
+            ).filter(is_default=True).first()
+        )
+        if delivery_address is None:
+            return Response({"detail": "Vui lòng chọn địa chỉ giao hàng"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra giỏ hàng
+    try:
+        cart = Cart.objects.get(user=request.user)
+    except Cart.DoesNotExist:
+        return Response({"detail": "Giỏ hàng không tồn tại"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not cart.items.exists() and not cart.combos.exists():
+        return Response({"detail": "Giỏ hàng trống"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tính tổng tiền
+    total_amount = calculate_cart_total(cart)
+    
+    if total_amount <= 0:
+        return Response({"detail": "Tổng tiền không hợp lệ"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Tạo đơn hàng tạm
+    try:
+        order = create_order_from_cart(
+            request.user,
+            payment_method="card",
+            note=request.data.get("note", ""),
+            delivery_address=delivery_address,
+            clear_cart=False,
+        )
+    except ValueError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Kiểm tra Stripe configuration
+    if not settings.STRIPE_SECRET_KEY:
+        order.delete()
+        return Response({"detail": "Stripe chưa được cấu hình. Vui lòng liên hệ quản trị viên."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Tạo Payment Intent với thẻ đã lưu
+    try:
+        payment_intent = stripe.PaymentIntent.create(
+            amount=int(total_amount.quantize(Decimal('1'), rounding=ROUND_HALF_UP)),
+            currency='vnd',
+            customer=request.user.stripe_customer_id,
+            payment_method=request.user.stripe_payment_method_id,
+            confirmation_method='manual',
+            confirm=False,
+            metadata={
+                'order_id': str(order.id),
+                'user_id': str(request.user.id),
+            }
+        )
+        
+        # Lưu payment intent ID vào order
+        order.stripe_payment_intent_id = payment_intent.id
+        order.save()
+        
+        # Xóa giỏ hàng sau khi tạo payment intent thành công
+        try:
+            cart = Cart.objects.get(user=request.user)
+            cart.items.all().delete()
+            cart.combos.all().delete()
+        except Cart.DoesNotExist:
+            pass
+
+        return Response({
+            'client_secret': payment_intent.client_secret,
+            'payment_intent_id': payment_intent.id,
+            'order_id': order.id,
+            'requires_cvv': True  # Frontend cần collect CVV
+        }, status=status.HTTP_201_CREATED)
+
+    except stripe.error.StripeError as e:
+        order.delete()
+        return Response({"detail": f"Lỗi tạo phiên thanh toán: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        order.delete()
+        return Response({"detail": f"Lỗi không xác định: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ConfirmSavedCardPaymentView(generics.CreateAPIView):
+    """Xác nhận thanh toán với thẻ đã lưu (sau khi nhập CVV)"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def create(self, request, *args, **kwargs):
+        payment_intent_id = request.data.get("payment_intent_id")
+        cvv = request.data.get("cvv")  # CVV từ frontend (trong production nên dùng Stripe Elements)
+        
+        if not payment_intent_id:
+            return Response({"detail": "payment_intent_id là bắt buộc"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Tìm order tương ứng
+            try:
+                order = Order.objects.get(
+                    stripe_payment_intent_id=payment_intent_id,
+                    user=request.user
+                )
+            except Order.DoesNotExist:
+                return Response({"detail": "Không tìm thấy đơn hàng"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Retrieve payment intent để kiểm tra status
+            payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            # Nếu payment intent đã succeeded (từ webhook), cập nhật order
+            if payment_intent.status == 'succeeded':
+                order.stripe_payment_status = 'paid'
+                order.payment_completed_at = timezone.now()
+                order.save()
+                
+                return Response({
+                    'status': 'succeeded',
+                    'order_id': order.id
+                }, status=status.HTTP_200_OK)
+            
+            # Nếu chưa confirmed, confirm payment intent
+            # Note: CVV should be handled via Stripe Elements on frontend for security
+            # This is a simplified version
+            try:
+                payment_intent = stripe.PaymentIntent.confirm(
+                    payment_intent_id,
+                    payment_method=request.user.stripe_payment_method_id
+                )
+                
+                if payment_intent.status == 'succeeded':
+                    order.stripe_payment_status = 'paid'
+                    order.payment_completed_at = timezone.now()
+                    order.save()
+                    
+                    return Response({
+                        'status': 'succeeded',
+                        'order_id': order.id
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({
+                        'status': payment_intent.status,
+                        'detail': 'Thanh toán chưa hoàn tất. Vui lòng thử lại.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except stripe.error.CardError as e:
+                # Card error (có thể do CVV sai)
+                return Response({
+                    "detail": f"Lỗi thẻ: {e.user_message or str(e)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except stripe.error.StripeError as e:
+            return Response({"detail": f"Lỗi xác nhận thanh toán: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@csrf_exempt
+@require_POST
+def stripe_webhook(request):
+    """Xử lý webhook từ Stripe để cập nhật trạng thái thanh toán"""
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse(status=400)
+
+    # Xử lý sự kiện thanh toán thành công
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        try:
+            order_id = session.get('client_reference_id')
+            if order_id:
+                order = Order.objects.get(id=order_id)
+                payment_intent_id = session.get('payment_intent')
+                order.stripe_payment_intent_id = payment_intent_id
+                order.stripe_payment_status = 'paid'
+                order.payment_completed_at = timezone.now()  # Lưu thời gian thanh toán hoàn tất
+                order.save()
+                
+                # Lưu thông tin thẻ và customer vào User để dùng cho lần sau
+                try:
+                    if payment_intent_id:
+                        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+                        payment_method_id = payment_intent.payment_method
+                        
+                        if payment_method_id:
+                            payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+                            
+                            # Tạo hoặc lấy Stripe Customer
+                            customer_id = order.user.stripe_customer_id
+                            if not customer_id:
+                                customer = stripe.Customer.create(
+                                    email=order.user.email,
+                                    name=order.user.full_name or order.user.username,
+                                    metadata={'user_id': str(order.user.id)}
+                                )
+                                customer_id = customer.id
+                                order.user.stripe_customer_id = customer_id
+                            
+                            # Lưu payment method vào customer
+                            stripe.PaymentMethod.attach(
+                                payment_method_id,
+                                customer=customer_id
+                            )
+                            
+                            # Đặt payment method làm mặc định cho customer
+                            stripe.Customer.modify(
+                                customer_id,
+                                invoice_settings={'default_payment_method': payment_method_id}
+                            )
+                            
+                            # Lưu payment method ID vào user
+                            order.user.stripe_payment_method_id = payment_method_id
+                            order.user.save()
+                except Exception as e:
+                    # Log error nhưng không fail webhook
+                    print(f"Error saving payment method: {e}")
+                
+                # Đảm bảo giỏ hàng đã được xóa (trong trường hợp chưa xóa)
+                try:
+                    cart = Cart.objects.get(user=order.user)
+                    cart.items.all().delete()
+                    cart.combos.all().delete()
+                except Cart.DoesNotExist:
+                    pass
+        except Order.DoesNotExist:
+            pass
+        except Exception as e:
+            # Log error nhưng không fail webhook
+            print(f"Error processing webhook: {e}")
+
+    elif event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']
+        # Có thể xử lý thêm logic nếu cần
+
+    return HttpResponse(status=200)

@@ -11,9 +11,13 @@ import CartPage from './pages/CartPage.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
+import ManagerAccountsPage from './pages/ManagerAccountsPage.jsx'
 import Protected from './components/Protected.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
+import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx'
+import PaymentCancelPage from './pages/PaymentCancelPage.jsx'
+import CVVPaymentPage from './pages/CVVPaymentPage.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
 
 const router = createBrowserRouter([
@@ -55,6 +59,20 @@ const router = createBrowserRouter([
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'update-password', element: <UpdatePasswordPage /> },
       
+      // Payment callbacks
+      { 
+        path: 'payment/success', 
+        element: <Protected><PaymentSuccessPage /></Protected>
+      },
+      { 
+        path: 'payment/cancel', 
+        element: <Protected><PaymentCancelPage /></Protected>
+      },
+      { 
+        path: 'payment/cvv', 
+        element: <Protected><CVVPaymentPage /></Protected>
+      },
+      
       // Manager only routes
       { 
         path: 'manager/menu', 
@@ -65,6 +83,14 @@ const router = createBrowserRouter([
           </div>
         </Protected>
       },
+      {
+        path: 'manager/accounts',
+        element: (
+          <Protected roles={['manager']}>
+            <ManagerAccountsPage />
+          </Protected>
+        )
+      }
     ],
   },
 ])

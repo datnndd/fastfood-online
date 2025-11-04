@@ -8,10 +8,22 @@ from .serializers import CartSerializer, CartItemSerializer, CartComboSerializer
 class CartView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = CartSerializer
-    
+
     def get_object(self):
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
-        return cart
+        # vẫn giữ get_or_create như cũ để đảm bảo có cart
+        cart, _ = Cart.objects.get_or_create(user=self.request.user)
+
+        # nạp lại cart với đầy đủ prefetch để tránh N+1 khi serialize
+        return (
+            Cart.objects
+            .filter(pk=cart.pk)
+            .prefetch_related(
+                "items__selected_options",   # M2M
+                "items__menu_item",          # FK
+                "combos__combo"              # FK
+            )
+            .get()
+        )
 
 class AddItemView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -28,11 +40,17 @@ class AddItemView(generics.CreateAPIView):
         cart, _ = Cart.objects.get_or_create(user=request.user)
         menu_item_id = request.data.get('menu_item_id')
         option_ids = set(request.data.get('option_ids', []))
-        
+
+        # Prefetch options cho tất cả item cùng menu_item trước khi so sánh
+        candidates = (
+            cart.items
+            .filter(menu_item_id=menu_item_id)
+            .prefetch_related("selected_options")
+        )
+
         existing_item = None
-        for item in cart.items.filter(menu_item_id=menu_item_id):
-            item_option_ids = set(item.selected_options.values_list('id', flat=True))
-            if item_option_ids == option_ids:
+        for item in candidates:
+            if set(item.selected_options.values_list('id', flat=True)) == option_ids:
                 existing_item = item
                 break
         
@@ -47,16 +65,15 @@ class AddItemView(generics.CreateAPIView):
 class UpdateItemView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = CartItemSerializer
-    
+
     def get_queryset(self):
-        user_cart = Cart.objects.get_or_create(user=self.request.user)[0]
-        return CartItem.objects.filter(cart=user_cart)
-    
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
-        context["cart"] = cart
-        return context
+        cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        return (
+            CartItem.objects
+            .filter(cart=cart)
+            .select_related("menu_item")
+            .prefetch_related("selected_options")
+        )
 
 
 class AddComboView(generics.CreateAPIView):
@@ -102,16 +119,10 @@ class AddComboView(generics.CreateAPIView):
 class UpdateComboView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = CartComboSerializer
-    
+
     def get_queryset(self):
-        user_cart = Cart.objects.get_or_create(user=self.request.user)[0]
-        return CartCombo.objects.filter(cart=user_cart)
-    
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        cart, created = Cart.objects.get_or_create(user=self.request.user)
-        context["cart"] = cart
-        return context
+        cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        return CartCombo.objects.filter(cart=cart).select_related("combo")
 
 class ClearCartView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]

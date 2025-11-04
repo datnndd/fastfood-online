@@ -7,6 +7,16 @@ const api = axios.create({
 
 let accessToken = null
 
+const uploadImage = (url, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post(url, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 export const setApiAccessToken = (token) => {
   accessToken = token || null
 }
@@ -46,6 +56,7 @@ export const AuthAPI = {
 // ACCOUNTS APIs (cho admin/manager)
 // =============================================================================
 export const AccountsAPI = {
+  listUsers: (params = {}) => api.get('/accounts/users/', { params }),
   createStaff: (userData) => api.post('/accounts/staff/create/', userData),
   updateUserRole: (userId, role) => api.put(`/accounts/users/${userId}/role/`, { role }),
   patchUserRole: (userId, role) => api.patch(`/accounts/users/${userId}/role/`, { role }),
@@ -76,15 +87,18 @@ export const CatalogAPI = {
   createCategory: (data) => api.post('/catalog/categories/', data),
   updateCategory: (id, data) => api.put(`/catalog/categories/${id}/`, data),
   patchCategory: (id, data) => api.patch(`/catalog/categories/${id}/`, data),
+  uploadCategoryImage: (id, file) => uploadImage(`/catalog/categories/${id}/upload-image/`, file),
   deleteCategory: (id) => api.delete(`/catalog/categories/${id}/`),
   listItems: (params = {}) => api.get('/catalog/items/', { params }),
   getItem: (id) => api.get(`/catalog/items/${id}/`),
   createItem: (data) => api.post('/catalog/items/', data),
   updateItem: (id, data) => api.put(`/catalog/items/${id}/`, data),
   patchItem: (id, data) => api.patch(`/catalog/items/${id}/`, data),
+  uploadItemImage: (id, file) => uploadImage(`/catalog/items/${id}/upload-image/`, file),
   deleteItem: (id) => api.delete(`/catalog/items/${id}/`),
   listCombos: (params = {}) => api.get('/catalog/combos/', { params }),
-  getCombo: (id) => api.get(`/catalog/combos/${id}/`)
+  getCombo: (id) => api.get(`/catalog/combos/${id}/`),
+  uploadComboImage: (id, file) => uploadImage(`/catalog/combos/${id}/upload-image/`, file)
 }
 
 // =============================================================================
@@ -155,7 +169,8 @@ export const OrderAPI = {
     },
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
-  checkout: (data) => api.post('/orders/checkout/', data)
+  checkout: (data) => api.post('/orders/checkout/', data),
+  confirmSavedCard: (data) => api.post('/orders/confirm-saved-card/', data)
 }
 
 export default api
