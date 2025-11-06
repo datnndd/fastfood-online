@@ -33,7 +33,13 @@ export const AuthAPI = {
     const url = dryRun ? '/accounts/register/?dry_run=1' : '/accounts/register/'
     return api.post(url, userData)
   },
-  profile: () => api.get('/accounts/me/')
+  profile: () => api.get('/accounts/me/'),
+  getEmailForUsername: (username) => {
+    return api.post('/accounts/get-email/', { username })
+  },
+  setPassword: (password) => {
+    return api.post('/accounts/set-password/', { password })
+  }
 }
 
 // =============================================================================
@@ -147,9 +153,29 @@ export const OrderAPI = {
       if (status) searchParams.append('status', status)
       return api.get(`/orders/my/?${searchParams.toString()}`)
     },
+    get: (id) => api.get(`/orders/my/${id}/`),
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
   checkout: (data) => api.post('/orders/checkout/', data)
+}
+
+// =============================================================================
+// NOTIFICATIONS APIs
+// =============================================================================
+export const NotificationAPI = {
+  list: async (params = {}) => {
+    const searchParams = new URLSearchParams()
+    if (params.page) searchParams.append('page', params.page.toString())
+    if (params.limit) searchParams.append('limit', params.limit.toString())
+    if (params.is_read !== undefined) searchParams.append('is_read', params.is_read.toString())
+    const queryString = searchParams.toString()
+    const url = queryString ? `/orders/notifications/?${queryString}` : '/orders/notifications/'
+    return api.get(url)
+  },
+  get: (id) => api.get(`/orders/notifications/${id}/`),
+  unreadCount: () => api.get('/orders/notifications/unread_count/'),
+  markRead: (id) => api.patch(`/orders/notifications/${id}/mark_read/`),
+  markAllRead: () => api.patch('/orders/notifications/mark_all_read/')
 }
 
 export default api

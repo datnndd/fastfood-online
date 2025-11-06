@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Protected from '../components/Protected'
 import { useAuth } from '../lib/auth'
 import { AccountsAPI, OrderAPI } from '../lib/api'
@@ -15,6 +15,8 @@ const unwrapList = (response) => {
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
   const [addresses, setAddresses] = useState([])
   const [provinces, setProvinces] = useState([])
@@ -25,6 +27,24 @@ export default function ProfilePage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [editingAddress, setEditingAddress] = useState(null)
   const [showAddAddress, setShowAddAddress] = useState(false)
+  // Sync tab with query param (?tab=...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tab = params.get('tab')
+    const validTabs = new Set(['profile', 'addresses', 'payments', 'password', 'orders'])
+    if (tab && validTabs.has(tab) && tab !== activeTab) {
+      setActiveTab(tab)
+    }
+  }, [location.search, activeTab])
+
+  // Push query when tab changes (for deep-linking)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('tab') !== activeTab) {
+      params.set('tab', activeTab)
+      navigate({ search: params.toString() }, { replace: true })
+    }
+  }, [activeTab, location.search, navigate])
 
   // Form states
   const [profileForm, setProfileForm] = useState({
@@ -897,15 +917,15 @@ export default function ProfilePage() {
       </div>
 
       <div className="text-center">
-        <Link
-          to="/orders"
+        <button
+          onClick={() => setActiveTab('orders')}
           className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
           </svg>
           Xem chi tiết đơn hàng
-        </Link>
+        </button>
       </div>
     </div>
   )

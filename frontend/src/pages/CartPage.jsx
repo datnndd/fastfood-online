@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AccountsAPI, CartAPI, OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
+import { useNotifications } from '../contexts/NotificationContext'
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/100'
 
@@ -37,6 +38,7 @@ export default function CartPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [orderData, setOrderData] = useState({ payment_method: 'cash', note: '' })
   const navigate = useNavigate()
+  const { fetchNotifications, fetchUnreadCount, pushLocalNotification } = useNotifications()
 
   const [addresses, setAddresses] = useState([])
   const [addressesLoading, setAddressesLoading] = useState(true)
@@ -52,6 +54,10 @@ export default function CartPage() {
   })
   const [isFetchingWards, setIsFetchingWards] = useState(false)
 
+  // Selection for partial checkout
+  const [selectedItemIds, setSelectedItemIds] = useState(new Set())
+  const [selectedComboIds, setSelectedComboIds] = useState(new Set())
+
   const loadCart = async (syncBadge = false) => {
     setCartLoading(true)
     try {
@@ -63,6 +69,9 @@ export default function CartPage() {
         cart_total: data?.cart_total ?? '0'
       }
       setCart(normalized)
+      // Initialize selection to all items/combos when cart loads
+      setSelectedItemIds(new Set((normalized.items || []).map((i) => i.id)))
+      setSelectedComboIds(new Set((normalized.combos || []).map((c) => c.id)))
       if (syncBadge) {
         window.dispatchEvent(new CustomEvent('cartUpdated'))
       }
@@ -253,6 +262,7 @@ export default function CartPage() {
     }
 
     const itemsTotal = (cart.items ?? []).reduce((sum, item) => {
+      if (!selectedItemIds.has(item.id)) return sum
       if (item.item_total !== undefined && item.item_total !== null) {
         return sum + toNumber(item.item_total)
       }
@@ -262,6 +272,7 @@ export default function CartPage() {
     }, 0)
 
     const combosTotal = (cart.combos ?? []).reduce((sum, comboItem) => {
+      if (!selectedComboIds.has(comboItem.id)) return sum
       if (comboItem.combo_total !== undefined && comboItem.combo_total !== null) {
         return sum + toNumber(comboItem.combo_total)
       }
@@ -272,13 +283,18 @@ export default function CartPage() {
 
     const overall = cart.cart_total ? toNumber(cart.cart_total) : itemsTotal + combosTotal
     return { items: itemsTotal, combos: combosTotal, total: overall }
-  }, [cart])
+  }, [cart, selectedItemIds, selectedComboIds])
 
   const hasEntries =
     (cart?.items?.length ?? 0) > 0 || (cart?.combos?.length ?? 0) > 0
+  const hasSelection = selectedItemIds.size > 0 || selectedComboIds.size > 0
 
   const handleCheckout = async () => {
     if (!hasEntries) return
+    if (!hasSelection) {
+      alert('Vui lòng chọn ít nhất 1 món để đặt hàng.')
+      return
+    }
     if (!selectedAddressId) {
       alert('Vui lòng chọn địa chỉ giao hàng trước khi đặt hàng.')
       return
@@ -286,15 +302,45 @@ export default function CartPage() {
 
     setCheckoutLoading(true)
     try {
-      await OrderAPI.checkout({
+      const response = await OrderAPI.checkout({
         payment_method: orderData.payment_method,
         note: orderData.note,
-        delivery_address_id: selectedAddressId
+        delivery_address_id: selectedAddressId,
+        item_ids: Array.from(selectedItemIds),
+        combo_ids: Array.from(selectedComboIds)
       })
 
       await loadCart(true)
-      alert('Đặt hàng thành công! Bạn có thể theo dõi đơn tại trang "Đơn hàng của tôi".')
-      navigate('/orders')
+      
+      // Local instant notification (fallback in case backend notification delays)
+      try {
+        const order = response?.data
+        pushLocalNotification({
+          type: 'ORDER_PLACED',
+          title: `Đơn hàng #${order?.id ?? ''} đã được đặt thành công!`,
+          message: 'Chúng tôi đang xử lý đơn hàng của bạn. Nhấn để xem chi tiết.',
+          order_id: order?.id
+        })
+      } catch (_) {}
+      
+      // Refresh notifications sau khi đặt hàng thành công
+      try {
+        await fetchNotifications({ limit: 20 })
+        await fetchUnreadCount()
+      } catch (notifError) {
+        console.error('Failed to refresh notifications:', notifError)
+      }
+      
+      // Trigger event để các component khác có thể refresh
+      window.dispatchEvent(new CustomEvent('orderPlaced'))
+      
+      alert('Đặt hàng thành công! Đang mở chi tiết đơn hàng...')
+      const newOrderId = response?.data?.id
+      if (newOrderId) {
+        navigate(`/orders/${newOrderId}`)
+      } else {
+        navigate('/profile')
+      }
     } catch (error) {
       console.error('Checkout failed:', error)
       const message =
@@ -333,6 +379,19 @@ export default function CartPage() {
               {(cart?.items ?? []).map((item) => (
                 <div key={`item-${item.id}`} className="bg-white border rounded-lg p-4">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedItemIds.has(item.id)}
+                      onChange={(e) => {
+                        setSelectedItemIds((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(item.id)
+                          else next.delete(item.id)
+                          return next
+                        })
+                      }}
+                      className="h-4 w-4 mt-1"
+                    />
                     <img
                       src={item.menu_item?.image_url || PLACEHOLDER_IMG}
                       alt={item.menu_item?.name}
@@ -388,6 +447,19 @@ export default function CartPage() {
               {(cart?.combos ?? []).map((comboItem) => (
                 <div key={`combo-${comboItem.id}`} className="bg-white border rounded-lg p-4">
                   <div className="flex flex-col md:flex-row md:items-start gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedComboIds.has(comboItem.id)}
+                      onChange={(e) => {
+                        setSelectedComboIds((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(comboItem.id)
+                          else next.delete(comboItem.id)
+                          return next
+                        })
+                      }}
+                      className="h-4 w-4 mt-1"
+                    />
                     <img
                       src={comboItem.combo?.image_url || PLACEHOLDER_IMG}
                       alt={comboItem.combo?.name}
@@ -724,11 +796,11 @@ export default function CartPage() {
 
               <section className="space-y-2 border-t pt-4 text-sm text-gray-700">
                 <div className="flex justify-between">
-                  <span>Tạm tính món lẻ</span>
+                  <span>Tạm tính món lẻ (đã chọn)</span>
                   <span>{formatCurrency(totals.items)}₫</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Tạm tính combo</span>
+                  <span>Tạm tính combo (đã chọn)</span>
                   <span>{formatCurrency(totals.combos)}₫</span>
                 </div>
                 <div className="flex justify-between font-semibold text-lg text-gray-900">
@@ -736,17 +808,17 @@ export default function CartPage() {
                   <span>{formatCurrency(totals.total)}₫</span>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Đã bao gồm VAT. Phí giao hàng sẽ được thông báo nếu áp dụng.
+                  Chỉ các món được tick sẽ được đặt. Món không chọn vẫn ở lại giỏ hàng.
                 </p>
               </section>
 
               <button
                 type="button"
                 onClick={handleCheckout}
-                disabled={checkoutLoading || !selectedAddressId}
+                disabled={checkoutLoading || !selectedAddressId || !hasSelection}
                 className="w-full rounded-lg bg-red-600 py-3 text-white font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {checkoutLoading ? 'Đang xử lý...' : 'Đặt hàng ngay'}
+                {checkoutLoading ? 'Đang xử lý...' : 'Đặt hàng ngay (chỉ món đã chọn)'}
               </button>
             </div>
           </div>

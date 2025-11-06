@@ -1,6 +1,10 @@
 # accounts/views.py
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .models import User, Province, Ward, DeliveryAddress
 from .permissions import IsManager
@@ -81,3 +85,51 @@ class DeliveryAddressViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) #Cho phép truy cập không cần token
+def get_email_for_username(request):
+    """
+    Lấy email của người dùng dựa trên username.
+    """
+    username = request.data.get('username')
+    if not username:
+        return Response(
+            {'detail': 'Username is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        # Dùng 'iexact' để tìm kiếm không phân biệt hoa thường
+        user = User.objects.get(username__iexact=username)
+        return Response({'email': user.email}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Username not found.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def set_password(request):
+    """
+    Đặt lại mật khẩu mới cho user (request.user).
+    Được sử dụng sau khi Supabase xác thực token reset mật khẩu.
+    """
+    password = request.data.get('password')
+    if not password:
+        return Response(
+            {'detail': 'Password is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user = request.user
+    try:
+        # Validate mật khẩu theo rules của Django
+        validate_password(password, user)
+    except ValidationError as e:
+        return Response({'detail': list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(password) # Hash và set mật khẩu
+    user.save()
+    return Response({'detail': 'Password set successfully in Django.'}, status=status.HTTP_200_OK)

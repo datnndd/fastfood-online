@@ -1,4 +1,6 @@
 # accounts/models.py
+from datetime import date
+
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -33,13 +35,23 @@ class User(AbstractUser):
         CUSTOMER = "customer", "Customer"
         STAFF = "staff", "Staff"
         MANAGER = "manager", "Manager"
+    
+    class Gender(models.TextChoices):
+        MALE = "male", "Male"
+        FEMALE = "female", "Female"
+        OTHER = "other", "Other"
+        UNSPECIFIED = "unspecified", "Không xác định"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)
+    full_name = models.CharField(max_length=255, blank=True)
+    gender = models.CharField(max_length=20, choices=Gender.choices, default=Gender.UNSPECIFIED, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     address_line = models.CharField(max_length=255, blank=True)
     province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
     ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users")
 
+    
     supabase_id = models.UUIDField(null=True, blank=True, unique=True, db_index=True)
     auth_provider = models.CharField(max_length=30, blank=True)
     email_verified = models.BooleanField(default=False)
@@ -54,6 +66,12 @@ class User(AbstractUser):
 
     def clean(self):
         super().clean()
+        if self.full_name:
+            self.full_name = self.full_name.strip()
+        if not self.gender:
+            self.gender = self.Gender.UNSPECIFIED
+        if self.date_of_birth and self.date_of_birth > date.today():
+            raise ValidationError({"date_of_birth": "Ngày sinh không được ở tương lai"})
         if self.ward:
             if not self.province:
                 self.province = self.ward.province

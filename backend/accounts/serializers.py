@@ -1,4 +1,6 @@
 # accounts/serializers.py
+from datetime import date
+
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
@@ -42,7 +44,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             "username",
             "password",
             "email",
+            "full_name",
             "phone",
+            "gender",
+            "date_of_birth",
             "address_line",
             "province_id",
             "ward_id",
@@ -53,6 +58,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "role": {"read_only": True},
             "email": {"required": True},
+            "full_name": {"required": False, "allow_blank": True},
+            "gender": {"required": False, "allow_blank": True},
+            "date_of_birth": {"required": False, "allow_null": True},
         }
 
     def create(self, validated):
@@ -63,6 +71,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         user_defaults = validated.copy()
         if supabase_id:
             user_defaults["supabase_id"] = supabase_id
+
+        full_name = user_defaults.get("full_name")
+        if full_name:
+            user_defaults["full_name"] = full_name.strip()
+        else:
+            user_defaults["full_name"] = ""
+
+        gender = user_defaults.get("gender") or User.Gender.UNSPECIFIED
+        user_defaults["gender"] = gender
 
         username = user_defaults.get("username")
         user, created = User.objects.get_or_create(
@@ -87,7 +104,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 user=user,
                 label="Địa chỉ mặc định",
                 defaults={
-                    "contact_name": user.username,
+                    "contact_name": user.full_name or user.username,
                     "contact_phone": user.phone or "",
                     "street_address": user.address_line,
                     "additional_info": "",
@@ -100,6 +117,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
     def validate(self, attrs):
+        full_name = attrs.get("full_name")
+        if full_name:
+            attrs["full_name"] = full_name.strip()
+
+        gender = attrs.get("gender")
+        if not gender:
+            attrs["gender"] = User.Gender.UNSPECIFIED
+
         province = attrs.get("province")
         ward = attrs.get("ward")
         set_default = attrs.get("set_default_address")
@@ -135,6 +160,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
 
+    def validate_date_of_birth(self, value):
+        if value and value > date.today():
+            raise serializers.ValidationError("Ngày sinh không được ở tương lai")
+        return value
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     province = ProvinceSerializer(read_only=True)
     ward = WardSerializer(read_only=True)
@@ -147,6 +178,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "email_verified",
+            "full_name",
+            "gender",
+            "date_of_birth",
             "phone",
             "phone_verified",
             "auth_provider",
@@ -238,4 +272,3 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
             })
 
         return attrs
-

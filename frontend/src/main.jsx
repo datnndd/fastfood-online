@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './lib/auth.jsx'
+import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import App from './App.jsx'
 import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -10,10 +11,12 @@ import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import MenuPage from './pages/MenuPage.jsx'
 import CartPage from './pages/CartPage.jsx'
-import OrdersPage from './pages/OrdersPage.jsx'
+import OrderDetailPage from './pages/OrderDetailPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
+import OrdersPage from './pages/OrdersPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Protected from './components/Protected.jsx'
+import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
 import ProfilePage from './pages/ProfilePage.jsx'
 
@@ -40,6 +43,10 @@ const router = createBrowserRouter([
         path: 'orders', 
         element: <Protected><OrdersPage /></Protected>
       },
+      {
+        path: 'orders/:id',
+        element: <Protected><OrderDetailPage /></Protected>
+      },
       
       // Staff/Manager routes
       { 
@@ -51,8 +58,8 @@ const router = createBrowserRouter([
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
 
-      // >>> Thêm dòng này
       { path: 'profile', element: <Protected><ProfilePage /></Protected> },
+      { path: 'update-password', element: <UpdatePasswordPage /> },
       
       // Manager only routes
       { 
@@ -71,7 +78,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <NotificationProvider>
+        <RouterProvider router={router} />
+      </NotificationProvider>
     </AuthProvider>
   </React.StrictMode>
 )

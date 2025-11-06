@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ loginInput: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState('')
@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(formData.email, formData.password)
+      await login(formData.loginInput, formData.password)
       navigate(from, { replace: true })
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại')
@@ -56,13 +56,13 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Email
+              Email hoặc Username
             </label>
             <input
-              type="email"
+              type="text"
               required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              value={formData.loginInput}
+              onChange={(e) => setFormData({ ...formData, loginInput: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
           </div>
@@ -83,6 +83,15 @@ export default function LoginPage() {
                 Quên mật khẩu?
               </Link>
             </div>
+          </div>
+
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm font-medium text-red-600 hover:text-red-500"
+            >
+              Quên mật khẩu?
+            </Link>
           </div>
 
           <button

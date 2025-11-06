@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useAuth, useRole } from '../lib/auth'
 import { CartAPI } from '../lib/api'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useRef } from 'react'
+import NotificationBell from './NotificationBell'
 
 export default function NavBar() {
   const { user, logout } = useAuth()
@@ -12,6 +12,20 @@ export default function NavBar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const menuRef = useRef(null)
   const location = useLocation()
+
+  const displayName = useMemo(() => {
+    if (!user) return ''
+    const name = (user.full_name || '').trim()
+    return name || user.username || ''
+  }, [user])
+
+  const displayInitial = useMemo(() => {
+    if (!user) return ''
+    if (displayName) {
+      return displayName.charAt(0).toUpperCase()
+    }
+    return (user.username || '?').charAt(0).toUpperCase()
+  }, [user, displayName])
 
   // Lấy số lượng items trong cart
   useEffect(() => {
@@ -104,6 +118,9 @@ export default function NavBar() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
+                  {/* Notifications */}
+                  <NotificationBell />
+
                   {/* Cart */}
                   <Link 
                     to="/cart" 
@@ -127,17 +144,17 @@ export default function NavBar() {
                     >
                       <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium">
-                          {user.username[0].toUpperCase()}
+                          {displayInitial}
                         </span>
                       </div>
-                      <span className="hidden md:block">{user.username}</span>
+                      <span className="hidden md:block">{displayName}</span>
                     </button>
 
                     {showUserMenu && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
                         <div className="py-2">
                           <div className="px-4 py-2 border-b">
-                            <p className="text-sm font-medium text-gray-900">{user.username}</p>
+                            <p className="text-sm font-medium text-gray-900">{displayName || user.username}</p>
                             <p className="text-xs text-gray-500">{user.email}</p>
                           </div>
                           <Link
