@@ -1,7 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, useRole } from "../lib/auth";
-import { CartAPI } from "../lib/api";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import logo from "../assets/images/logo.jpg";
 
@@ -19,42 +18,20 @@ export default function NavBar() {
   const [cartCount, setCartCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!user) {
-      setCartCount(0);
-      return;
-    }
-    const refreshCartCount = () => {
-      CartAPI.getCart()
-        .then(({ data }) => {
-          const itemCount = (data.items ?? []).reduce(
-            (sum, item) => sum + (item.quantity ?? 0),
-            0
-          );
-          const comboCount = (data.combos ?? []).reduce(
-            (sum, combo) => sum + (combo.quantity ?? 0),
-            0
-          );
-          setCartCount(itemCount + comboCount);
-        })
-        .catch(() => setCartCount(0));
-    };
-    refreshCartCount();
-    window.addEventListener("cartUpdated", refreshCartCount);
-    return () => window.removeEventListener("cartUpdated", refreshCartCount);
-  }, [user]);
-
+  // ⚡ Danh mục hiển thị trong dropdown "Thực đơn"
   const menuItems = [
-    { label: "Gà rán", img: chicken, path: "/menu/chicken" },
-    { label: "Mì Ý", img: spaghetti, path: "/menu/spaghetti" },
-    { label: "Gà cay", img: spicy, path: "/menu/spicy" },
-    { label: "Burger", img: burger, path: "/menu/burger" },
-    { label: "Món phụ", img: sides, path: "/menu/sides" },
-    { label: "Tráng miệng", img: dessert, path: "/menu/dessert" },
-    { label: "Thức uống", img: drinks, path: "/menu/drinks" },
+    { label: "Gà rán", slug: "ga-ran", img: chicken },
+    { label: "Mì Ý", slug: "mi-y", img: spaghetti },
+    { label: "Gà cay", slug: "ga-cay", img: spicy },
+    { label: "Burger", slug: "burger", img: burger },
+    { label: "Món phụ", slug: "mon-phu", img: sides },
+    { label: "Tráng miệng", slug: "trang-mieng", img: dessert },
+    { label: "Thức uống", slug: "thuc-uong", img: drinks },
   ];
 
+  // ⚡ Các đường dẫn trong navbar
   const navLinks = [
     { path: "/", label: "Trang chủ" },
     { path: "/about", label: "Về Mc Dono" },
@@ -66,7 +43,7 @@ export default function NavBar() {
 
   return (
     <>
-      {/* Thanh vàng trên cùng */}
+      {/* Thanh trên cùng */}
       <div className="bg-[#f7c600] text-black text-sm">
         <div className="max-w-7xl mx-auto px-4 py-1 flex justify-between items-center font-semibold">
           <div className="flex items-center space-x-4">
@@ -75,16 +52,10 @@ export default function NavBar() {
           </div>
           {!user && (
             <div className="flex items-center space-x-4">
-              <Link
-                to="/register"
-                className="flex items-center gap-1 hover:text-[#e21b1b]"
-              >
+              <Link to="/register" className="flex items-center gap-1 hover:text-[#e21b1b]">
                 <span>🧑‍🍳</span> <span>Đăng ký</span>
               </Link>
-              <Link
-                to="/login"
-                className="flex items-center gap-1 hover:text-[#e21b1b]"
-              >
+              <Link to="/login" className="flex items-center gap-1 hover:text-[#e21b1b]">
                 <span>🔑</span> <span>Đăng nhập</span>
               </Link>
             </div>
@@ -92,10 +63,10 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Thanh đỏ chính */}
+      {/* Thanh điều hướng chính */}
       <div className="bg-[#e21b1b] text-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-[90px] px-6">
-          {/* LOGO */}
+          {/* Logo */}
           <Link to="/" className="flex items-center">
             <img
               src={logo}
@@ -104,10 +75,9 @@ export default function NavBar() {
             />
           </Link>
 
-          {/* MENU */}
+          {/* Navigation */}
           <div className="flex space-x-6 font-semibold uppercase text-[14px] relative">
             {navLinks.map((link) => {
-              // Kiểm tra active đúng chuẩn
               const isActive =
                 location.pathname === link.path ||
                 (link.path !== "/" && location.pathname.startsWith(link.path));
@@ -116,10 +86,11 @@ export default function NavBar() {
                 <div key={link.path} className="relative group">
                   <Link
                     to={link.path}
-                    className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${isActive
+                    className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${
+                      isActive
                         ? "border-white bg-[#f9d7d7] text-[#b91c1c]"
                         : "border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]"
-                      }`}
+                    }`}
                   >
                     {link.label}
                   </Link>
@@ -129,10 +100,10 @@ export default function NavBar() {
                     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[750px] bg-white text-black rounded-xl shadow-lg p-5 z-50 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-300 ease-out">
                       <div className="grid grid-cols-4 gap-5">
                         {link.dropdown.map((item) => (
-                          <Link
-                            key={item.label}
-                            to={item.path}
-                            className="flex flex-col items-center hover:scale-105 transition-transform duration-200"
+                          <div
+                            key={item.slug}
+                            onClick={() => navigate(`/menu?category=${item.slug}`)}
+                            className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-pointer"
                           >
                             <img
                               src={item.img}
@@ -142,7 +113,7 @@ export default function NavBar() {
                             <span className="font-semibold text-sm text-gray-800">
                               {item.label}
                             </span>
-                          </Link>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -152,8 +123,7 @@ export default function NavBar() {
             })}
           </div>
 
-
-          {/* CART + USER */}
+          {/* Giỏ hàng + Người dùng */}
           <div className="flex items-center space-x-6">
             {user && (
               <Link
@@ -185,9 +155,7 @@ export default function NavBar() {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
                     <div className="py-2">
                       <div className="px-4 py-2 border-b">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.username}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900">{user.username}</p>
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
                       <Link
