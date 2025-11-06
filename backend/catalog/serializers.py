@@ -16,8 +16,9 @@ class OptionGroupSerializer(serializers.ModelSerializer):
 
 class MenuItemSerializer(serializers.ModelSerializer):
     option_groups = OptionGroupSerializer(many=True, read_only=True)
-    category = serializers.StringRelatedField()
-    category_id = serializers.IntegerField(source="category.id", read_only=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_id = serializers.IntegerField(source='category.id', read_only=True)
 
     class Meta:
         model = MenuItem
@@ -30,6 +31,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
             "is_available",
             "category",
             "category_id",
+            "category_name",
             "image_url",
             "option_groups",
         ]
@@ -70,7 +72,6 @@ class ComboItemWriteSerializer(serializers.ModelSerializer):
             if existing != len(value):
                 raise serializers.ValidationError("Một số option không tồn tại")
         return value
-
 
 class ComboListSerializer(serializers.ModelSerializer):
     original_price = serializers.SerializerMethodField()
@@ -143,7 +144,6 @@ class ComboDetailSerializer(serializers.ModelSerializer):
         final = obj.calculate_final_price()
         return str(original - final)
 
-
 class ComboCreateUpdateSerializer(serializers.ModelSerializer):
     items = ComboItemWriteSerializer(many=True, write_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -176,37 +176,30 @@ class ComboCreateUpdateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop("items")
         combo = Combo.objects.create(**validated_data)
-
         self._sync_items(combo, items_data)
         return combo
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop("items", None)
-
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-
         if items_data is not None:
             instance.items.all().delete()
             self._sync_items(instance, items_data)
-
         return instance
 
     def _sync_items(self, combo, items_data):
         for item_data in items_data:
             menu_item_id = item_data.pop("menu_item_id")
             option_ids = item_data.pop("option_ids", [])
-
             combo_item = ComboItem.objects.create(
                 combo=combo,
                 menu_item_id=menu_item_id,
                 **item_data,
             )
-
             if option_ids:
                 combo_item.selected_options.set(option_ids)
-
 
 class CategorySerializer(serializers.ModelSerializer):
     items = MenuItemSerializer(many=True, read_only=True)

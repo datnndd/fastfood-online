@@ -12,9 +12,14 @@ import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ManagerAccountsPage from './pages/ManagerAccountsPage.jsx'
+import ItemsManagement from './pages/ItemsManagement.jsx'
 import Protected from './components/Protected.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
+import StatisticsPage from './pages/StatisticsPage.jsx'
+import CombosManagement from './pages/CombosManagement.jsx'
+import CategoriesManagement from './pages/CategoriesManagement.jsx'
+import ManagerDashboard from './pages/ManagerDashboard.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
 
 const router = createBrowserRouter([
@@ -28,24 +33,24 @@ const router = createBrowserRouter([
       { path: 'menu', element: <MenuPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
-      
+
       // Protected routes
-      { 
-        path: 'cart', 
+      {
+        path: 'cart',
         element: <Protected><CartPage /></Protected>
       },
-      { 
-        path: 'orders', 
+      {
+        path: 'orders',
         element: <Protected><OrdersPage /></Protected>
       },
-      
+
       // Staff/Manager routes
-      { 
-        path: 'work', 
+      {
+        path: 'work',
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
-      { 
-        path: 'staff/orders', 
+      {
+        path: 'staff/orders',
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
 
@@ -55,15 +60,36 @@ const router = createBrowserRouter([
       // Forgot Password
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'update-password', element: <UpdatePasswordPage /> },
-      
+
       // Manager only routes
-      { 
-        path: 'manager/menu', 
+      {
+        path: 'manager',
         element: <Protected roles={['manager']}>
-          <div className="p-8">
-            <h1 className="text-2xl font-bold">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Coming soon...</p>
-          </div>
+          <ManagerDashboard />
+        </Protected>
+      },
+      {
+        path: 'manager/dashboard',
+        element: <Protected roles={['manager']}>
+          <ManagerDashboard />
+        </Protected>
+      },
+      {
+        path: 'manager/categories',
+        element: <Protected roles={['manager']}>
+          <CategoriesManagement />
+        </Protected>
+      },
+      {
+        path: 'manager/menu',
+        element: <Protected roles={['manager']}>
+          <ItemsManagement />
+        </Protected>
+      },
+      {
+        path: 'manager/combos',
+        element: <Protected roles={['manager']}>
+          <CombosManagement />
         </Protected>
       },
       {
@@ -71,6 +97,14 @@ const router = createBrowserRouter([
         element: (
           <Protected roles={['manager']}>
             <ManagerAccountsPage />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/statistics',
+        element: (
+          <Protected roles={['manager']}>
+            <StatisticsPage />
           </Protected>
         )
       }

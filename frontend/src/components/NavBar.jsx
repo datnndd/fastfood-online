@@ -80,16 +80,6 @@ export default function NavBar() {
               <Link to="/menu" className="text-gray-700 hover:text-red-600 transition-colors">
                 Thực đơn
               </Link>
-              {hasStaffAccess && (
-                <Link to="/work" className="text-gray-700 hover:text-red-600 transition-colors">
-                  Quản lý
-                </Link>
-              )}
-              {isManager && (
-                <Link to="/manager/accounts" className="text-gray-700 hover:text-red-600 transition-colors">
-                  Tài khoản
-                </Link>
-              )}
             </div>
 
             {/* User actions */}
@@ -97,8 +87,8 @@ export default function NavBar() {
               {user ? (
                 <>
                   {/* Cart */}
-                  <Link 
-                    to="/cart" 
+                  <Link
+                    to="/cart"
                     className="relative p-2 text-gray-700 hover:text-red-600 transition-colors"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,40 +116,52 @@ export default function NavBar() {
                     </button>
 
                     {showUserMenu && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-50">
                         <div className="py-2">
-                          <div className="px-4 py-2 border-b">
+                          <div className="px-4 py-3 border-b">
                             <p className="text-sm font-medium text-gray-900">{displayName || user.username}</p>
                             <p className="text-xs text-gray-500">{user.email}</p>
                           </div>
+
                           <Link
                             to="/profile"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserMenu(false)}
                           >
-                            Hồ sơ của tôi
+                            👤 Hồ sơ của tôi
                           </Link>
+
                           <Link
                             to="/orders"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserMenu(false)}
                           >
-                            Đơn hàng của tôi
+                            📦 Đơn hàng của tôi
                           </Link>
-                          {isManager && (
-                            <Link
-                              to="/manager/accounts"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                              Quản lý tài khoản
-                            </Link>
+
+                          {hasStaffAccess && (
+                            <>
+                              <div className="border-t my-1"></div>
+                              <Link
+                                to="/manager/dashboard"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setShowUserMenu(false)}
+                              >
+                                🏪 Dashboard Quản Lý
+                              </Link>
+                            </>
                           )}
+
+                          <div className="border-t my-1"></div>
+
                           <button
                             onClick={() => {
                               logout()
                               setShowUserMenu(false)
                             }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                           >
-                            Đăng xuất
+                            🚪 Đăng xuất
                           </button>
                         </div>
                       </div>

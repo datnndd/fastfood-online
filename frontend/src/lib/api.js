@@ -98,7 +98,11 @@ export const CatalogAPI = {
   deleteItem: (id) => api.delete(`/catalog/items/${id}/`),
   listCombos: (params = {}) => api.get('/catalog/combos/', { params }),
   getCombo: (id) => api.get(`/catalog/combos/${id}/`),
-  uploadComboImage: (id, file) => uploadImage(`/catalog/combos/${id}/upload-image/`, file)
+  createCombo: (data) => api.post('/catalog/combos/', data),
+  updateCombo: (id, data) => api.put(`/catalog/combos/${id}/`, data),
+  patchCombo: (id, data) => api.patch(`/catalog/combos/${id}/`, data),
+  uploadComboImage: (id, file) => uploadImage(`/catalog/combos/${id}/upload-image/`, file),
+  deleteCombo: (id) => api.delete(`/catalog/combos/${id}/`)
 }
 
 // =============================================================================
@@ -169,7 +173,20 @@ export const OrderAPI = {
     },
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
-  checkout: (data) => api.post('/orders/checkout/', data)
+  checkout: (data) => api.post('/orders/checkout/', data),
+
+  // Statistics APIs
+  stats: {
+    getRevenue: (params) => api.get('/orders/stats/revenue/', { params }),
+    getOrderStats: (params) => api.get('/orders/stats/orders/', { params }),
+    getTopItems: (params) => api.get('/orders/stats/top-items/', { params }),
+    getTopCombos: (params) => api.get('/orders/stats/top-combos/', { params }),
+    exportReport: (params, format = 'pdf') =>
+      api.get(`/orders/stats/export/${format}/`, {
+        params,
+        responseType: 'blob'
+      })
+  }
 }
 
 export default api
