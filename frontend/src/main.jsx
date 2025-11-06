@@ -8,16 +8,20 @@ import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import MenuPage from './pages/MenuPage.jsx'
 import CartPage from './pages/CartPage.jsx'
+import About from './pages/About.jsx'
 import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
+import Promotions from './pages/Promotions.jsx'
+import StoresPage from './pages/StoresPage.jsx'
+import ContactPage from './pages/ContactPage.jsx'
 import ManagerAccountsPage from './pages/ManagerAccountsPage.jsx'
 import Protected from './components/Protected.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx'
 import PaymentCancelPage from './pages/PaymentCancelPage.jsx'
-import './styles/tw.css' // Sử dụng file CSS đã có
+import './styles/tw.css'
 
 const router = createBrowserRouter([
   {
@@ -30,7 +34,11 @@ const router = createBrowserRouter([
       { path: 'menu', element: <MenuPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
-      
+      { path: 'promotions', element: <Promotions /> },
+      { path: 'stores', element: <StoresPage /> },
+      { path: 'contact', element: <ContactPage /> },
+      { path: 'about', element: <About /> },
+
       // Protected routes
       { 
         path: 'cart', 
@@ -40,7 +48,7 @@ const router = createBrowserRouter([
         path: 'orders', 
         element: <Protected><OrdersPage /></Protected>
       },
-      
+
       // Staff/Manager routes
       { 
         path: 'work', 
@@ -50,9 +58,6 @@ const router = createBrowserRouter([
         path: 'staff/orders', 
         element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
       },
-
-      // >>> Thêm dòng này
-      // { path: 'profile', element: <Protected><Profile /></Protected> },
 
       // Forgot Password
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
@@ -71,12 +76,14 @@ const router = createBrowserRouter([
       // Manager only routes
       { 
         path: 'manager/menu', 
-        element: <Protected roles={['manager']}>
-          <div className="p-8">
-            <h1 className="text-2xl font-bold">Menu Management</h1>
-            <p className="text-gray-600 mt-2">Coming soon...</p>
-          </div>
-        </Protected>
+        element: (
+          <Protected roles={['manager']}>
+            <div className="p-8">
+              <h1 className="text-2xl font-bold">Menu Management</h1>
+              <p className="text-gray-600 mt-2">Coming soon...</p>
+            </div>
+          </Protected>
+        ),
       },
       {
         path: 'manager/accounts',
