@@ -29,7 +29,10 @@ class Order(models.Model):
     stripe_checkout_session_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_payment_status = models.CharField(max_length=50, blank=True, null=True)
-    payment_completed_at = models.DateTimeField(null=True, blank=True)  # Thời gian thanh toán hoàn tất
+    payment_completed_at = models.DateTimeField(null=True, blank=True)  # Thời gian thanh toán hoàn tất (capture)
+    authorized_at = models.DateTimeField(null=True, blank=True)  # Thời gian authorization (status requires_capture)
+    authorization_expires_at = models.DateTimeField(null=True, blank=True)  # Thời gian hết hạn authorization (60s sau authorized_at)
+    captured_at = models.DateTimeField(null=True, blank=True)  # Thời gian capture thành công
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

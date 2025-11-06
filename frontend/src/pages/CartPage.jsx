@@ -35,8 +35,7 @@ export default function CartPage() {
   const [cart, setCart] = useState(null)
   const [cartLoading, setCartLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
-  const [orderData, setOrderData] = useState({ payment_method: 'cash', note: '', use_saved_card: false })
-  const [hasSavedCard, setHasSavedCard] = useState(false)
+  const [orderData, setOrderData] = useState({ payment_method: 'cash', note: '' })
   const navigate = useNavigate()
 
   const [addresses, setAddresses] = useState([])
@@ -124,30 +123,7 @@ export default function CartPage() {
   useEffect(() => {
     loadCart()
     loadAddresses()
-    checkSavedCard()
   }, [])
-
-  useEffect(() => {
-    // Tự động set use_saved_card khi có thẻ đã lưu và chọn thanh toán bằng thẻ
-    if (orderData.payment_method === 'card' && hasSavedCard && !orderData.use_saved_card) {
-      setOrderData((prev) => ({ ...prev, use_saved_card: true }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSavedCard, orderData.payment_method])
-
-  const checkSavedCard = async () => {
-    try {
-      const response = await AuthAPI.profile()
-      const hasCard = response.data?.has_saved_card || false
-      setHasSavedCard(hasCard)
-      // Nếu có thẻ đã lưu và đang chọn thanh toán bằng thẻ, tự động enable
-      if (hasCard && orderData.payment_method === 'card') {
-        setOrderData((prev) => ({ ...prev, use_saved_card: true }))
-      }
-    } catch (error) {
-      console.error('Failed to check saved card:', error)
-    }
-  }
 
   const updateItemQuantity = async (itemId, nextQuantity) => {
     if (nextQuantity < 1) return
@@ -308,49 +284,16 @@ export default function CartPage() {
       return
     }
 
-    // Tự động enable saved card nếu có và đang chọn thanh toán bằng thẻ
-    // LUÔN LUÔN dùng saved card nếu user có (theo yêu cầu: đơn thứ 2 chỉ cần CVV)
-    let finalUseSavedCard = orderData.use_saved_card
-    if (orderData.payment_method === 'card' && hasSavedCard) {
-      // Force dùng saved card - đây là yêu cầu chính
-      finalUseSavedCard = true
-      console.log('Auto-enabling saved card payment - user has saved card')
-    }
-
     setCheckoutLoading(true)
     try {
-      console.log('Checkout with:', {
-        payment_method: orderData.payment_method,
-        use_saved_card: finalUseSavedCard,
-        hasSavedCard
-      })
-
       const response = await OrderAPI.checkout({
         payment_method: orderData.payment_method,
         note: orderData.note,
-        delivery_address_id: selectedAddressId,
-        use_saved_card: finalUseSavedCard
+        delivery_address_id: selectedAddressId
       })
 
-      console.log('Checkout response:', response.data)
-
-      // Nếu thanh toán bằng thẻ đã lưu, cần nhập CVV
-      if (orderData.payment_method === 'card' && finalUseSavedCard && response.data?.client_secret) {
-        console.log('Redirecting to CVV page')
-        // Redirect đến trang nhập CVV
-        navigate('/payment/cvv', {
-          state: {
-            clientSecret: response.data.client_secret,
-            paymentIntentId: response.data.payment_intent_id,
-            orderId: response.data.order_id
-          }
-        })
-        return
-      }
-
-      // Nếu thanh toán bằng thẻ mới, redirect đến Stripe
+      // Nếu thanh toán bằng thẻ, redirect đến Stripe Checkout
       if (orderData.payment_method === 'card' && response.data?.checkout_url) {
-        console.log('Redirecting to Stripe Checkout')
         window.location.href = response.data.checkout_url
         return
       }
@@ -767,44 +710,18 @@ export default function CartPage() {
                     value={orderData.payment_method}
                     onChange={(e) => {
                       const newMethod = e.target.value
-                      // Tự động sử dụng thẻ đã lưu nếu có và chọn thanh toán bằng thẻ
                       setOrderData((prev) => ({ 
                         ...prev, 
-                        payment_method: newMethod,
-                        use_saved_card: newMethod === 'card' && hasSavedCard // Tự động check nếu có thẻ đã lưu
+                        payment_method: newMethod
                       }))
                     }}
                     className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="cash">Tiền mặt</option>
-                    <option value="card">Thẻ {hasSavedCard ? '(Có thẻ đã lưu)' : ''}</option>
+                    <option value="card">Thẻ</option>
                     <option value="bank_transfer">Chuyển khoản</option>
                   </select>
                 </div>
-
-                {orderData.payment_method === 'card' && hasSavedCard && (
-                  <div className={`p-3 border rounded-lg ${orderData.use_saved_card ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-                    <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={orderData.use_saved_card}
-                        onChange={(e) => setOrderData((prev) => ({ ...prev, use_saved_card: e.target.checked }))}
-                        className="h-4 w-4 mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <span className="font-medium">✅ Sử dụng thẻ đã lưu (Khuyến nghị)</span>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Bạn chỉ cần nhập số bảo mật (CVV) để xác nhận thanh toán. Nhanh chóng và tiện lợi hơn!
-                        </p>
-                        {!orderData.use_saved_card && (
-                          <p className="text-xs text-orange-600 mt-1 font-medium">
-                            ⚠️ Bỏ chọn nếu muốn sử dụng thẻ khác (sẽ phải nhập đầy đủ thông tin)
-                          </p>
-                        )}
-                      </div>
-                    </label>
-                  </div>
-                )}
 
                 <div>
                   <label className="text-sm font-medium text-gray-700">Ghi chú cho đơn hàng</label>

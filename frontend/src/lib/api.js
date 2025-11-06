@@ -170,7 +170,6 @@ export const OrderAPI = {
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
   checkout: (data) => api.post('/orders/checkout/', data),
-  confirmSavedCard: (data) => api.post('/orders/confirm-saved-card/', data)
 }
 
 export default api

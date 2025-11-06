@@ -1,6 +1,6 @@
 # orders/views.py
 from rest_framework import generics, permissions, viewsets, status, mixins
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
@@ -313,6 +313,9 @@ def create_stripe_checkout_session(request):
             'success_url': success_url,
             'cancel_url': cancel_url,
             'client_reference_id': str(order.id),
+            'payment_intent_data': {
+                'capture_method': 'manual',  # Chỉ authorize, không capture ngay
+            },
             'metadata': {
                 'order_id': str(order.id),
                 'user_id': str(request.user.id),
@@ -608,8 +611,31 @@ def stripe_webhook(request):
                 order = Order.objects.get(id=order_id)
                 payment_intent_id = session.get('payment_intent')
                 order.stripe_payment_intent_id = payment_intent_id
-                order.stripe_payment_status = 'paid'
-                order.payment_completed_at = timezone.now()  # Lưu thời gian thanh toán hoàn tất
+                
+                # Kiểm tra PaymentIntent status
+                if payment_intent_id:
+                    payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+                    
+                    # Đảm bảo metadata có order_id
+                    if not payment_intent.metadata.get('order_id'):
+                        stripe.PaymentIntent.modify(
+                            payment_intent_id,
+                            metadata={'order_id': str(order.id), 'user_id': str(order.user.id)}
+                        )
+                    
+                    if payment_intent.status == 'requires_capture':
+                        # Payment đã được authorize, chưa capture
+                        order.stripe_payment_status = 'authorized'
+                        order.authorized_at = timezone.now()
+                        # Set thời gian hết hạn authorization (60 giây)
+                        from datetime import timedelta
+                        order.authorization_expires_at = order.authorized_at + timedelta(seconds=60)
+                    elif payment_intent.status == 'succeeded':
+                        # Payment đã được capture (có thể từ nơi khác)
+                        order.stripe_payment_status = 'paid'
+                        order.payment_completed_at = timezone.now()
+                        order.captured_at = timezone.now()
+                
                 order.save()
                 
                 # Lưu thông tin thẻ và customer vào User để dùng cho lần sau
@@ -666,6 +692,138 @@ def stripe_webhook(request):
 
     elif event['type'] == 'payment_intent.succeeded':
         payment_intent = event['data']['object']
-        # Có thể xử lý thêm logic nếu cần
+        # PaymentIntent đã được capture thành công
+        try:
+            order_id = payment_intent.metadata.get('order_id')
+            if order_id:
+                order = Order.objects.get(id=order_id)
+                order.stripe_payment_status = 'paid'
+                order.payment_completed_at = timezone.now()
+                order.captured_at = timezone.now()
+                order.save()
+        except Order.DoesNotExist:
+            pass
+        except Exception as e:
+            print(f"Error processing payment_intent.succeeded: {e}")
+    
+    elif event['type'] == 'payment_intent.canceled':
+        payment_intent = event['data']['object']
+        # PaymentIntent đã bị cancel (void authorization)
+        try:
+            order_id = payment_intent.metadata.get('order_id')
+            if order_id:
+                order = Order.objects.get(id=order_id)
+                order.stripe_payment_status = 'canceled'
+                order.status = Order.Status.CANCELLED
+                order.save()
+        except Order.DoesNotExist:
+            pass
+        except Exception as e:
+            print(f"Error processing payment_intent.canceled: {e}")
 
     return HttpResponse(status=200)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_payment_authorization(request, order_id):
+    """Hủy authorization (void) trong cửa sổ 60s"""
+    try:
+        order = Order.objects.get(id=order_id, user=request.user)
+    except Order.DoesNotExist:
+        return Response({"detail": "Không tìm thấy đơn hàng"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if not order.stripe_payment_intent_id:
+        return Response({"detail": "Đơn hàng không có PaymentIntent"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if order.stripe_payment_status != 'authorized':
+        return Response({"detail": "Đơn hàng không ở trạng thái authorized"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Kiểm tra xem còn trong cửa sổ 60s không
+    if order.authorization_expires_at and timezone.now() > order.authorization_expires_at:
+        return Response({"detail": "Đã quá thời gian hủy (60 giây)"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Cancel PaymentIntent để void authorization
+        payment_intent = stripe.PaymentIntent.cancel(
+            order.stripe_payment_intent_id,
+            cancellation_reason='requested_by_customer'
+        )
+        
+        # Cập nhật order status
+        order.stripe_payment_status = 'canceled'
+        order.status = Order.Status.CANCELLED
+        order.save()
+        
+        return Response({
+            'status': 'canceled',
+            'message': 'Đã hủy authorization thành công'
+        }, status=status.HTTP_200_OK)
+        
+    except stripe.error.StripeError as e:
+        return Response({"detail": f"Lỗi hủy authorization: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def capture_payment(request, order_id):
+    """Capture PaymentIntent sau 60s hoặc khi chuẩn bị hàng"""
+    try:
+        order = Order.objects.get(id=order_id, user=request.user)
+    except Order.DoesNotExist:
+        return Response({"detail": "Không tìm thấy đơn hàng"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if not order.stripe_payment_intent_id:
+        return Response({"detail": "Đơn hàng không có PaymentIntent"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if order.stripe_payment_status != 'authorized':
+        return Response({"detail": "Đơn hàng không ở trạng thái authorized"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Capture PaymentIntent
+        payment_intent = stripe.PaymentIntent.capture(order.stripe_payment_intent_id)
+        
+        if payment_intent.status == 'succeeded':
+            # Cập nhật order status
+            order.stripe_payment_status = 'paid'
+            order.payment_completed_at = timezone.now()
+            order.captured_at = timezone.now()
+            order.save()
+            
+            return Response({
+                'status': 'captured',
+                'message': 'Đã thu tiền thành công'
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": f"Capture không thành công. Status: {payment_intent.status}"}, status=status.HTTP_400_BAD_REQUEST)
+            
+    except stripe.error.StripeError as e:
+        return Response({"detail": f"Lỗi capture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_authorization_status(request, order_id):
+    """Kiểm tra trạng thái authorization và thời gian còn lại"""
+    try:
+        order = Order.objects.get(id=order_id, user=request.user)
+    except Order.DoesNotExist:
+        return Response({"detail": "Không tìm thấy đơn hàng"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if order.stripe_payment_status == 'authorized' and order.authorization_expires_at:
+        remaining_seconds = max(0, int((order.authorization_expires_at - timezone.now()).total_seconds()))
+        can_cancel = remaining_seconds > 0
+        can_capture = True  # Có thể capture bất cứ lúc nào sau khi authorized
+    else:
+        remaining_seconds = 0
+        can_cancel = False
+        can_capture = False
+    
+    return Response({
+        'payment_status': order.stripe_payment_status,
+        'authorized_at': order.authorized_at,
+        'authorization_expires_at': order.authorization_expires_at,
+        'remaining_seconds': remaining_seconds,
+        'can_cancel': can_cancel,
+        'can_capture': can_capture,
+    }, status=status.HTTP_200_OK)

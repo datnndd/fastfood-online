@@ -17,7 +17,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx'
 import PaymentCancelPage from './pages/PaymentCancelPage.jsx'
-import CVVPaymentPage from './pages/CVVPaymentPage.jsx'
 import './styles/tw.css' // Sử dụng file CSS đã có
 
 const router = createBrowserRouter([
@@ -67,10 +66,6 @@ const router = createBrowserRouter([
       { 
         path: 'payment/cancel', 
         element: <Protected><PaymentCancelPage /></Protected>
-      },
-      { 
-        path: 'payment/cvv', 
-        element: <Protected><CVVPaymentPage /></Protected>
       },
       
       // Manager only routes
