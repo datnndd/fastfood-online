@@ -1,41 +1,36 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, useRole } from "../lib/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import logo from "../assets/images/logo.jpg";
-
-import chicken from "../assets/images/menu/chicken.png";
-import spaghetti from "../assets/images/menu/spaghetti.png";
-import spicy from "../assets/images/menu/spicy.png";
-import burger from "../assets/images/menu/burger.png";
-import sides from "../assets/images/menu/sides.png";
-import dessert from "../assets/images/menu/dessert.png";
-import drinks from "../assets/images/menu/drinks.png";
+import { CatalogAPI } from "../lib/api"; // ✅ thêm dòng này
 
 export default function NavBar() {
   const { user, logout } = useAuth();
   const { hasStaffAccess } = useRole();
   const [cartCount, setCartCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [categories, setCategories] = useState([]); // ✅ danh mục từ API
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ⚡ Danh mục hiển thị trong dropdown "Thực đơn"
-  const menuItems = [
-    { label: "Gà rán", slug: "ga-ran", img: chicken },
-    { label: "Mì Ý", slug: "mi-y", img: spaghetti },
-    { label: "Gà cay", slug: "ga-cay", img: spicy },
-    { label: "Burger", slug: "burger", img: burger },
-    { label: "Món phụ", slug: "mon-phu", img: sides },
-    { label: "Tráng miệng", slug: "trang-mieng", img: dessert },
-    { label: "Thức uống", slug: "thuc-uong", img: drinks },
-  ];
+  // ✅ Lấy danh mục từ API khi component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await CatalogAPI.listCategories();
+        setCategories(res.data.results || res.data); // tùy API có dùng pagination hay không
+      } catch (error) {
+        console.error("Lỗi khi lấy danh mục:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
-  // ⚡ Các đường dẫn trong navbar
   const navLinks = [
     { path: "/", label: "Trang chủ" },
     { path: "/about", label: "Về Mc Dono" },
-    { path: "/menu", label: "Thực đơn", dropdown: menuItems },
+    { path: "/menu", label: "Thực đơn", dropdown: categories }, // ✅ dùng API data
     { path: "/promotions", label: "Khuyến mãi" },
     { path: "/stores", label: "Cửa hàng" },
     { path: "/contact", label: "Liên hệ" },
@@ -96,7 +91,7 @@ export default function NavBar() {
                   </Link>
 
                   {/* Dropdown Thực đơn */}
-                  {link.dropdown && (
+                  {link.dropdown && link.dropdown.length > 0 && (
                     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[750px] bg-white text-black rounded-xl shadow-lg p-5 z-50 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-300 ease-out">
                       <div className="grid grid-cols-4 gap-5">
                         {link.dropdown.map((item) => (
@@ -105,13 +100,14 @@ export default function NavBar() {
                             onClick={() => navigate(`/menu?category=${item.slug}`)}
                             className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-pointer"
                           >
+                            {/* ✅ Ảnh lấy từ API */}
                             <img
-                              src={item.img}
-                              alt={item.label}
+                              src={item.image || item.image_url || "/default.jpg"}
+                              alt={item.name}
                               className="w-20 h-20 object-contain mb-2"
                             />
-                            <span className="font-semibold text-sm text-gray-800">
-                              {item.label}
+                            <span className="font-semibold text-sm text-gray-800 text-center">
+                              {item.name}
                             </span>
                           </div>
                         ))}
