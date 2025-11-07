@@ -15,7 +15,16 @@ class OptionGroupSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "required", "min_select", "max_select", "options"]
 
 class MenuItemSerializer(serializers.ModelSerializer):
-    option_groups = OptionGroupSerializer(many=True, read_only=True)
+    option_groups = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=False
+    )
+    option_groups_display = OptionGroupSerializer(
+        source='option_groups',
+        many=True,
+        read_only=True
+    )
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_id = serializers.IntegerField(source='category.id', read_only=True)
@@ -34,7 +43,62 @@ class MenuItemSerializer(serializers.ModelSerializer):
             "category_name",
             "image_url",
             "option_groups",
+            "option_groups_display",
         ]
+    
+    def to_representation(self, instance):
+        """Customize output to use option_groups instead of option_groups_display"""
+        ret = super().to_representation(instance)
+        # Move option_groups_display to option_groups for frontend
+        if 'option_groups_display' in ret:
+            ret['option_groups'] = ret.pop('option_groups_display')
+        return ret
+    
+    def create(self, validated_data):
+        option_groups_data = validated_data.pop('option_groups', [])
+        menu_item = MenuItem.objects.create(**validated_data)
+        
+        self._create_option_groups(menu_item, option_groups_data)
+        
+        return menu_item
+    
+    def update(self, instance, validated_data):
+        option_groups_data = validated_data.pop('option_groups', None)
+        
+        # Update basic fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update option groups if provided
+        if option_groups_data is not None:
+            # Delete existing option groups (cascade will delete options)
+            instance.option_groups.all().delete()
+            
+            # Create new option groups
+            self._create_option_groups(instance, option_groups_data)
+        
+        return instance
+    
+    def _create_option_groups(self, menu_item, option_groups_data):
+        """Helper method to create option groups and their options"""
+        for group_data in option_groups_data:
+            options_data = group_data.pop('options', [])
+            
+            option_group = OptionGroup.objects.create(
+                menu_item=menu_item,
+                name=group_data.get('name', ''),
+                required=group_data.get('required', False),
+                min_select=group_data.get('min_select', 0),
+                max_select=group_data.get('max_select', 1)
+            )
+            
+            for option_data in options_data:
+                Option.objects.create(
+                    group=option_group,
+                    name=option_data.get('name', ''),
+                    price_delta=option_data.get('price_delta', 0)
+                )
 
 class ComboItemReadSerializer(serializers.ModelSerializer):
     menu_item = MenuItemSerializer(read_only=True)

@@ -8,7 +8,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
         category: '',
         price: '',
         is_available: true,
-        slug: ''
+        option_groups: []
     })
     const [imageFile, setImageFile] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
@@ -23,51 +23,31 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                 category: item.category_id || item.category || '',
                 price: item.price || '',
                 is_available: item.is_available ?? true,
-                slug: item.slug || ''
+                option_groups: item.option_groups?.map(group => ({
+                    id: group.id,
+                    name: group.name,
+                    required: group.required,
+                    min_select: group.min_select,
+                    max_select: group.max_select,
+                    options: group.options?.map(opt => ({
+                        id: opt.id,
+                        name: opt.name,
+                        price_delta: opt.price_delta
+                    })) || []
+                })) || []
             })
             setImagePreview(item.image_url)
         }
     }, [item])
 
-    const generateSlug = (text) => {
-        return text
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu tiếng Việt
-            .replace(/đ/g, 'd')
-            .replace(/Đ/g, 'd')
-            .replace(/[^a-z0-9\s-]/g, '') // Chỉ giữ chữ, số, space và dấu gạch ngang
-            .trim()
-            .replace(/\s+/g, '-') // Thay space bằng dấu gạch ngang
-            .replace(/-+/g, '-') // Loại bỏ dấu gạch ngang trùng
-    }
-
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target
         let newValue = type === 'checkbox' ? checked : value
 
-        // Auto-generate slug khi nhập tên
-        if (name === 'name' && !item) {
-            setFormData((prev) => ({
-                ...prev,
-                name: value,
-                slug: prev.slug || generateSlug(value)
-            }))
-            return
-        }
-
-        // Validate slug: chỉ cho phép a-z, 0-9, dấu gạch ngang và gạch dưới
-        if (name === 'slug') {
-            newValue = value
-                .toLowerCase()
-                .replace(/[^a-z0-9-_]/g, '')
-                .replace(/^-+|-+$/g, '') // Loại bỏ dấu gạch ngang đầu/cuối
-        }
-
         // Validate price: max 8 chữ số trước dấu thập phân
         if (name === 'price') {
             const numValue = parseFloat(value)
-            if (numValue >= 100000000) { // 10^8
+            if (numValue >= 100000000) {
                 setError('Giá không được vượt quá 99,999,999 VNĐ')
                 return
             }
@@ -91,6 +71,79 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
         }
     }
 
+    const handleAddOptionGroup = () => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: [...prev.option_groups, {
+                name: '',
+                required: false,
+                min_select: 0,
+                max_select: 1,
+                options: []
+            }]
+        }))
+    }
+
+    const handleRemoveOptionGroup = (groupIndex) => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: prev.option_groups.filter((_, i) => i !== groupIndex)
+        }))
+    }
+
+    const handleOptionGroupChange = (groupIndex, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: prev.option_groups.map((group, i) =>
+                i === groupIndex ? { ...group, [field]: value } : group
+            )
+        }))
+    }
+
+    const handleAddOption = (groupIndex) => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: prev.option_groups.map((group, i) =>
+                i === groupIndex
+                    ? {
+                        ...group,
+                        options: [...group.options, { name: '', price_delta: 0 }]
+                    }
+                    : group
+            )
+        }))
+    }
+
+    const handleRemoveOption = (groupIndex, optionIndex) => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: prev.option_groups.map((group, i) =>
+                i === groupIndex
+                    ? {
+                        ...group,
+                        options: group.options.filter((_, j) => j !== optionIndex)
+                    }
+                    : group
+            )
+        }))
+    }
+
+    const handleOptionChange = (groupIndex, optionIndex, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            option_groups: prev.option_groups.map((group, i) =>
+                i === groupIndex
+                    ? {
+                        ...group,
+                        options: group.options.map((opt, j) =>
+                            j === optionIndex ? { ...opt, [field]: value } : opt
+                        )
+                    }
+                    : group
+            )
+        }))
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setLoading(true)
@@ -111,22 +164,22 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                 throw new Error('Giá không được vượt quá 99,999,999 VNĐ')
             }
 
-            // Tự động tạo slug nếu để trống
-            const finalSlug = formData.slug.trim() || generateSlug(formData.name)
-
-            // Validate slug cuối cùng
-            if (!/^[a-z0-9-_]+$/.test(finalSlug)) {
-                throw new Error('Slug chỉ được chứa chữ thường, số, dấu gạch ngang và gạch dưới')
-            }
-
-            // Backend serializer có category_id là PrimaryKeyRelatedField
             const dataToSubmit = {
                 name: formData.name.trim(),
                 description: formData.description.trim(),
-                category: parseInt(formData.category), // Gửi "category" không phải "category_id"
+                category: parseInt(formData.category),
                 price: parseFloat(formData.price),
                 is_available: formData.is_available,
-                slug: finalSlug
+                option_groups: formData.option_groups.map(group => ({
+                    name: group.name.trim(),
+                    required: group.required,
+                    min_select: parseInt(group.min_select),
+                    max_select: parseInt(group.max_select),
+                    options: group.options.map(opt => ({
+                        name: opt.name.trim(),
+                        price_delta: parseFloat(opt.price_delta)
+                    }))
+                }))
             }
 
             console.log('Submitting data:', dataToSubmit)
@@ -138,7 +191,6 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                 response = await CatalogAPI.createItem(dataToSubmit)
             }
 
-            // Upload ảnh nếu có
             if (imageFile && response.data.id) {
                 await CatalogAPI.uploadItemImage(response.data.id, imageFile)
             }
@@ -154,9 +206,6 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
 
                 if (errors.category_id) {
                     errorMessages.push(`Danh mục: ${Array.isArray(errors.category_id) ? errors.category_id.join(', ') : errors.category_id}`)
-                }
-                if (errors.slug) {
-                    errorMessages.push(`Slug: ${Array.isArray(errors.slug) ? errors.slug.join(', ') : errors.slug}`)
                 }
                 if (errors.price) {
                     errorMessages.push(`Giá: ${Array.isArray(errors.price) ? errors.price.join(', ') : errors.price}`)
@@ -182,7 +231,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-hidden shadow-2xl transform animate-slideUp">
+            <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl transform animate-slideUp">
                 {/* Header với gradient */}
                 <div className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
@@ -349,25 +398,6 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                             </div>
                         </div>
 
-                        {/* Slug Field */}
-                        <div>
-                            <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                <span className="text-2xl">🔗</span>
-                                Đường dẫn (Slug)
-                            </label>
-                            <input
-                                type="text"
-                                name="slug"
-                                value={formData.slug}
-                                onChange={handleChange}
-                                placeholder="burger-pho-mai-dac-biet"
-                                className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-mono focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all"
-                            />
-                            <p className="text-sm text-gray-500 mt-2">
-                                💡 Để trống để tự động tạo từ tên món ăn
-                            </p>
-                        </div>
-
                         {/* Availability Toggle */}
                         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200">
                             <label className="flex items-center gap-4 cursor-pointer">
@@ -390,6 +420,161 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                                     </p>
                                 </div>
                             </label>
+                        </div>
+
+                        {/* Option Groups Section */}
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <span className="text-2xl">🎨</span>
+                                    Nhóm tùy chọn (Options)
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={handleAddOptionGroup}
+                                    className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2"
+                                >
+                                    <span className="text-xl">+</span>
+                                    Thêm nhóm
+                                </button>
+                            </div>
+
+                            {formData.option_groups.length === 0 ? (
+                                <p className="text-center text-gray-500 py-8">
+                                    Chưa có nhóm tùy chọn. Nhấn "Thêm nhóm" để bắt đầu.
+                                </p>
+                            ) : (
+                                <div className="space-y-6">
+                                    {formData.option_groups.map((group, groupIndex) => (
+                                        <div key={groupIndex} className="bg-white rounded-xl p-5 border-2 border-purple-200">
+                                            {/* Group Header */}
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-lg font-bold text-purple-900">
+                                                    Nhóm #{groupIndex + 1}
+                                                </h4>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveOptionGroup(groupIndex)}
+                                                    className="text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg font-semibold transition-all"
+                                                >
+                                                    🗑️ Xóa nhóm
+                                                </button>
+                                            </div>
+
+                                            {/* Group Fields */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        Tên nhóm *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={group.name}
+                                                        onChange={(e) => handleOptionGroupChange(groupIndex, 'name', e.target.value)}
+                                                        required
+                                                        placeholder="VD: Chọn size, Topping thêm..."
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={group.required}
+                                                        onChange={(e) => handleOptionGroupChange(groupIndex, 'required', e.target.checked)}
+                                                        className="w-5 h-5 text-purple-600 rounded"
+                                                    />
+                                                    <label className="ml-3 text-sm font-semibold text-gray-700">
+                                                        Bắt buộc chọn
+                                                    </label>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        Số lượng tối thiểu
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={group.min_select}
+                                                        onChange={(e) => handleOptionGroupChange(groupIndex, 'min_select', e.target.value)}
+                                                        min="0"
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                        Số lượng tối đa
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        value={group.max_select}
+                                                        onChange={(e) => handleOptionGroupChange(groupIndex, 'max_select', e.target.value)}
+                                                        min="1"
+                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Options */}
+                                            <div className="border-t-2 border-purple-100 pt-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <label className="text-sm font-bold text-gray-700">
+                                                        Các tùy chọn
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAddOption(groupIndex)}
+                                                        className="text-purple-600 hover:bg-purple-50 px-3 py-1 rounded-lg font-semibold transition-all text-sm"
+                                                    >
+                                                        + Thêm tùy chọn
+                                                    </button>
+                                                </div>
+
+                                                {group.options.length === 0 ? (
+                                                    <p className="text-center text-gray-400 py-4 text-sm">
+                                                        Chưa có tùy chọn
+                                                    </p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {group.options.map((option, optionIndex) => (
+                                                            <div key={optionIndex} className="flex gap-2 items-start">
+                                                                <div className="flex-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={option.name}
+                                                                        onChange={(e) => handleOptionChange(groupIndex, optionIndex, 'name', e.target.value)}
+                                                                        required
+                                                                        placeholder="Tên tùy chọn"
+                                                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 text-sm"
+                                                                    />
+                                                                </div>
+                                                                <div className="w-32">
+                                                                    <input
+                                                                        type="number"
+                                                                        value={option.price_delta}
+                                                                        onChange={(e) => handleOptionChange(groupIndex, optionIndex, 'price_delta', e.target.value)}
+                                                                        placeholder="Giá thêm"
+                                                                        step="1000"
+                                                                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-purple-500 text-sm"
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveOption(groupIndex, optionIndex)}
+                                                                    className="text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-all"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
