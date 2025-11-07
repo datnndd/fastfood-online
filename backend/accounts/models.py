@@ -62,6 +62,8 @@ class User(AbstractUser):
     auth_provider = models.CharField(max_length=30, blank=True)
     email_verified = models.BooleanField(default=False)
     phone_verified = models.BooleanField(default=False)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Stripe Customer ID
+    stripe_payment_method_id = models.CharField(max_length=255, blank=True, null=True)  # Saved payment method ID
 
     def set_unusable_password_if_oauth(self):
         if self.auth_provider and self.auth_provider != "email":

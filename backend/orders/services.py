@@ -7,7 +7,7 @@ from .models import Order, OrderItem
 from decimal import Decimal, ROUND_HALF_UP
 
 @transaction.atomic
-def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None):
+def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None, clear_cart=True):
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
@@ -22,11 +22,21 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
     if delivery_address.user_id != user.id:
         raise ValueError("Địa chỉ giao hàng không hợp lệ")
 
+    # Xác định payment_status dựa trên payment_method
+    payment_status = "pending"
+    if payment_method == "card":
+        payment_status = "pending"  # Chờ thanh toán Stripe
+    elif payment_method in ["cash", "bank_transfer"]:
+        payment_status = "pending"  # Chờ xác nhận
+    
     order = Order.objects.create(
         user=user,
         delivery_address=delivery_address,
         payment_method=payment_method,
-        note=note
+        payment_status=payment_status,
+        note=note,
+        delivery_fee=Decimal("0.00"),  # Mặc định phí giao hàng = 0
+        discount_amount=Decimal("0.00")  # Mặc định giảm giá = 0
     )
     
     total = Decimal("0.00")
@@ -96,8 +106,10 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
     order.total_amount = total
     order.save()
     
-    cart.items.all().delete()
-    cart.combos.all().delete()
+    # Chỉ xóa giỏ hàng nếu clear_cart=True (mặc định cho thanh toán tiền mặt/chuyển khoản)
+    if clear_cart:
+        cart.items.all().delete()
+        cart.combos.all().delete()
     
     return order
 

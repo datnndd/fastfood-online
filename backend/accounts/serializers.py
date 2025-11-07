@@ -169,6 +169,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     province = ProvinceSerializer(read_only=True)
     ward = WardSerializer(read_only=True)
+    has_saved_card = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -188,8 +189,12 @@ class ProfileSerializer(serializers.ModelSerializer):
             "address_line",
             "province",
             "ward",
+            "has_saved_card",
         ]
         read_only_fields = fields
+    
+    def get_has_saved_card(self, obj):
+        return bool(obj.stripe_customer_id and obj.stripe_payment_method_id)
 
 
 class CreateStaffSerializer(serializers.ModelSerializer):

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AccountsAPI, CartAPI, OrderAPI } from '../lib/api'
+import { AccountsAPI, CartAPI, OrderAPI, AuthAPI } from '../lib/api'
 import Protected from '../components/Protected'
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/100'
@@ -286,12 +286,19 @@ export default function CartPage() {
 
     setCheckoutLoading(true)
     try {
-      await OrderAPI.checkout({
+      const response = await OrderAPI.checkout({
         payment_method: orderData.payment_method,
         note: orderData.note,
         delivery_address_id: selectedAddressId
       })
 
+      // Nếu thanh toán bằng thẻ, redirect đến Stripe Checkout
+      if (orderData.payment_method === 'card' && response.data?.checkout_url) {
+        window.location.href = response.data.checkout_url
+        return
+      }
+
+      // Thanh toán tiền mặt hoặc chuyển khoản
       await loadCart(true)
       alert('Đặt hàng thành công! Bạn có thể theo dõi đơn tại trang "Đơn hàng của tôi".')
       navigate('/orders')
@@ -701,7 +708,13 @@ export default function CartPage() {
                   <label className="text-sm font-medium text-gray-700">Phương thức thanh toán</label>
                   <select
                     value={orderData.payment_method}
-                    onChange={(e) => setOrderData((prev) => ({ ...prev, payment_method: e.target.value }))}
+                    onChange={(e) => {
+                      const newMethod = e.target.value
+                      setOrderData((prev) => ({ 
+                        ...prev, 
+                        payment_method: newMethod
+                      }))
+                    }}
                     className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="cash">Tiền mặt</option>

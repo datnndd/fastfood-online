@@ -169,7 +169,7 @@ export const OrderAPI = {
     },
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
-  checkout: (data) => api.post('/orders/checkout/', data)
+  checkout: (data) => api.post('/orders/checkout/', data),
 }
 
 export default api

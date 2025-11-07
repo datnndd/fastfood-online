@@ -3,16 +3,33 @@ import { OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
 
 // Helper function để kiểm tra đơn hàng có thể hủy không (trong 60s)
-const canCancelOrder = (createdAt) => {
-  const orderTime = new Date(createdAt)
+const canCancelOrder = (order) => {
+  // Nếu đã thanh toán bằng thẻ, kiểm tra từ payment_completed_at
+  if (order.payment_method === 'card' && order.payment_completed_at) {
+    const paymentTime = new Date(order.payment_completed_at)
+    const currentTime = new Date()
+    const diffInSeconds = (currentTime - paymentTime) / 1000
+    return diffInSeconds <= 60
+  }
+  // Nếu chưa thanh toán, kiểm tra từ created_at
+  const orderTime = new Date(order.created_at)
   const currentTime = new Date()
   const diffInSeconds = (currentTime - orderTime) / 1000
   return diffInSeconds <= 60
 }
 
 // Helper function để tính thời gian còn lại
-const getTimeRemaining = (createdAt) => {
-  const orderTime = new Date(createdAt)
+const getTimeRemaining = (order) => {
+  // Nếu đã thanh toán bằng thẻ, tính từ payment_completed_at
+  if (order.payment_method === 'card' && order.payment_completed_at) {
+    const paymentTime = new Date(order.payment_completed_at)
+    const currentTime = new Date()
+    const diffInSeconds = (currentTime - paymentTime) / 1000
+    const remaining = Math.max(0, 60 - diffInSeconds)
+    return Math.ceil(remaining)
+  }
+  // Nếu chưa thanh toán, tính từ created_at
+  const orderTime = new Date(order.created_at)
   const currentTime = new Date()
   const diffInSeconds = (currentTime - orderTime) / 1000
   const remaining = Math.max(0, 60 - diffInSeconds)
@@ -64,7 +81,7 @@ export default function OrdersPage() {
       if (status === 'PREPARING') {
         const timeRemainingData = {}
         ordersData.forEach(order => {
-          timeRemainingData[order.id] = getTimeRemaining(order.created_at)
+          timeRemainingData[order.id] = getTimeRemaining(order)
         })
         setTimeRemaining(timeRemainingData)
       }
@@ -115,7 +132,7 @@ export default function OrdersPage() {
         let hasChanges = false
         
         orders.forEach(order => {
-          const remaining = getTimeRemaining(order.created_at)
+          const remaining = getTimeRemaining(order)
           updated[order.id] = remaining
           if (prev[order.id] !== remaining) {
             hasChanges = true
@@ -253,7 +270,7 @@ export default function OrdersPage() {
                     {/* Nút hủy đơn cho trạng thái PREPARING */}
                     {activeTab === 'PREPARING' && (
                       <div className="flex items-center space-x-2">
-                        {canCancelOrder(order.created_at) ? (
+                        {canCancelOrder(order) ? (
                           <>
                             <div className="text-xs text-orange-600 font-medium">
                               Còn {timeRemaining[order.id] || 0}s để hủy
