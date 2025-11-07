@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Optional app theme tweaks */
+:root {
+  --brand: #ff3b30;
+}

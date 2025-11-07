@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: fastfood
+      POSTGRES_USER: fastfood
+      POSTGRES_PASSWORD: fastfood
+    ports:
+      - "5432:5432"
+    volumes:
+      - fastfood_db:/var/lib/postgresql/data
+volumes:
+  fastfood_db:
