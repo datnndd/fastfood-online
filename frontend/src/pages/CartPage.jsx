@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AccountsAPI, CartAPI, OrderAPI, AuthAPI } from '../lib/api'
+import { AccountsAPI, CartAPI, OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/100'
@@ -710,8 +710,8 @@ export default function CartPage() {
                     value={orderData.payment_method}
                     onChange={(e) => {
                       const newMethod = e.target.value
-                      setOrderData((prev) => ({ 
-                        ...prev, 
+                      setOrderData((prev) => ({
+                        ...prev,
                         payment_method: newMethod
                       }))
                     }}

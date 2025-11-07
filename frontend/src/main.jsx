@@ -40,42 +40,24 @@ const router = createBrowserRouter([
       { path: 'about', element: <About /> },
 
       // Protected routes
-      { 
-        path: 'cart', 
-        element: <Protected><CartPage /></Protected>
-      },
-      { 
-        path: 'orders', 
-        element: <Protected><OrdersPage /></Protected>
-      },
+      { path: 'cart', element: <Protected><CartPage /></Protected> },
+      { path: 'orders', element: <Protected><OrdersPage /></Protected> },
 
       // Staff/Manager routes
-      { 
-        path: 'work', 
-        element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
-      },
-      { 
-        path: 'staff/orders', 
-        element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected>
-      },
+      { path: 'work', element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected> },
+      { path: 'staff/orders', element: <Protected roles={['staff', 'manager']}><WorkPage /></Protected> },
 
-      // Forgot Password
+      // Forgot / Update Password
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'update-password', element: <UpdatePasswordPage /> },
-      
+
       // Payment callbacks
-      { 
-        path: 'payment/success', 
-        element: <Protected><PaymentSuccessPage /></Protected>
-      },
-      { 
-        path: 'payment/cancel', 
-        element: <Protected><PaymentCancelPage /></Protected>
-      },
-      
+      { path: 'payment/success', element: <Protected><PaymentSuccessPage /></Protected> },
+      { path: 'payment/cancel', element: <Protected><PaymentCancelPage /></Protected> },
+
       // Manager only routes
-      { 
-        path: 'manager/menu', 
+      {
+        path: 'manager/menu',
         element: (
           <Protected roles={['manager']}>
             <div className="p-8">
@@ -83,7 +65,7 @@ const router = createBrowserRouter([
               <p className="text-gray-600 mt-2">Coming soon...</p>
             </div>
           </Protected>
-        ),
+        )
       },
       {
         path: 'manager/accounts',

@@ -2,15 +2,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    MyOrdersView, 
-    CheckoutView, 
-    OrdersWorkViewSet, 
-    OrdersAdminViewSet, 
-    stripe_webhook, 
+    MyOrdersView,
+    CheckoutView,
+    OrdersWorkViewSet,
+    OrdersAdminViewSet,
+    stripe_webhook,
     ConfirmSavedCardPaymentView,
     cancel_payment_authorization,
     capture_payment,
-    check_authorization_status
+    check_authorization_status,
 )
 
 router = DefaultRouter()

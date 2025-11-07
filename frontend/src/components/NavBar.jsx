@@ -1,9 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, useRole } from "../lib/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import logo from "../assets/images/logo.jpg";
-import { CatalogAPI } from "../lib/api";
+import { CatalogAPI, CartAPI } from "../lib/api";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
@@ -13,6 +13,20 @@ export default function NavBar() {
   const [categories, setCategories] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
+  const displayName = useMemo(() => {
+    if (!user) {
+      return "";
+    }
+    const fullName = (user.full_name || "").trim();
+    return fullName || user.username || "";
+  }, [user]);
+  const displayInitial = useMemo(() => {
+    if (!user) {
+      return "";
+    }
+    const source = displayName || user.username || "?";
+    return source.charAt(0).toUpperCase();
+  }, [displayName, user]);
 
   // Lấy danh mục từ API khi component mount
   useEffect(() => {
@@ -26,6 +40,29 @@ export default function NavBar() {
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setCartCount(0);
+      return;
+    }
+
+    const refreshCartCount = () => {
+      CartAPI.getCart()
+        .then(({ data }) => {
+          const itemsTotal = (data.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
+          const combosTotal = (data.combos || []).reduce((sum, combo) => sum + (combo.quantity || 0), 0);
+          setCartCount(itemsTotal + combosTotal);
+        })
+        .catch(() => setCartCount(0));
+    };
+
+    refreshCartCount();
+    window.addEventListener("cartUpdated", refreshCartCount);
+    return () => {
+      window.removeEventListener("cartUpdated", refreshCartCount);
+    };
+  }, [user]);
 
   const navLinks = [
     { path: "/", label: "Trang chủ" },
@@ -167,16 +204,16 @@ export default function NavBar() {
                   className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-colors"
                 >
                   <div className="w-8 h-8 bg-white text-[#e21b1b] rounded-full flex items-center justify-center font-bold">
-                    {user.username[0].toUpperCase()}
+                    {displayInitial}
                   </div>
-                  <span className="hidden md:block">{user.username}</span>
+                  <span className="hidden md:block">{displayName || user.username}</span>
                 </button>
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
                     <div className="py-2">
                       <div className="px-4 py-2 border-b">
-                        <p className="text-sm font-medium text-gray-900">{user.username}</p>
+                        <p className="text-sm font-medium text-gray-900">{displayName || user.username}</p>
                         <p className="text-xs text-gray-500">{user.email}</p>
                       </div>
                       <Link

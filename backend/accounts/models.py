@@ -57,7 +57,6 @@ class User(AbstractUser):
     province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
     ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
 
-    
     supabase_id = models.UUIDField(null=True, blank=True, unique=True, db_index=True)
     auth_provider = models.CharField(max_length=30, blank=True)
     email_verified = models.BooleanField(default=False)

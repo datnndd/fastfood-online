@@ -28,7 +28,6 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
         payment_status = "pending"  # Chờ thanh toán Stripe
     elif payment_method in ["cash", "bank_transfer"]:
         payment_status = "pending"  # Chờ xác nhận
-    
     order = Order.objects.create(
         user=user,
         delivery_address=delivery_address,
