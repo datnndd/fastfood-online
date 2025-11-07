@@ -6,13 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0005_order_stripe_checkout_session_id_and_more 2'),
-        ('orders', '0006_order_delivery_fee 2'),
-        ('orders', '0007_auto_20251031_0748 2'),
-        ('orders', '0008_auto_20251031_0749 2'),
-        ('orders', '0009_order_discount_amount 2'),
-        ('orders', '0010_order_payment_status 2'),
-        ('orders', '0011_order_updated_at 2'),
+        ('orders', '0011_order_updated_at'),
         ('orders', '0014_merge_20251106_1429'),
     ]
 
