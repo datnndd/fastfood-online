@@ -93,9 +93,9 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-3">
             {orders.map((order) => (
-              <div key={order.id} className="bg-white border rounded-lg shadow-sm cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+              <div key={order.id} className="bg-white border rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/orders/${order.id}`)}>
                 <div className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">Đơn hàng #{order.id}</h3>
@@ -110,6 +110,72 @@ export default function OrdersPage() {
                       <div className="text-xl font-bold text-red-600">{parseFloat(order.total_amount).toLocaleString()}₫</div>
                     </div>
                   </div>
+                  
+                  {/* Hiển thị sản phẩm với hình ảnh */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="border-t pt-3">
+                      <div className="flex gap-3 overflow-x-auto pb-2">
+                        {order.items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                            <div className="w-16 h-16 rounded border bg-gray-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                              {item.image_url ? (
+                                <img 
+                                  src={item.image_url} 
+                                  alt={item.menu_item_name || 'Sản phẩm'} 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                    e.target.nextElementSibling.style.display = 'flex'
+                                  }}
+                                />
+                              ) : null}
+                              <svg 
+                                className={`w-6 h-6 text-gray-300 ${item.image_url ? 'hidden' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium truncate">{item.menu_item_name}</div>
+                              <div className="text-xs text-gray-500">x{item.quantity}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {order.combos && order.combos.length > 0 && order.combos.map((combo) => (
+                          <div key={combo.id} className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                            <div className="w-16 h-16 rounded border bg-gray-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                              {combo.image_url ? (
+                                <img 
+                                  src={combo.image_url} 
+                                  alt={combo.combo_name || 'Combo'} 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                    e.target.nextElementSibling.style.display = 'flex'
+                                  }}
+                                />
+                              ) : null}
+                              <svg 
+                                className={`w-6 h-6 text-gray-300 ${combo.image_url ? 'hidden' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium truncate">{combo.combo_name}</div>
+                              <div className="text-xs text-gray-500">x{combo.quantity}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
