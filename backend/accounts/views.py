@@ -63,6 +63,13 @@ class UserListView(generics.ListAPIView):
     ordering_fields = ["date_joined", "username", "role"]
     ordering = ["-date_joined"]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        role = self.request.query_params.get("role")
+        if role in ["customer", "staff", "manager"]:
+            queryset = queryset.filter(role=role)
+        return queryset
+
 
 class ProvinceListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]

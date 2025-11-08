@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AccountsAPI } from '../lib/api'
+import DashboardBackButton from '../components/DashboardBackButton'
 
 const ROLE_OPTIONS = [
   { value: 'customer', label: '👤 Khách hàng', color: 'bg-blue-100 text-blue-800' },
   { value: 'staff', label: '👨‍🍳 Nhân viên', color: 'bg-green-100 text-green-800' },
   { value: 'manager', label: '👔 Quản lý', color: 'bg-purple-100 text-purple-800' }
+]
+
+const ROLE_FILTERS = [
+  { value: 'all', label: 'Tất cả', icon: '✨' },
+  { value: 'manager', label: 'Quản lý', icon: '👔' },
+  { value: 'staff', label: 'Nhân viên', icon: '👨‍🍳' },
+  { value: 'customer', label: 'Khách hàng', icon: '👤' }
 ]
 
 const getErrorMessage = (error, fallback = 'Đã có lỗi xảy ra') => {
@@ -40,6 +48,7 @@ export default function ManagerAccountsPage() {
   const [userListError, setUserListError] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [searchValue, setSearchValue] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const [roleEdits, setRoleEdits] = useState({})
   const [rowStatuses, setRowStatuses] = useState({})
 
@@ -77,14 +86,19 @@ export default function ManagerAccountsPage() {
     return () => clearTimeout(handler)
   }, [searchInput])
 
+  const getCurrentListParams = useCallback(() => {
+    const params = {}
+    if (searchValue) params.search = searchValue
+    if (roleFilter !== 'all') params.role = roleFilter
+    return params
+  }, [searchValue, roleFilter])
+
   useEffect(() => {
-    const params = searchValue ? { search: searchValue } : {}
-    loadUsers(params)
-  }, [searchValue, loadUsers])
+    loadUsers(getCurrentListParams())
+  }, [searchValue, roleFilter, loadUsers, getCurrentListParams])
 
   const refreshUsers = () => {
-    const params = searchValue ? { search: searchValue } : {}
-    loadUsers(params)
+    loadUsers(getCurrentListParams())
   }
 
   const setRowStatus = (userId, status) => {
@@ -154,7 +168,8 @@ export default function ManagerAccountsPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white shadow-2xl">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 space-y-4">
+          <DashboardBackButton className="bg-white/10 text-white hover:bg-white hover:text-purple-600 border-transparent" />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -220,6 +235,26 @@ export default function ManagerAccountsPage() {
                     ✖
                   </button>
                 )}
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {ROLE_FILTERS.map((filter) => {
+                  const isActive = roleFilter === filter.value
+                  return (
+                    <button
+                      key={filter.value}
+                      onClick={() => setRoleFilter(filter.value)}
+                      className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-all ${
+                        isActive
+                          ? 'bg-white text-blue-700 shadow-lg ring-2 ring-white ring-offset-2 ring-offset-blue-500'
+                          : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'
+                      }`}
+                    >
+                      <span className="text-base">{filter.icon}</span>
+                      <span>{filter.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -23,7 +23,7 @@ import CombosManagement from './pages/CombosManagement.jsx'
 import CategoriesManagement from './pages/CategoriesManagement.jsx'
 import ManagerDashboard from './pages/ManagerDashboard.jsx'
 import FeedbackManagement from './pages/FeedbackManagement.jsx'
-import StatisticsPage from './pages/StatisticsPage.jsx'
+import OrdersDetailReport from './pages/OrdersDetailReport.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Protected from './components/Protected.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
@@ -145,10 +145,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'manager/statistics',
+        path: 'manager/orders-report',
         element: (
           <Protected roles={['manager']}>
-            <StatisticsPage />
+            <OrdersDetailReport />
           </Protected>
         ),
       },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { CatalogAPI } from '../lib/api'
 import CategoryFormModal from '../components/CategoryFormModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import DashboardBackButton from '../components/DashboardBackButton'
 
 export default function CategoriesManagement() {
     const [categories, setCategories] = useState([])
@@ -93,7 +94,8 @@ export default function CategoriesManagement() {
         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50">
             {/* Header */}
             <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white shadow-2xl">
-                <div className="container mx-auto px-4 py-8">
+                <div className="container mx-auto px-4 py-8 space-y-4">
+                    <DashboardBackButton className="bg-white/10 text-white hover:bg-white hover:text-indigo-600 border-transparent" />
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <h1 className="text-4xl font-black tracking-tight mb-2">

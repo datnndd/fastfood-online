@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { CatalogAPI } from '../lib/api'
 import ItemFormModal from '../components/ItemFormModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import DashboardBackButton from '../components/DashboardBackButton'
 
 export default function ItemsManagement() {
     const [items, setItems] = useState([])
@@ -172,7 +173,8 @@ export default function ItemsManagement() {
         <div className="min-h-screen bg-gradient-to-br from-red-50 via-yellow-50 to-orange-50">
             {/* Header */}
             <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-2xl">
-                <div className="container mx-auto px-4 py-8">
+                <div className="container mx-auto px-4 py-8 space-y-4">
+                    <DashboardBackButton className="bg-white/10 text-white hover:bg-white hover:text-red-600 border-transparent" />
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <h1 className="text-4xl font-black tracking-tight mb-2">

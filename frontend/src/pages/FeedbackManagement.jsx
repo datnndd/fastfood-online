@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FeedbackAPI } from '../lib/api'
+import DashboardBackButton from '../components/DashboardBackButton'
 
 export default function FeedbackManagement() {
   const [items, setItems] = useState([])
@@ -44,7 +45,8 @@ export default function FeedbackManagement() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 via-white to-orange-50 py-10 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
+          <DashboardBackButton />
           <p className="text-sm uppercase tracking-[0.4em] text-gray-400 font-semibold">
             Feedback Center
           </p>

@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db.models import Sum, Count, Avg, Q, F
+from django.db.models import Sum, Count, Avg, Q, F, DecimalField
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -164,15 +164,18 @@ def top_items_statistics(request):
         'menu_item__id',
         'menu_item__name'
     ).annotate(
-        quantity=Sum('quantity'),
-        revenue=Sum(F('quantity') * F('price')),
-        avg_price=Avg('price')
+        total_quantity=Sum('quantity'),
+        revenue=Sum(
+            F('quantity') * F('unit_price'),
+            output_field=DecimalField(max_digits=14, decimal_places=2)
+        ),
+        avg_price=Avg('unit_price')
     ).order_by('-revenue')[:20]  # Top 20
     
     items_data = [{
         'id': item['menu_item__id'],
         'name': item['menu_item__name'],
-        'quantity': item['quantity'],
+        'quantity': item['total_quantity'],
         'revenue': str(item['revenue']),
         'avg_price': str(item['avg_price']),
         'emoji': '🍔'  # Default emoji
@@ -228,15 +231,18 @@ def top_combos_statistics(request):
         'combo__id',
         'combo__name'
     ).annotate(
-        quantity=Sum('quantity'),
-        revenue=Sum(F('quantity') * F('price')),
-        price=Avg('price')
+        total_quantity=Sum('quantity'),
+        revenue=Sum(
+            F('quantity') * F('unit_price'),
+            output_field=DecimalField(max_digits=14, decimal_places=2)
+        ),
+        price=Avg('unit_price')
     ).order_by('-revenue')[:20]  # Top 20
     
     combos_data = [{
         'id': combo['combo__id'],
         'name': combo['combo__name'],
-        'quantity': combo['quantity'],
+        'quantity': combo['total_quantity'],
         'revenue': str(combo['revenue']),
         'price': str(combo['price'])
     } for combo in combos_stats]

@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import { useAuth } from '../lib/authContext'
 import ItemCard from '../components/ItemCard'
 import ItemDetailPopup from '../components/ItemDetailPopup'
 import ComboCard from '../components/ComboCard'
+import ComboDetailPopup from '../components/ComboDetailPopup'
 
 const VIEW_TABS = [
   { id: 'all', label: 'Tất cả' },
@@ -159,6 +160,8 @@ export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
   const [showPopup, setShowPopup] = useState(false)
+  const [selectedCombo, setSelectedCombo] = useState(null)
+  const [showComboPopup, setShowComboPopup] = useState(false)
   const [viewMode, setViewMode] = useState('all')
   const [sortOption, setSortOption] = useState('default')
   const [comboPage, setComboPage] = useState(1)
@@ -169,7 +172,7 @@ export default function MenuPage() {
   const comboStatusTimers = useRef(new Map())
   const normalizedSearch = searchTerm.trim().toLowerCase()
   const normalizedSelectedCategory = selectedCategorySlug ? slugify(selectedCategorySlug) : null
-  const isMenuEntryAvailable = (entry) => {
+  const isMenuEntryAvailable = useCallback((entry) => {
     if (!entry) return false
     if (entry.is_available === false) return false
     const numericStock = Number(entry.stock)
@@ -177,9 +180,9 @@ export default function MenuPage() {
       return numericStock > 0
     }
     return true
-  }
-  const isItemAvailable = (item) => isMenuEntryAvailable(item)
-  const isComboAvailable = (combo) => isMenuEntryAvailable(combo)
+  }, [])
+  const isItemAvailable = useCallback((item) => isMenuEntryAvailable(item), [isMenuEntryAvailable])
+  const isComboAvailable = useCallback((combo) => isMenuEntryAvailable(combo), [isMenuEntryAvailable])
 
   const updateStatus = (setter, timersRef, id, status, { autoReset = false, resetAfter = 2000 } = {}) => {
     if (!id) return
@@ -264,6 +267,7 @@ export default function MenuPage() {
 
   const filteredItems = useMemo(() => {
     const matches = items.filter((item) => {
+      if (!isItemAvailable(item)) return false
       if (normalizedSearch) {
         const inName = item.name?.toLowerCase().includes(normalizedSearch)
         const inDesc = item.description?.toLowerCase().includes(normalizedSearch)
@@ -278,10 +282,11 @@ export default function MenuPage() {
       return true
     })
     return sortCollection(matches, sortOption, getItemPrice)
-  }, [items, normalizedSearch, sortOption, normalizedSelectedCategory])
+  }, [items, normalizedSearch, sortOption, normalizedSelectedCategory, isItemAvailable])
 
   const filteredCombos = useMemo(() => {
     const matches = combos.filter((combo) => {
+      if (!isComboAvailable(combo)) return false
       if (normalizedSearch) {
         const inName = combo.name?.toLowerCase().includes(normalizedSearch)
         const inDesc = combo.description?.toLowerCase().includes(normalizedSearch)
@@ -296,7 +301,7 @@ export default function MenuPage() {
       return true
     })
     return sortCollection(matches, sortOption, getComboPrice)
-  }, [combos, normalizedSearch, sortOption, normalizedSelectedCategory])
+  }, [combos, normalizedSearch, sortOption, normalizedSelectedCategory, isComboAvailable])
 
   const categoryOptions = useMemo(() => {
     const map = new Map()
@@ -319,17 +324,19 @@ export default function MenuPage() {
     })
 
     items.forEach((item) => {
+      if (!isItemAvailable(item)) return
       const { slug, name } = getCategoryMetaFromEntity(item)
       addCategory(slug, name)
     })
 
     combos.forEach((combo) => {
+      if (!isComboAvailable(combo)) return
       const { slug, name } = getCategoryMetaFromEntity(combo)
       addCategory(slug, name)
     })
 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi', { sensitivity: 'base' }))
-  }, [categories, items, combos])
+  }, [categories, items, combos, isItemAvailable, isComboAvailable])
 
   const selectedCategoryName = useMemo(() => {
     if (!normalizedSelectedCategory) return null
@@ -377,9 +384,11 @@ export default function MenuPage() {
   }, [])
 
   useEffect(() => {
+    const itemTimers = itemStatusTimers.current
+    const comboTimers = comboStatusTimers.current
     return () => {
-      itemStatusTimers.current.forEach((timerId) => clearTimeout(timerId))
-      comboStatusTimers.current.forEach((timerId) => clearTimeout(timerId))
+      itemTimers.forEach((timerId) => clearTimeout(timerId))
+      comboTimers.forEach((timerId) => clearTimeout(timerId))
     }
   }, [])
 
@@ -409,6 +418,17 @@ export default function MenuPage() {
     setSelectedItem(null)
   }
 
+  const handleShowComboDetail = (combo) => {
+    if (!combo) return
+    setSelectedCombo(combo)
+    setShowComboPopup(true)
+  }
+
+  const handleCloseComboDetail = () => {
+    setShowComboPopup(false)
+    setSelectedCombo(null)
+  }
+
   const handleAddToCart = async (cartItem) => {
     if (!requireAuth()) return
     const targetItemId = cartItem?.menu_item_id
@@ -431,15 +451,23 @@ export default function MenuPage() {
     }
   }
 
-  const handleAddComboToCart = async (combo) => {
+  const handleAddComboToCart = async (combo, requestedQuantity = 1) => {
     if (!requireAuth()) return
+    if (!combo) return
     if (!isComboAvailable(combo)) {
       alert('Combo này đã hết hàng.')
       return
     }
+    const rawStock = Number(combo?.stock)
+    const hasStockInfo = Number.isFinite(rawStock)
+    const safeQuantity = Math.max(1, Number.parseInt(requestedQuantity, 10) || 1)
+    if (hasStockInfo && safeQuantity > rawStock) {
+      alert(`Combo chỉ còn ${rawStock} suất.`)
+      return
+    }
     setComboStatus(combo.id, 'pending')
     try {
-      await CartAPI.addCombo({ combo_id: combo.id, quantity: 1 })
+      await CartAPI.addCombo({ combo_id: combo.id, quantity: safeQuantity })
       window.dispatchEvent(new CustomEvent('cartUpdated'))
       setComboStatus(combo.id, 'success', { autoReset: true })
     } catch (error) {
@@ -612,7 +640,7 @@ export default function MenuPage() {
                     key={combo.id}
                     combo={combo}
                     status={comboAddState[combo.id]}
-                    onAddToCart={handleAddComboToCart}
+                    onViewDetail={handleShowComboDetail}
                     categoryName={name}
                     onCategoryClick={slug ? () => handleCategorySelect(slug) : undefined}
                   />
@@ -702,6 +730,12 @@ export default function MenuPage() {
           isOpen={showPopup}
           onClose={handleCloseItemDetail}
           onAddToCart={handleAddToCart}
+        />
+        <ComboDetailPopup
+          combo={selectedCombo}
+          isOpen={showComboPopup}
+          onClose={handleCloseComboDetail}
+          onAddToCart={handleAddComboToCart}
         />
       </div>
     </div>

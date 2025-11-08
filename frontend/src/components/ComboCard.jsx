@@ -7,7 +7,7 @@ const toNumber = (value) => {
 
 const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
 
-export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick, status = 'idle' }) {
+export default function ComboCard({ combo, onViewDetail, categoryName, onCategoryClick, status = 'idle' }) {
   const itemsPreview = (combo.items ?? []).slice(0, 3)
   const remainingCount = Math.max((combo.items?.length ?? 0) - itemsPreview.length, 0)
   const rawStock = Number(combo?.stock)
@@ -20,14 +20,34 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
     return `-${Math.round(numeric)}%`
   })()
 
-  const handleAdd = () => {
-    if (!isOutOfStock && typeof onAddToCart === 'function') {
-      onAddToCart(combo)
+  const handleViewDetail = () => {
+    onViewDetail?.(combo)
+  }
+
+  const handleCardKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handleViewDetail()
     }
   }
 
+  const actionLabel = (() => {
+    if (isOutOfStock) return 'Hết hàng'
+    if (status === 'pending') return 'Đang thêm...'
+    if (status === 'success') return 'Đã thêm ✓'
+    if (status === 'error') return 'Thử lại'
+    return 'Xem chi tiết'
+  })()
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl">
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Xem chi tiết combo ${combo.name}`}
+      onClick={handleViewDetail}
+      onKeyDown={handleCardKeyDown}
+      className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
+    >
       <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={combo.image_url || PLACEHOLDER_IMG}
@@ -53,7 +73,10 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
             {categoryName && (
               <button
                 type="button"
-                onClick={() => onCategoryClick && onCategoryClick()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onCategoryClick && onCategoryClick()
+                }}
                 className="mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 hover:border-amber-300"
               >
                 <span className="text-[9px] text-amber-500">Danh mục</span>
@@ -102,25 +125,22 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
           </div>
           <div className="text-right">
             <button
-              onClick={handleAdd}
-              disabled={isOutOfStock || status === 'pending'}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                handleViewDetail()
+              }}
+              disabled={status === 'pending'}
+              aria-disabled={isOutOfStock}
               className={`mt-2 inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white shadow transition ${
                 isOutOfStock
-                  ? 'bg-gray-400 cursor-not-allowed'
+                  ? 'bg-gray-400 hover:bg-gray-400'
                   : status === 'pending'
                     ? 'bg-amber-400 cursor-wait'
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
               }`}
             >
-              {isOutOfStock
-                ? 'Hết hàng'
-                : status === 'pending'
-                  ? 'Đang thêm...'
-                  : status === 'success'
-                    ? 'Đã thêm ✓'
-                    : status === 'error'
-                      ? 'Thử lại'
-                      : 'Thêm combo'}
+              {actionLabel}
             </button>
           </div>
         </div>
