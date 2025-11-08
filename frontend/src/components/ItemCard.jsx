@@ -1,5 +1,5 @@
 // components/ItemCard.jsx
-export default function ItemCard({ item, onAddToCart, categoryName, onCategoryClick }) {
+export default function ItemCard({ item, onViewDetail, categoryName, onCategoryClick, status = 'idle' }) {
   const displayCategory = categoryName || (typeof item.category === 'string' ? item.category : null)
   const hasDiscount =
     (typeof item?.discount_percentage === 'number' && item.discount_percentage > 0) ||
@@ -19,8 +19,34 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
     return null
   })()
 
+  const handleViewDetail = () => {
+    onViewDetail?.(item)
+  }
+
+  const handleCardKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handleViewDetail()
+    }
+  }
+
+  const actionLabel = (() => {
+    if (isOutOfStock) return 'Hết hàng'
+    if (status === 'pending') return 'Đang thêm...'
+    if (status === 'success') return 'Đã thêm ✓'
+    if (status === 'error') return 'Thử lại'
+    return 'Xem chi tiết'
+  })()
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-sky-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg">
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Xem chi tiết ${item.name}`}
+      onClick={handleViewDetail}
+      onKeyDown={handleCardKeyDown}
+      className="relative overflow-hidden rounded-2xl border-2 border-sky-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 cursor-pointer"
+    >
       <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={item.image_url || 'https://via.placeholder.com/300x200'}
@@ -44,7 +70,10 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
         {displayCategory && (
           <button
             type="button"
-            onClick={() => onCategoryClick && onCategoryClick()}
+            onClick={(event) => {
+              event.stopPropagation()
+              onCategoryClick && onCategoryClick()
+            }}
             className="mb-3 inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
           >
             <span className="text-[10px] text-sky-500">Danh mục</span>
@@ -71,13 +100,22 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
             )}
           </div>
           <button
-            onClick={() => {
-              if (!isOutOfStock) onAddToCart(item)
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              handleViewDetail()
             }}
-            disabled={isOutOfStock}
-            className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:from-red-600 hover:to-red-700 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+            disabled={status === 'pending'}
+            aria-disabled={isOutOfStock}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow transition ${
+              isOutOfStock
+                ? 'bg-gray-400 hover:bg-gray-400'
+                : status === 'pending'
+                  ? 'bg-red-400 cursor-wait'
+                  : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+            }`}
           >
-            {isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
+            {actionLabel}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import { useAuth } from '../lib/authContext'
@@ -163,6 +163,10 @@ export default function MenuPage() {
   const [sortOption, setSortOption] = useState('default')
   const [comboPage, setComboPage] = useState(1)
   const [itemPage, setItemPage] = useState(1)
+  const [itemAddState, setItemAddState] = useState({})
+  const [comboAddState, setComboAddState] = useState({})
+  const itemStatusTimers = useRef(new Map())
+  const comboStatusTimers = useRef(new Map())
   const normalizedSearch = searchTerm.trim().toLowerCase()
   const normalizedSelectedCategory = selectedCategorySlug ? slugify(selectedCategorySlug) : null
   const isMenuEntryAvailable = (entry) => {
@@ -176,6 +180,43 @@ export default function MenuPage() {
   }
   const isItemAvailable = (item) => isMenuEntryAvailable(item)
   const isComboAvailable = (combo) => isMenuEntryAvailable(combo)
+
+  const updateStatus = (setter, timersRef, id, status, { autoReset = false, resetAfter = 2000 } = {}) => {
+    if (!id) return
+    setter((prev) => {
+      const next = { ...prev }
+      if (!status || status === 'idle') {
+        delete next[id]
+      } else {
+        next[id] = status
+      }
+      return next
+    })
+
+    const timers = timersRef.current
+    const existingTimer = timers.get(id)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      timers.delete(id)
+    }
+
+    if (autoReset && status && status !== 'pending') {
+      const timeoutId = setTimeout(() => {
+        setter((prev) => {
+          const next = { ...prev }
+          if (next[id] && next[id] !== 'pending') {
+            delete next[id]
+          }
+          return next
+        })
+        timers.delete(id)
+      }, resetAfter)
+      timers.set(id, timeoutId)
+    }
+  }
+
+  const setItemStatus = (id, status, options) => updateStatus(setItemAddState, itemStatusTimers, id, status, options)
+  const setComboStatus = (id, status, options) => updateStatus(setComboAddState, comboStatusTimers, id, status, options)
 
   const requireAuth = () => {
     if (user) return true
@@ -335,6 +376,13 @@ export default function MenuPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
+  useEffect(() => {
+    return () => {
+      itemStatusTimers.current.forEach((timerId) => clearTimeout(timerId))
+      comboStatusTimers.current.forEach((timerId) => clearTimeout(timerId))
+    }
+  }, [])
+
   const handleCategorySelect = (slug) => {
     if (!slug) {
       navigate('/menu')
@@ -350,32 +398,34 @@ export default function MenuPage() {
     setViewMode(mode)
   }
 
-  const handleAddToCartClick = (item) => {
-    if (!requireAuth()) return
-    if (!isItemAvailable(item)) {
-      alert('Món này đã hết hàng.')
-      return
-    }
-    if (item.option_groups && item.option_groups.length > 0) {
-      setSelectedItem(item)
-      setShowPopup(true)
-    } else {
-      handleAddToCart({
-        menu_item_id: item.id,
-        quantity: 1,
-        option_ids: []
-      })
-    }
+  const handleShowItemDetail = (item) => {
+    if (!item) return
+    setSelectedItem(item)
+    setShowPopup(true)
+  }
+
+  const handleCloseItemDetail = () => {
+    setShowPopup(false)
+    setSelectedItem(null)
   }
 
   const handleAddToCart = async (cartItem) => {
     if (!requireAuth()) return
+    const targetItemId = cartItem?.menu_item_id
+    if (targetItemId) {
+      setItemStatus(targetItemId, 'pending')
+    }
     try {
       await CartAPI.addItem(cartItem)
       window.dispatchEvent(new CustomEvent('cartUpdated'))
-      alert('Đã thêm vào giỏ hàng!')
+      if (targetItemId) {
+        setItemStatus(targetItemId, 'success', { autoReset: true })
+      }
     } catch (error) {
       console.error('Failed to add to cart:', error)
+      if (targetItemId) {
+        setItemStatus(targetItemId, 'error', { autoReset: true, resetAfter: 4000 })
+      }
       const message = error.response?.data?.detail || error.response?.data?.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng'
       alert(message)
     }
@@ -387,12 +437,14 @@ export default function MenuPage() {
       alert('Combo này đã hết hàng.')
       return
     }
+    setComboStatus(combo.id, 'pending')
     try {
       await CartAPI.addCombo({ combo_id: combo.id, quantity: 1 })
       window.dispatchEvent(new CustomEvent('cartUpdated'))
-      alert('Đã thêm combo vào giỏ hàng!')
+      setComboStatus(combo.id, 'success', { autoReset: true })
     } catch (error) {
       console.error('Failed to add combo:', error)
+      setComboStatus(combo.id, 'error', { autoReset: true, resetAfter: 4000 })
       const message = error.response?.data?.detail || error.response?.data?.error || 'Có lỗi xảy ra khi thêm combo vào giỏ hàng'
       alert(message)
     }
@@ -559,6 +611,7 @@ export default function MenuPage() {
                   <ComboCard
                     key={combo.id}
                     combo={combo}
+                    status={comboAddState[combo.id]}
                     onAddToCart={handleAddComboToCart}
                     categoryName={name}
                     onCategoryClick={slug ? () => handleCategorySelect(slug) : undefined}
@@ -620,7 +673,8 @@ export default function MenuPage() {
                     <ItemCard
                       key={item.id}
                       item={item}
-                      onAddToCart={handleAddToCartClick}
+                      status={itemAddState[item.id]}
+                      onViewDetail={handleShowItemDetail}
                       categoryName={name}
                       onCategoryClick={slug ? () => handleCategorySelect(slug) : undefined}
                     />
@@ -646,7 +700,7 @@ export default function MenuPage() {
         <ItemDetailPopup
           item={selectedItem}
           isOpen={showPopup}
-          onClose={() => setShowPopup(false)}
+          onClose={handleCloseItemDetail}
           onAddToCart={handleAddToCart}
         />
       </div>

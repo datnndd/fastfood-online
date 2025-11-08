@@ -30,12 +30,12 @@ def create_order_from_cart(
     if delivery_address.user_id != user.id:
         raise ValueError("Địa chỉ giao hàng không hợp lệ")
 
-    # Xác định payment_status dựa trên payment_method
+    allowed_payment_methods = {"cash", "card"}
+    if payment_method not in allowed_payment_methods:
+        raise ValueError("Phương thức thanh toán không hợp lệ")
+
+    # Xác định payment_status dựa trên payment_method (hiện tại đều pending)
     payment_status = "pending"
-    if payment_method == "card":
-        payment_status = "pending"  # Chờ thanh toán Stripe
-    elif payment_method in ["cash", "bank_transfer"]:
-        payment_status = "pending"  # Chờ xác nhận
     order = Order.objects.create(
         user=user,
         delivery_address=delivery_address,

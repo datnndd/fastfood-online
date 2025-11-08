@@ -157,11 +157,36 @@ export default function CartPage() {
     loadAddresses()
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    if (!addressFormOpen || typeof document === 'undefined') return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [addressFormOpen])
+
   const updateItemQuantity = async (itemId, nextQuantity) => {
     if (nextQuantity < 1) return
     try {
-      await CartAPI.patchItem(itemId, { quantity: nextQuantity })
-      await loadCart(true)
+      const { data } = await CartAPI.patchItem(itemId, { quantity: nextQuantity })
+      setCart((prev) => {
+        if (!prev) return prev
+        const nextItems = (prev.items || []).map((item) =>
+          item.id === itemId ? { ...item, ...data } : item
+        )
+        return {
+          ...prev,
+          items: nextItems,
+          cart_total: ''
+        }
+      })
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
     } catch (error) {
       console.error('Failed to update quantity:', error)
       const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể cập nhật số lượng món. Vui lòng thử lại.'
@@ -183,8 +208,19 @@ export default function CartPage() {
   const updateComboQuantity = async (comboId, nextQuantity) => {
     if (nextQuantity < 1) return
     try {
-      await CartAPI.patchCombo(comboId, { quantity: nextQuantity })
-      await loadCart(true)
+      const { data } = await CartAPI.patchCombo(comboId, { quantity: nextQuantity })
+      setCart((prev) => {
+        if (!prev) return prev
+        const nextCombos = (prev.combos || []).map((comboItem) =>
+          comboItem.id === comboId ? { ...comboItem, ...data } : comboItem
+        )
+        return {
+          ...prev,
+          combos: nextCombos,
+          cart_total: ''
+        }
+      })
+      window.dispatchEvent(new CustomEvent('cartUpdated'))
     } catch (error) {
       console.error('Failed to update combo quantity:', error)
       const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể cập nhật số lượng combo.'
@@ -331,8 +367,9 @@ export default function CartPage() {
 
     setCheckoutLoading(true)
     try {
+      const paymentMethod = orderData.payment_method
       const response = await OrderAPI.checkout({
-        payment_method: orderData.payment_method,
+        payment_method: paymentMethod,
         note: orderData.note,
         delivery_address_id: selectedAddressId,
         item_ids: Array.from(selectedItemIds),
@@ -340,7 +377,7 @@ export default function CartPage() {
       })
 
       // Nếu thanh toán bằng thẻ, redirect đến Stripe Checkout
-      if (orderData.payment_method === 'card' && response.data?.checkout_url) {
+      if (paymentMethod === 'card' && response.data?.checkout_url) {
         window.location.href = response.data.checkout_url
         return
       }
@@ -370,12 +407,17 @@ export default function CartPage() {
       // Trigger event để các component khác có thể refresh
       window.dispatchEvent(new CustomEvent('orderPlaced'))
       
-      alert('Đặt hàng thành công! Đang mở chi tiết đơn hàng...')
       const newOrderId = response?.data?.id
-      if (newOrderId) {
-        navigate(`/orders/${newOrderId}`)
+      if (paymentMethod === 'cash') {
+        alert('Đặt hàng thành công! Đang chuyển đến mục Đơn hàng của tôi...')
+        navigate('/orders')
       } else {
-        navigate('/profile')
+        alert('Đặt hàng thành công! Đang mở chi tiết đơn hàng...')
+        if (newOrderId) {
+          navigate(`/orders/${newOrderId}`)
+        } else {
+          navigate('/orders')
+        }
       }
     } catch (error) {
       console.error('Checkout failed:', error)
@@ -387,6 +429,13 @@ export default function CartPage() {
     } finally {
       setCheckoutLoading(false)
     }
+  }
+
+  const closeAddressModal = () => {
+    setAddressFormOpen(false)
+    setAddressErrors({})
+    setAddressForm(EMPTY_ADDRESS_FORM)
+    setLocations((prev) => ({ ...prev, wards: [] }))
   }
 
   return (
@@ -410,8 +459,8 @@ export default function CartPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] xl:gap-8">
+            <div className="space-y-4 lg:pr-2 xl:pr-4">
               {(cart?.items ?? []).map((item) => {
                 const itemOutOfStock = !isMenuItemInStock(item.menu_item)
                 const stockCount = getNumericStock(item.menu_item?.stock)
@@ -607,10 +656,16 @@ export default function CartPage() {
               })}
             </div>
 
-            <div className="bg-white border rounded-lg p-6 space-y-6 h-fit">
-              <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Địa chỉ giao hàng</h3>
+            <div className="bg-white border rounded-lg p-6 space-y-6 h-fit lg:sticky lg:top-6">
+              <section className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-red-50 to-amber-50 p-5 shadow-inner space-y-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Bước 1</p>
+                    <h3 className="mt-1 text-xl font-semibold text-rose-900">Địa chỉ giao hàng</h3>
+                    <p className="text-sm text-rose-700/80">
+                      Hãy chọn địa điểm nhận hàng chính xác để tài xế liên hệ nhanh chóng.
+                    </p>
+                  </div>
                   {!addressFormOpen && (
                     <button
                       type="button"
@@ -623,225 +678,73 @@ export default function CartPage() {
                         setLocations((prev) => ({ ...prev, wards: [] }))
                         setAddressFormOpen(true)
                       }}
-                      className="text-sm text-red-600 hover:text-red-700 font-medium"
+                      className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-white/80 px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm hover:border-rose-400 hover:text-rose-700"
                     >
-                      + Thêm địa chỉ
+                      <span className="text-lg leading-none">＋</span>
                     </button>
                   )}
                 </div>
 
                 {addressesLoading ? (
-                  <div className="py-6 text-center text-sm text-gray-500">
+                  <div className="py-8 text-center text-sm text-rose-700 flex flex-col items-center gap-2">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-rose-200 border-t-rose-500" />
                     Đang tải danh sách địa chỉ...
                   </div>
                 ) : addresses.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Bạn chưa có địa chỉ giao hàng. Vui lòng thêm mới để tiếp tục đặt hàng.
-                  </p>
+                  <div className="rounded-xl border border-dashed border-rose-200 bg-white/70 p-4 text-sm text-rose-800">
+                    Bạn chưa có địa chỉ giao hàng. Thêm địa chỉ mới để hoàn tất đơn hàng.
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {addresses.map((address) => (
-                      <label
-                        key={address.id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                          selectedAddressId === address.id ? 'border-red-500 bg-red-50' : 'hover:border-red-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="delivery_address"
-                          checked={selectedAddressId === address.id}
-                          onChange={() => setSelectedAddressId(address.id)}
-                          className="mt-1 h-4 w-4"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900">{address.label || 'Địa chỉ'}</p>
-                            {address.is_default && (
-                              <span className="text-[11px] rounded-full bg-gray-800 px-2 py-0.5 text-white uppercase">
-                                Mặc định
-                              </span>
-                            )}
+                    {addresses.map((address) => {
+                      const isActive = selectedAddressId === address.id
+                      return (
+                        <label
+                          key={address.id}
+                          className={`group relative flex cursor-pointer flex-col gap-2 rounded-2xl border-2 bg-white/90 p-4 transition-all ${
+                            isActive ? 'border-rose-500 shadow-lg shadow-rose-100' : 'border-transparent hover:border-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="radio"
+                              name="delivery_address"
+                              checked={isActive}
+                              onChange={() => setSelectedAddressId(address.id)}
+                              className="mt-1 h-5 w-5 text-rose-600 focus:ring-rose-400"
+                            />
+                            <div className="flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-base font-semibold text-gray-900">{address.label || 'Địa chỉ'}</p>
+                                {address.is_default && (
+                                  <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+                                    Mặc định
+                                  </span>
+                                )}
+                                {isActive && (
+                                  <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-rose-600">
+                                    Đang sử dụng
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-700">
+                                {address.contact_name} • {address.contact_phone}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {address.street_address}
+                                {address.additional_info ? `, ${address.additional_info}` : ''}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {[address.ward_name, address.province_name].filter(Boolean).join(', ')}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {address.contact_name} • {address.contact_phone}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {address.street_address}
-                            {address.additional_info ? `, ${address.additional_info}` : ''}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {[
-                              address.ward_name,
-                              address.province_name
-                            ]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      )
+                    })}
                   </div>
                 )}
 
-                {addressFormOpen && (
-                  <form onSubmit={handleCreateAddress} className="mt-4 space-y-4 border-t pt-4">
-                    {addressErrors.general && (
-                      <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-                        {addressErrors.general}
-                      </div>
-                    )}
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Tên gợi nhớ *
-                        </label>
-                        <input
-                          type="text"
-                          value={addressForm.label}
-                          onChange={(e) => setAddressForm((prev) => ({ ...prev, label: e.target.value }))}
-                          className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          placeholder="Ví dụ: Nhà, Văn phòng..."
-                          required
-                        />
-                        {renderFieldErrors('label')}
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Số điện thoại liên hệ *
-                        </label>
-                        <input
-                          type="tel"
-                          value={addressForm.contact_phone}
-                          onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
-                          className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          required
-                        />
-                        {renderFieldErrors('contact_phone')}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        Người nhận hàng *
-                      </label>
-                      <input
-                        type="text"
-                        value={addressForm.contact_name}
-                        onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_name: e.target.value }))}
-                        className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        required
-                      />
-                      {renderFieldErrors('contact_name')}
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Tỉnh / Thành phố *
-                        </label>
-                        <select
-                          value={addressForm.province_id}
-                          onChange={(e) => onProvinceChange(e.target.value)}
-                          className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          required
-                        >
-                          <option value="">Chọn tỉnh/thành</option>
-                          {locations.provinces.map((province) => (
-                            <option key={province.id} value={province.id}>
-                              {province.name}
-                            </option>
-                          ))}
-                        </select>
-                        {renderFieldErrors('province_id')}
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Phường / Xã *
-                        </label>
-                        <select
-                          value={addressForm.ward_id}
-                          onChange={(e) => setAddressForm((prev) => ({ ...prev, ward_id: e.target.value }))}
-                          className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                          disabled={!addressForm.province_id || isFetchingWards}
-                          required
-                        >
-                          <option value="">
-                            {isFetchingWards ? 'Đang tải...' : 'Chọn phường/xã'}
-                          </option>
-                          {locations.wards.map((ward) => (
-                            <option key={ward.id} value={ward.id}>
-                              {ward.name}
-                            </option>
-                          ))}
-                        </select>
-                        {renderFieldErrors('ward_id')}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        Địa chỉ chi tiết *
-                      </label>
-                      <input
-                        type="text"
-                        value={addressForm.street_address}
-                        onChange={(e) => setAddressForm((prev) => ({ ...prev, street_address: e.target.value }))}
-                        className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        placeholder="Ví dụ: Số 1, Đường Phạm Hùng"
-                        required
-                      />
-                      {renderFieldErrors('street_address')}
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">
-                        Ghi chú thêm
-                      </label>
-                      <textarea
-                        value={addressForm.additional_info}
-                        onChange={(e) => setAddressForm((prev) => ({ ...prev, additional_info: e.target.value }))}
-                        className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        rows={3}
-                      />
-                      {renderFieldErrors('additional_info')}
-                    </div>
-
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={addressForm.is_default}
-                        onChange={(e) => setAddressForm((prev) => ({ ...prev, is_default: e.target.checked }))}
-                        className="h-4 w-4"
-                      />
-                      Đặt làm địa chỉ mặc định
-                    </label>
-
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddressFormOpen(false)
-                          setAddressErrors({})
-                          setAddressForm(EMPTY_ADDRESS_FORM)
-                          setLocations((prev) => ({ ...prev, wards: [] }))
-                        }}
-                        className="rounded border px-4 py-2 text-sm hover:bg-gray-100"
-                        disabled={savingAddress}
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={savingAddress}
-                        className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                      >
-                        {savingAddress ? 'Đang lưu...' : 'Lưu địa chỉ'}
-                      </button>
-                    </div>
-                  </form>
-                )}
               </section>
 
               <section className="space-y-4">
@@ -860,7 +763,6 @@ export default function CartPage() {
                   >
                     <option value="cash">Tiền mặt</option>
                     <option value="card">Thẻ</option>
-                    <option value="bank_transfer">Chuyển khoản</option>
                   </select>
                 </div>
 
@@ -904,8 +806,171 @@ export default function CartPage() {
               </button>
             </div>
           </div>
+
         )}
       </div>
+
+      {addressFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeAddressModal}></div>
+          <div className="relative z-10 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <form
+              onSubmit={handleCreateAddress}
+              className="max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b px-6 py-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Thêm địa chỉ</p>
+                  <h3 className="text-lg font-semibold text-gray-900">Thông tin giao hàng</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeAddressModal}
+                  className="rounded-full bg-gray-100 p-2 text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-5">
+                {addressErrors.general && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                    {addressErrors.general}
+                  </div>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Tên gợi nhớ *</label>
+                    <input
+                      type="text"
+                      value={addressForm.label}
+                      onChange={(e) => setAddressForm((prev) => ({ ...prev, label: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      placeholder="Ví dụ: Nhà, Văn phòng..."
+                      required
+                    />
+                    {renderFieldErrors('label')}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Số điện thoại liên hệ *</label>
+                    <input
+                      type="tel"
+                      value={addressForm.contact_phone}
+                      onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      placeholder="09xx xxx xxx"
+                      required
+                    />
+                    {renderFieldErrors('contact_phone')}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Người nhận hàng *</label>
+                  <input
+                    type="text"
+                    value={addressForm.contact_name}
+                    onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_name: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    required
+                  />
+                  {renderFieldErrors('contact_name')}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Tỉnh / Thành phố *</label>
+                    <select
+                      value={addressForm.province_id}
+                      onChange={(e) => onProvinceChange(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      required
+                    >
+                      <option value="">Chọn tỉnh/thành</option>
+                      {locations.provinces.map((province) => (
+                        <option key={province.id} value={province.id}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                    {renderFieldErrors('province_id')}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Phường / Xã *</label>
+                    <select
+                      value={addressForm.ward_id}
+                      onChange={(e) => setAddressForm((prev) => ({ ...prev, ward_id: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      disabled={!addressForm.province_id || isFetchingWards}
+                      required
+                    >
+                      <option value="">{isFetchingWards ? 'Đang tải...' : 'Chọn phường/xã'}</option>
+                      {locations.wards.map((ward) => (
+                        <option key={ward.id} value={ward.id}>
+                          {ward.name}
+                        </option>
+                      ))}
+                    </select>
+                    {renderFieldErrors('ward_id')}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Địa chỉ chi tiết *</label>
+                  <input
+                    type="text"
+                    value={addressForm.street_address}
+                    onChange={(e) => setAddressForm((prev) => ({ ...prev, street_address: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    placeholder="Ví dụ: Số 1, Đường Phạm Hùng"
+                    required
+                  />
+                  {renderFieldErrors('street_address')}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Ghi chú thêm</label>
+                  <textarea
+                    value={addressForm.additional_info}
+                    onChange={(e) => setAddressForm((prev) => ({ ...prev, additional_info: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    rows={3}
+                    placeholder="Hướng dẫn giao hàng, mã cổng, số tầng..."
+                  />
+                  {renderFieldErrors('additional_info')}
+                </div>
+
+                <label className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={addressForm.is_default}
+                    onChange={(e) => setAddressForm((prev) => ({ ...prev, is_default: e.target.checked }))}
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-400"
+                  />
+                  Đặt làm địa chỉ mặc định
+                </label>
+              </div>
+              <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeAddressModal}
+                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                  disabled={savingAddress}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingAddress}
+                  className="rounded-xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-2 text-sm font-semibold text-white shadow hover:from-rose-600 hover:to-red-600 disabled:opacity-60"
+                >
+                  {savingAddress ? 'Đang lưu...' : 'Lưu địa chỉ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Protected>
   )
 }

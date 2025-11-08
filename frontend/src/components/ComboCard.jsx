@@ -7,7 +7,7 @@ const toNumber = (value) => {
 
 const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
 
-export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick }) {
+export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick, status = 'idle' }) {
   const itemsPreview = (combo.items ?? []).slice(0, 3)
   const remainingCount = Math.max((combo.items?.length ?? 0) - itemsPreview.length, 0)
   const rawStock = Number(combo?.stock)
@@ -103,10 +103,24 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
           <div className="text-right">
             <button
               onClick={handleAdd}
-              disabled={isOutOfStock}
-              className="mt-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+              disabled={isOutOfStock || status === 'pending'}
+              className={`mt-2 inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white shadow transition ${
+                isOutOfStock
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : status === 'pending'
+                    ? 'bg-amber-400 cursor-wait'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+              }`}
             >
-              {isOutOfStock ? 'Hết hàng' : 'Thêm combo'}
+              {isOutOfStock
+                ? 'Hết hàng'
+                : status === 'pending'
+                  ? 'Đang thêm...'
+                  : status === 'success'
+                    ? 'Đã thêm ✓'
+                    : status === 'error'
+                      ? 'Thử lại'
+                      : 'Thêm combo'}
             </button>
           </div>
         </div>

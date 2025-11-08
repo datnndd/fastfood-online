@@ -7,6 +7,10 @@ class Category(models.Model):
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
     image_url = models.URLField(blank=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+
     def save(self,*a,**kw):
         if not self.slug: self.slug = slugify(self.name)
         return super().save(*a,**kw)
@@ -36,6 +40,9 @@ class MenuItem(models.Model):
         return super().save(*a,**kw)
 
     def __str__(self): return self.name
+
+    class Meta:
+        ordering = ["name", "id"]
 
 class OptionGroup(models.Model):
     name = models.CharField(max_length=120)

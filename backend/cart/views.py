@@ -2,8 +2,9 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.db import transaction
+from django.db.models import Prefetch
 from .models import Cart, CartItem, CartCombo
-from catalog.models import MenuItem, Combo
+from catalog.models import MenuItem, Combo, ComboItem
 from .serializers import CartSerializer, CartItemSerializer, CartComboSerializer
 
 class CartView(generics.RetrieveAPIView):
@@ -14,14 +15,33 @@ class CartView(generics.RetrieveAPIView):
         # vẫn giữ get_or_create như cũ để đảm bảo có cart
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
 
+        items_queryset = (
+            CartItem.objects
+            .select_related("menu_item", "menu_item__category")
+            .prefetch_related("selected_options")
+        )
+
+        combo_items_queryset = (
+            ComboItem.objects
+            .select_related("menu_item", "menu_item__category")
+            .prefetch_related("selected_options")
+        )
+
+        combos_queryset = (
+            CartCombo.objects
+            .select_related("combo", "combo__category")
+            .prefetch_related(
+                Prefetch("combo__items", queryset=combo_items_queryset)
+            )
+        )
+
         # nạp lại cart với đầy đủ prefetch để tránh N+1 khi serialize
         return (
             Cart.objects
             .filter(pk=cart.pk)
             .prefetch_related(
-                "items__selected_options",   # M2M
-                "items__menu_item",          # FK
-                "combos__combo"              # FK
+                Prefetch("items", queryset=items_queryset),
+                Prefetch("combos", queryset=combos_queryset),
             )
             .get()
         )
