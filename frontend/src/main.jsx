@@ -16,6 +16,11 @@ import Promotions from './pages/Promotions.jsx'
 import StoresPage from './pages/StoresPage.jsx'
 import ContactPage from './pages/ContactPage.jsx'
 import ManagerAccountsPage from './pages/ManagerAccountsPage.jsx'
+import ItemsManagement from './pages/ItemsManagement.jsx'
+import CombosManagement from './pages/CombosManagement.jsx'
+import CategoriesManagement from './pages/CategoriesManagement.jsx'
+import ManagerDashboard from './pages/ManagerDashboard.jsx'
+import StatisticsPage from './pages/StatisticsPage.jsx'
 import Protected from './components/Protected.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
@@ -51,19 +56,44 @@ const router = createBrowserRouter([
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'update-password', element: <UpdatePasswordPage /> },
 
-      // Payment callbacks
-      { path: 'payment/success', element: <Protected><PaymentSuccessPage /></Protected> },
-      { path: 'payment/cancel', element: <Protected><PaymentCancelPage /></Protected> },
-
       // Manager only routes
+      {
+        path: 'manager',
+        element: (
+          <Protected roles={['manager']}>
+            <ManagerDashboard />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/dashboard',
+        element: (
+          <Protected roles={['manager']}>
+            <ManagerDashboard />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/categories',
+        element: (
+          <Protected roles={['manager']}>
+            <CategoriesManagement />
+          </Protected>
+        )
+      },
       {
         path: 'manager/menu',
         element: (
           <Protected roles={['manager']}>
-            <div className="p-8">
-              <h1 className="text-2xl font-bold">Menu Management</h1>
-              <p className="text-gray-600 mt-2">Coming soon...</p>
-            </div>
+            <ItemsManagement />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/combos',
+        element: (
+          <Protected roles={['manager']}>
+            <CombosManagement />
           </Protected>
         )
       },
@@ -72,6 +102,32 @@ const router = createBrowserRouter([
         element: (
           <Protected roles={['manager']}>
             <ManagerAccountsPage />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/statistics',
+        element: (
+          <Protected roles={['manager']}>
+            <StatisticsPage />
+          </Protected>
+        )
+      },
+
+      // Payment callbacks
+      {
+        path: 'payment/success',
+        element: (
+          <Protected>
+            <PaymentSuccessPage />
+          </Protected>
+        )
+      },
+      {
+        path: 'payment/cancel',
+        element: (
+          <Protected>
+            <PaymentCancelPage />
           </Protected>
         )
       }

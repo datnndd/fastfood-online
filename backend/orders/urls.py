@@ -12,6 +12,7 @@ from .views import (
     capture_payment,
     check_authorization_status,
 )
+from . import statistics
 
 router = DefaultRouter()
 router.register("my", MyOrdersView, basename="my-orders")
@@ -26,4 +27,10 @@ urlpatterns = [
     path("my/<int:order_id>/capture/", capture_payment, name="capture-payment"),
     path("my/<int:order_id>/authorization-status/", check_authorization_status, name="authorization-status"),
     path("", include(router.urls)),
+    # Statistics endpoints
+    path("stats/revenue/", statistics.revenue_statistics, name="stats-revenue"),
+    path("stats/orders/", statistics.order_statistics, name="stats-orders"),
+    path("stats/top-items/", statistics.top_items_statistics, name="stats-top-items"),
+    path("stats/top-combos/", statistics.top_combos_statistics, name="stats-top-combos"),
+    path("stats/export/<str:format>/", statistics.export_report, name="stats-export"),
 ]

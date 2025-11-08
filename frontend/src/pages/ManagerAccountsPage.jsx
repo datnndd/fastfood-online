@@ -2,35 +2,31 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AccountsAPI } from '../lib/api'
 
 const ROLE_OPTIONS = [
-  { value: 'customer', label: 'Khách hàng' },
-  { value: 'staff', label: 'Nhân viên' },
-  { value: 'manager', label: 'Quản lý' }
+  { value: 'customer', label: '👤 Khách hàng', color: 'bg-blue-100 text-blue-800' },
+  { value: 'staff', label: '👨‍🍳 Nhân viên', color: 'bg-green-100 text-green-800' },
+  { value: 'manager', label: '👔 Quản lý', color: 'bg-purple-100 text-purple-800' }
 ]
 
 const getErrorMessage = (error, fallback = 'Đã có lỗi xảy ra') => {
   const data = error?.response?.data
-  if (!data) {
-    return error?.message || fallback
-  }
+  if (!data) return error?.message || fallback
   if (typeof data === 'string') return data
   if (Array.isArray(data)) return data.join(', ')
-
   if (data.detail) {
     if (Array.isArray(data.detail)) return data.detail.join(', ')
     if (typeof data.detail === 'string') return data.detail
   }
-
   const firstKey = Object.keys(data)[0]
   if (firstKey) {
     const value = data[firstKey]
     if (Array.isArray(value)) return value.join(', ')
     if (typeof value === 'string') return value
   }
-
   return fallback
 }
 
 export default function ManagerAccountsPage() {
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [staffForm, setStaffForm] = useState({
     username: '',
     email: '',
@@ -38,10 +34,6 @@ export default function ManagerAccountsPage() {
     role: 'staff'
   })
   const [staffState, setStaffState] = useState({ status: 'idle', message: '' })
-
-  const [roleForm, setRoleForm] = useState({ userId: '', role: 'staff' })
-  const [roleState, setRoleState] = useState({ status: 'idle', message: '' })
-
   const [activityLog, setActivityLog] = useState([])
   const [users, setUsers] = useState([])
   const [usersLoading, setUsersLoading] = useState(false)
@@ -52,27 +44,17 @@ export default function ManagerAccountsPage() {
   const [rowStatuses, setRowStatuses] = useState({})
 
   const addActivity = (message) => {
-    setActivityLog((prev) => [{ message, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 5))
+    setActivityLog((prev) => [{ message, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
   }
 
   const staffDisabled = staffState.status === 'loading'
-  const roleDisabled = roleState.status === 'loading'
-
-  const successColor = 'text-green-600'
-  const errorColor = 'text-red-600'
-
-  const helperText = useMemo(() => ({
-    createStaff: 'POST /accounts/staff/create/',
-    updateRole: 'PATCH /accounts/users/<id>/role/',
-    listUsers: 'GET /accounts/users/?search=<string>'
-  }), [])
 
   const roleLabelMap = useMemo(() =>
     ROLE_OPTIONS.reduce((acc, option) => {
       acc[option.value] = option.label
       return acc
     }, {}),
-  [])
+    [])
 
   const loadUsers = useCallback(async (params = {}) => {
     setUsersLoading(true)
@@ -129,8 +111,8 @@ export default function ManagerAccountsPage() {
         delete next[user.id]
         return next
       })
-      setRowStatus(user.id, { type: 'success', message: 'Đã cập nhật vai trò.' })
-      addActivity(`Cập nhật vai trò user #${user.id} thành ${pendingRole}`)
+      setRowStatus(user.id, { type: 'success', message: '✅ Đã cập nhật!' })
+      addActivity(`🎯 Cập nhật vai trò user #${user.id} → ${roleLabelMap[pendingRole]}`)
     } catch (error) {
       setRowStatus(user.id, {
         type: 'error',
@@ -150,9 +132,16 @@ export default function ManagerAccountsPage() {
         password: staffForm.password,
         role: staffForm.role
       })
-      setStaffState({ status: 'success', message: 'Tạo tài khoản nhân viên thành công.' })
+      setStaffState({ status: 'success', message: '✅ Tạo tài khoản thành công!' })
       setStaffForm({ username: '', email: '', password: '', role: 'staff' })
-      addActivity(`Đã tạo nhân viên "${staffForm.username}" với vai trò ${staffForm.role}`)
+      addActivity(`👤 Đã tạo nhân viên "${staffForm.username}" - ${roleLabelMap[staffForm.role]}`)
+      refreshUsers()
+
+      // Tự động đóng modal sau 1.5s
+      setTimeout(() => {
+        setShowCreateModal(false)
+        setStaffState({ status: 'idle', message: '' })
+      }, 1500)
     } catch (error) {
       setStaffState({
         status: 'error',
@@ -161,98 +150,313 @@ export default function ManagerAccountsPage() {
     }
   }
 
-  const handleUpdateRole = async (event) => {
-    event.preventDefault()
-    if (!roleForm.userId) {
-      setRoleState({ status: 'error', message: 'Vui lòng nhập ID người dùng cần cập nhật.' })
-      return
-    }
-
-    const userId = Number(roleForm.userId)
-    if (Number.isNaN(userId)) {
-      setRoleState({ status: 'error', message: 'ID người dùng không hợp lệ.' })
-      return
-    }
-
-    setRoleState({ status: 'loading', message: '' })
-
-    try {
-      await AccountsAPI.patchUserRole(userId, roleForm.role)
-      setRoleState({ status: 'success', message: 'Cập nhật vai trò thành công.' })
-      addActivity(`Đã đổi vai trò user #${userId} thành ${roleForm.role}`)
-    } catch (error) {
-      setRoleState({
-        status: 'error',
-        message: getErrorMessage(error, 'Không thể cập nhật vai trò lúc này.')
-      })
-    }
-  }
-
   return (
-    <div className="bg-gray-50 min-h-screen py-10">
-      <div className="max-w-6xl mx-auto px-4 space-y-10">
-        <header className="space-y-3">
-          <p className="text-sm font-semibold text-red-600 uppercase tracking-wide">Manager</p>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý tài khoản</h1>
-          <p className="text-gray-600 max-w-3xl">
-            Trang này giúp bạn tạo nhanh tài khoản cho nhân viên và điều chỉnh vai trò người dùng.
-            Các thao tác sử dụng trực tiếp các endpoint có trong <code className="bg-gray-200 px-1 py-0.5 rounded text-sm">AccountsAPI</code> của <code className="bg-gray-200 px-1 py-0.5 rounded text-sm">api.js</code>.
-          </p>
-        </header>
-
-        <div className="grid gap-8 md:grid-cols-2">
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Tạo tài khoản nhân viên</h2>
-                <p className="text-sm text-gray-500">{helperText.createStaff}</p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 text-white shadow-2xl">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-5xl">👥</span>
+                <h1 className="text-4xl font-black tracking-tight">
+                  QUẢN LÝ TÀI KHOẢN
+                </h1>
               </div>
-              <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">CREATE</span>
+              <p className="text-purple-100 text-lg">
+                Tổng: <span className="font-bold text-white">{users.length}</span> tài khoản
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-white text-purple-600 px-8 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+              >
+                <span className="text-2xl">➕</span>
+                <span className="hidden sm:inline">Tạo nhân viên</span>
+                <span className="sm:hidden">Tạo NV</span>
+              </button>
+              <button
+                onClick={refreshUsers}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-4 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+              >
+                <span className="text-xl">🔄</span>
+
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Users List */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">📋</span>
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Danh sách tài khoản</h2>
+                    <p className="text-blue-100 text-sm">Tìm kiếm và chỉnh sửa vai trò</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Bar - Fixed: bỏ icon thứ 2 */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Tìm kiếm theo tên, email hoặc username..."
+                  className="w-full pl-4 pr-12 py-4 border-2 border-white border-opacity-30 rounded-2xl text-gray-800 placeholder-gray-400 bg-white backdrop-blur-sm focus:border-opacity-100 focus:outline-none focus:ring-4 focus:ring-white focus:ring-opacity-30 transition-all text-lg font-medium shadow-lg"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput('')}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl font-bold"
+                  >
+                    ✖
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {userListError && (
+            <div className="px-6 py-4 bg-red-50 border-l-4 border-red-500 flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <p className="text-red-800 font-semibold">{userListError}</p>
+            </div>
+          )}
+
+          <div className="p-6">
+            {usersLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600"></div>
+                <p className="mt-4 text-gray-600 font-semibold">Đang tải...</p>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="text-6xl block mb-4">👤</span>
+                <p className="text-gray-500 font-semibold">
+                  {searchValue ? 'Không tìm thấy tài khoản nào' : 'Không có tài khoản nào'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {users.map((user) => {
+                  const pendingRole = roleEdits[user.id] ?? user.role
+                  const rowStatus = rowStatuses[user.id]
+                  const roleOption = ROLE_OPTIONS.find(r => r.value === user.role)
+
+                  return (
+                    <div
+                      key={user.id}
+                      className="bg-gradient-to-r from-gray-50 to-white border-2 border-gray-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                        {/* User Info */}
+                        <div className="flex-1 flex items-start gap-4">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg flex-shrink-0">
+                            {user.full_name?.[0] || user.username[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">
+                              {user.full_name || user.username}
+                            </h3>
+                            <p className="text-sm text-gray-600 truncate">
+                              📧 {user.email}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              ID: #{user.id} · @{user.username}
+                            </p>
+                            {user.phone && (
+                              <p className="text-xs text-gray-500">
+                                📱 {user.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Role Badge */}
+                        <div className="flex items-center gap-3">
+                          <span className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap ${roleOption?.color || 'bg-gray-100 text-gray-800'}`}>
+                            {roleOption?.label || user.role}
+                          </span>
+                        </div>
+
+                        {/* Role Editor */}
+                        <div className="flex items-center gap-3 lg:w-80">
+                          <select
+                            value={pendingRole}
+                            onChange={(e) =>
+                              setRoleEdits((prev) => ({ ...prev, [user.id]: e.target.value }))
+                            }
+                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
+                          >
+                            {ROLE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleInlineRoleSave(user)}
+                            disabled={rowStatus?.type === 'loading'}
+                            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all duration-200 disabled:opacity-60 whitespace-nowrap"
+                          >
+                            {rowStatus?.type === 'loading' ? '⏳' : '💾 Lưu'}
+                          </button>
+                        </div>
+                      </div>
+                      {rowStatus?.message && (
+                        <div className={`mt-3 px-4 py-2 rounded-lg text-sm font-semibold ${rowStatus.type === 'error'
+                          ? 'bg-red-100 text-red-800'
+                          : rowStatus.type === 'success'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-blue-100 text-blue-800'
+                          }`}>
+                          {rowStatus.message}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Activity Log */}
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">📊</span>
+              <div>
+                <h2 className="text-2xl font-black text-white">Hoạt động gần đây</h2>
+                <p className="text-yellow-100 text-sm">10 hoạt động mới nhất</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActivityLog([])}
+              className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
+            >
+              <span className="text-xl">🗑️</span>
+            </button>
+          </div>
+
+          <div className="p-6">
+            {activityLog.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="text-5xl block mb-3">📝</span>
+                <p className="text-gray-500 font-semibold">Chưa có hoạt động nào</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activityLog.map((item, index) => (
+                  <div
+                    key={`${item.time}-${index}`}
+                    className="flex items-start gap-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-l-4 border-yellow-500"
+                  >
+                    <span className="text-xl">📌</span>
+                    <div className="flex-1">
+                      <p className="text-gray-800 font-semibold">{item.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">🕐 {item.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Create Staff Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl transform animate-slideUp">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+              <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">➕</span>
+                  <div>
+                    <h2 className="text-2xl font-black text-white">Tạo nhân viên mới</h2>
+                    <p className="text-green-100 text-sm">Thêm tài khoản cho đội ngũ</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setStaffState({ status: 'idle', message: '' })
+                  }}
+                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all duration-200"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <form className="space-y-4" onSubmit={handleCreateStaff}>
+            <form className="p-6 space-y-4" onSubmit={handleCreateStaff}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="text-xl">👤</span>
+                  Username
+                </label>
                 <input
                   type="text"
                   required
                   value={staffForm.username}
-                  onChange={(event) => setStaffForm({ ...staffForm, username: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
+                  onChange={(e) => setStaffForm({ ...staffForm, username: e.target.value })}
+                  placeholder="nguyenvana"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="text-xl">📧</span>
+                  Email
+                </label>
                 <input
                   type="email"
                   required
                   value={staffForm.email}
-                  onChange={(event) => setStaffForm({ ...staffForm, email: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
+                  onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                  placeholder="nguyenvana@example.com"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu tạm</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="text-xl">🔒</span>
+                  Mật khẩu tạm
+                </label>
                 <input
                   type="password"
                   required
                   value={staffForm.password}
-                  onChange={(event) => setStaffForm({ ...staffForm, password: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
+                  onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Nhân viên có thể đổi mật khẩu sau khi đăng nhập.
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                  <span className="text-xl">🎯</span>
+                  Vai trò
+                </label>
                 <select
                   value={staffForm.role}
-                  onChange={(event) => setStaffForm({ ...staffForm, role: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
+                  onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all"
                 >
                   {ROLE_OPTIONS.filter((role) => role.value !== 'customer').map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -261,212 +465,61 @@ export default function ManagerAccountsPage() {
               </div>
 
               {staffState.message && (
-                <p className={`${staffState.status === 'error' ? errorColor : successColor} text-sm`}>
+                <div className={`p-4 rounded-xl font-semibold ${staffState.status === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                   {staffState.message}
-                </p>
+                </div>
               )}
 
-              <button
-                type="submit"
-                disabled={staffDisabled}
-                className="w-full py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition disabled:opacity-60"
-              >
-                {staffDisabled ? 'Đang xử lý...' : 'Tạo tài khoản'}
-              </button>
-            </form>
-          </section>
-
-          <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Điều chỉnh vai trò</h2>
-                <p className="text-sm text-gray-500">{helperText.updateRole}</p>
-              </div>
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">PATCH</span>
-            </div>
-
-            <form className="space-y-4" onSubmit={handleUpdateRole}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={roleForm.userId}
-                  onChange={(event) => setRoleForm({ ...roleForm, userId: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
-                  placeholder="Ví dụ: 42"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò mới</label>
-                <select
-                  value={roleForm.role}
-                  onChange={(event) => setRoleForm({ ...roleForm, role: event.target.value })}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setStaffState({ status: 'idle', message: '' })
+                  }}
+                  className="flex-1 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-100 transition-all"
                 >
-                  {ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                  ❌ Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={staffDisabled}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {staffDisabled ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <span>✨</span>
+                      Tạo tài khoản
+                    </>
+                  )}
+                </button>
               </div>
-
-              {roleState.message && (
-                <p className={`${roleState.status === 'error' ? errorColor : successColor} text-sm`}>
-                  {roleState.message}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={roleDisabled}
-                className="w-full py-2 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition disabled:opacity-60"
-              >
-                {roleDisabled ? 'Đang cập nhật...' : 'Cập nhật vai trò'}
-              </button>
             </form>
-
-            <div className="mt-4 text-xs text-gray-500">
-              Gợi ý: Sử dụng Django admin hoặc báo cáo nội bộ để tra user ID trước khi cập nhật.
-            </div>
-          </section>
+          </div>
         </div>
+      )}
 
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Danh sách tài khoản</h2>
-              <p className="text-sm text-gray-500">{helperText.listUsers}</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <div className="flex-1">
-                <label className="sr-only" htmlFor="search-users">Tìm kiếm</label>
-                <input
-                  id="search-users"
-                  type="text"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Tìm theo tên hoặc email"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-red-500 focus:ring-red-500"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={refreshUsers}
-                className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:border-gray-300"
-              >
-                Làm mới
-              </button>
-            </div>
-          </div>
-
-          {userListError && (
-            <div className="px-6 py-3 text-sm text-red-600 bg-red-50 border-b border-red-100">
-              {userListError}
-            </div>
-          )}
-
-          <div className="divide-y divide-gray-100">
-            <div className="hidden md:grid md:grid-cols-4 gap-4 px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-              <span>Người dùng</span>
-              <span>Liên hệ</span>
-              <span>Vai trò</span>
-              <span className="text-right">Hành động</span>
-            </div>
-
-            {usersLoading ? (
-              <div className="px-6 py-10 text-center text-gray-500">Đang tải danh sách...</div>
-            ) : users.length === 0 ? (
-              <div className="px-6 py-10 text-center text-gray-500">Không có tài khoản phù hợp.</div>
-            ) : (
-              users.map((user) => {
-                const pendingRole = roleEdits[user.id] ?? user.role
-                const rowStatus = rowStatuses[user.id]
-                const originalRoleLabel = roleLabelMap[user.role] || user.role_display || user.role
-                return (
-                  <div key={user.id} className="px-6 py-4 flex flex-col gap-4 md:grid md:grid-cols-4 md:items-center">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{user.full_name || user.username}</p>
-                      <p className="text-xs text-gray-500">#{user.id} · {user.username}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-700">{user.email}</p>
-                      {user.phone && <p className="text-xs text-gray-500">{user.phone}</p>}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <select
-                        value={pendingRole}
-                        onChange={(event) =>
-                          setRoleEdits((prev) => ({ ...prev, [user.id]: event.target.value }))
-                        }
-                        className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-red-500 focus:ring-red-500"
-                      >
-                        {ROLE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                      <span className="text-xs text-gray-500">{originalRoleLabel}</span>
-                    </div>
-                    <div className="md:text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleInlineRoleSave(user)}
-                        disabled={rowStatus?.type === 'loading'}
-                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 hover:border-gray-300 disabled:opacity-60"
-                      >
-                        {rowStatus?.type === 'loading' ? 'Đang lưu...' : 'Lưu vai trò'}
-                      </button>
-                      {rowStatus?.message && (
-                        <p
-                          className={`mt-2 text-xs ${
-                            rowStatus.type === 'error'
-                              ? 'text-red-600'
-                              : rowStatus.type === 'success'
-                                ? 'text-green-600'
-                                : 'text-gray-500'
-                          }`}
-                        >
-                          {rowStatus.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </section>
-
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Hoạt động gần đây</h2>
-            <button
-              type="button"
-              onClick={() => setActivityLog([])}
-              className="text-sm text-gray-500 hover:text-red-600"
-            >
-              Xóa lịch sử
-            </button>
-          </div>
-
-          {activityLog.length === 0 ? (
-            <p className="text-sm text-gray-500">Chưa có hoạt động nào.</p>
-          ) : (
-            <ul className="space-y-3">
-              {activityLog.map((item, index) => (
-                <li key={`${item.time}-${index}`} className="flex items-start space-x-3">
-                  <span className="w-2 h-2 mt-2 rounded-full bg-red-500" />
-                  <div>
-                    <p className="text-sm text-gray-800">{item.message}</p>
-                    <p className="text-xs text-gray-500">{item.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(50px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.4s ease-out;
+        }
+      `}</style>
     </div>
   )
 }

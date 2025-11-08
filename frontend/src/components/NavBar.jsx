@@ -230,6 +230,15 @@ export default function NavBar() {
                       >
                         Đơn hàng của tôi
                       </Link>
+                      {hasStaffAccess && (
+                        <Link
+                          to="/manager/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          Dashboard quản lý
+                        </Link>
+                      )}
                       {isManager && (
                         <Link
                           to="/manager/accounts"

@@ -1,2 +1,5 @@
 backend/.env
-backend/.env
+frontend/.env
+__pycache__/
+*.pyc
+.DS_Store
