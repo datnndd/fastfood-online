@@ -14,20 +14,66 @@ import stripe
 
 from accounts.models import DeliveryAddress
 from cart.models import Cart
-from .models import Order
-from .serializers import OrderSerializer
+from .models import Order, Notification
+from .serializers import OrderSerializer, NotificationSerializer
 from .permissions import IsStaffOrManager
 from .services import create_order_from_cart, calculate_cart_total
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+
+def create_order_notification(order, notification_type):
+    """Helper function để tạo notification cho order status changes"""
+    user = order.user
+    user_name = user.full_name or user.username or "Bạn"
+    
+    notification_messages = {
+        Notification.Type.ORDER_PLACED: {
+            "title": f"Đơn hàng #{order.id} đã được đặt thành công!",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đã được đặt thành công với tổng tiền {order.total_amount:,.0f}₫. Chúng tôi đang xử lý đơn hàng của bạn!"
+        },
+        Notification.Type.ORDER_CONFIRMED: {
+            "title": f"Đơn hàng #{order.id} đã được xác nhận!",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đã được xác nhận và đang được chuẩn bị. Cảm ơn bạn đã đặt hàng!"
+        },
+        Notification.Type.ORDER_READY: {
+            "title": f"Đơn hàng #{order.id} sẵn sàng giao hàng!",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đã sẵn sàng! Chúng tôi sẽ giao hàng đến bạn trong thời gian sớm nhất."
+        },
+        Notification.Type.ORDER_DELIVERING: {
+            "title": f"Đơn hàng #{order.id} đang được giao!",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đang trên đường đến bạn! Vui lòng chuẩn bị nhận hàng."
+        },
+        Notification.Type.ORDER_COMPLETED: {
+            "title": f"Đơn hàng #{order.id} đã được giao thành công!",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đã được giao thành công! Cảm ơn bạn đã mua sắm tại McDono. Chúc bạn ngon miệng!"
+        },
+        Notification.Type.ORDER_CANCELLED: {
+            "title": f"Đơn hàng #{order.id} đã bị hủy",
+            "message": f"{user_name} ơi, đơn hàng #{order.id} của bạn đã bị hủy. Nếu bạn có thắc mắc, vui lòng liên hệ với chúng tôi."
+        }
+    }
+    
+    msg_data = notification_messages.get(notification_type, {
+        "title": f"Cập nhật đơn hàng #{order.id}",
+        "message": f"Đơn hàng #{order.id} của bạn đã được cập nhật."
+    })
+    
+    Notification.objects.create(
+        user=user,
+        order=order,
+        type=notification_type,
+        title=msg_data["title"],
+        message=msg_data["message"]
+    )
+
 class OrdersPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'limit'
     max_page_size = 100
 
-class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
+class MyOrdersView(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = OrdersPagination
@@ -92,6 +138,14 @@ class MyOrdersView(mixins.ListModelMixin, viewsets.GenericViewSet):
         order.status = 'CANCELLED'
         order.save()
         
+        # Tạo notification (bỏ qua lỗi nếu có)
+        try:
+            create_order_notification(order, Notification.Type.ORDER_CANCELLED)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create notification for order {order.id}: {str(e)}")
+        
         return Response(OrderSerializer(order).data)
 
 class OrdersWorkViewSet(viewsets.ModelViewSet):
@@ -146,6 +200,7 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
     def update_status(self, request, pk=None):
         """API endpoint riêng để cập nhật status của đơn hàng"""
         order = self.get_object()
+        old_status = order.status
         new_status = request.data.get('status')
         
         if new_status not in ['PREPARING', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED']:
@@ -157,6 +212,29 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
         
         order.status = new_status
         order.save()
+        
+        # Tạo notification khi status thay đổi (bỏ qua lỗi nếu có)
+        if old_status != new_status:
+            try:
+                status_to_notification = {
+                    'PREPARING': Notification.Type.ORDER_PLACED,
+                    'READY': Notification.Type.ORDER_READY,
+                    'DELIVERING': Notification.Type.ORDER_DELIVERING,
+                    'COMPLETED': Notification.Type.ORDER_COMPLETED,
+                    'CANCELLED': Notification.Type.ORDER_CANCELLED,
+                }
+                # Chỉ tạo notification cho các status quan trọng (không tạo cho PREPARING vì đã tạo khi checkout)
+                if new_status in ['READY', 'DELIVERING', 'COMPLETED']:
+                    notification_type = status_to_notification.get(new_status)
+                    if notification_type:
+                        create_order_notification(order, notification_type)
+                # Tạo notification cho CONFIRMED khi chuyển từ PREPARING sang READY (sau 60s)
+                if old_status == 'PREPARING' and new_status == 'READY':
+                    create_order_notification(order, Notification.Type.ORDER_CONFIRMED)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to create notification for order {order.id}: {str(e)}")
         
         return Response(OrderSerializer(order).data)
 
@@ -406,10 +484,21 @@ class CheckoutView(generics.CreateAPIView):
                 payment_method=payment_method,
                 note=request.data.get("note", ""),
                 delivery_address=delivery_address,
+                selected_item_ids=request.data.get("item_ids", []),
+                selected_combo_ids=request.data.get("combo_ids", []),
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Tạo notification khi đơn hàng được đặt (bỏ qua lỗi nếu có)
+        try:
+            create_order_notification(order, Notification.Type.ORDER_PLACED)
+        except Exception as e:
+            # Log lỗi nhưng không làm gián đoạn quá trình đặt hàng
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create notification for order {order.id}: {str(e)}")
+        
         serializer = OrderSerializer(order)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -827,3 +916,45 @@ def check_authorization_status(request, order_id):
         'can_cancel': can_cancel,
         'can_capture': can_capture,
     }, status=status.HTTP_200_OK)
+class NotificationViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = OrdersPagination
+
+    def get_queryset(self):
+        queryset = Notification.objects.filter(user=self.request.user)
+
+        # Lọc theo is_read nếu có
+        is_read_param = self.request.query_params.get('is_read')
+        if is_read_param is not None:
+            is_read = is_read_param.lower() == 'true'
+            queryset = queryset.filter(is_read=is_read)
+
+        return queryset
+
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Lấy số lượng thông báo chưa đọc"""
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'count': count})
+
+    @action(detail=False, methods=['patch'])
+    def mark_all_read(self, request):
+        """Đánh dấu tất cả thông báo là đã đọc"""
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'message': 'Đã đánh dấu tất cả thông báo là đã đọc'})
+
+    @action(detail=True, methods=['patch'])
+    def mark_read(self, request, pk=None):
+        """Đánh dấu một thông báo là đã đọc"""
+        notification = self.get_object()
+        if notification.user != request.user:
+            return Response({'error': 'Bạn không có quyền truy cập thông báo này'}, status=403)
+        notification.is_read = True
+        notification.save()
+        return Response(NotificationSerializer(notification).data)

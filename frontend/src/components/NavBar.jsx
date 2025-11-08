@@ -1,83 +1,107 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth, useRole } from "../lib/authContext";
-import { useEffect, useMemo, useState } from "react";
-import { ShoppingCartIcon } from "@heroicons/react/24/outline";
-import logo from "../assets/images/logo.jpg";
-import { CatalogAPI, CartAPI } from "../lib/api";
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ShoppingCartIcon } from '@heroicons/react/24/outline'
+import logo from '../assets/images/logo.jpg'
+import { CatalogAPI, CartAPI } from '../lib/api'
+import { useAuth, useRole } from '../lib/auth'
+import NotificationBell from './NotificationBell'
 
 export default function NavBar() {
-  const { user, logout } = useAuth();
-  const { hasStaffAccess, isManager } = useRole();
-  const [cartCount, setCartCount] = useState(0);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [categories, setCategories] = useState([]);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const displayName = useMemo(() => {
-    if (!user) {
-      return "";
-    }
-    const fullName = (user.full_name || "").trim();
-    return fullName || user.username || "";
-  }, [user]);
-  const displayInitial = useMemo(() => {
-    if (!user) {
-      return "";
-    }
-    const source = displayName || user.username || "?";
-    return source.charAt(0).toUpperCase();
-  }, [displayName, user]);
+  const { user, logout } = useAuth()
+  const { hasStaffAccess, isManager } = useRole()
+  const [cartCount, setCartCount] = useState(0)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [categories, setCategories] = useState([])
+  const location = useLocation()
+  const navigate = useNavigate()
+  const menuRef = useRef(null)
 
-  // Lấy danh mục từ API khi component mount
+  const displayName = useMemo(() => {
+    if (!user) return ''
+    const fullName = (user.full_name || '').trim()
+    return fullName || user.username || ''
+  }, [user])
+
+  const displayInitial = useMemo(() => {
+    if (!user) return ''
+    const source = displayName || user.username || '?'
+    return source.charAt(0).toUpperCase()
+  }, [displayName, user])
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await CatalogAPI.listCategories();
-        setCategories(res.data.results || res.data);
+        const res = await CatalogAPI.listCategories()
+        setCategories(res.data.results || res.data)
       } catch (error) {
-        console.error("Lỗi khi lấy danh mục:", error);
+        console.error('Lỗi khi lấy danh mục:', error)
       }
-    };
-    fetchCategories();
-  }, []);
+    }
+    fetchCategories()
+  }, [])
 
   useEffect(() => {
     if (!user) {
-      setCartCount(0);
-      return;
+      setCartCount(0)
+      return
     }
 
     const refreshCartCount = () => {
       CartAPI.getCart()
         .then(({ data }) => {
-          const itemsTotal = (data.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
-          const combosTotal = (data.combos || []).reduce((sum, combo) => sum + (combo.quantity || 0), 0);
-          setCartCount(itemsTotal + combosTotal);
+          const itemsTotal = (data.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0)
+          const combosTotal = (data.combos || []).reduce((sum, combo) => sum + (combo.quantity || 0), 0)
+          setCartCount(itemsTotal + combosTotal)
         })
-        .catch(() => setCartCount(0));
-    };
+        .catch(() => setCartCount(0))
+    }
 
-    refreshCartCount();
-    window.addEventListener("cartUpdated", refreshCartCount);
+    refreshCartCount()
+    window.addEventListener('cartUpdated', refreshCartCount)
     return () => {
-      window.removeEventListener("cartUpdated", refreshCartCount);
-    };
-  }, [user]);
+      window.removeEventListener('cartUpdated', refreshCartCount)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!showUserMenu) return
+
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false)
+      }
+    }
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscapeKey)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [showUserMenu])
+
+  useEffect(() => {
+    setShowUserMenu(false)
+  }, [location.pathname])
 
   const navLinks = [
-    { path: "/", label: "Trang chủ" },
-    { path: "/about", label: "Về Mc Dono" },
-    { path: "/menu", label: "Thực đơn", dropdown: categories },
-    { path: "/promotions", label: "Khuyến mãi" },
-    { path: "/contact", label: "Liên hệ" },
-  ];
+    { path: '/', label: 'Trang chủ' },
+    { path: '/about', label: 'Về Mc Dono' },
+    { path: '/menu', label: 'Thực đơn', dropdown: categories },
+    { path: '/promotions', label: 'Khuyến mãi' },
+    { path: '/contact', label: 'Liên hệ' },
+  ]
 
   return (
     <>
-      {/* Thanh điều hướng chính */}
       <div className="bg-[#e21b1b] text-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-[90px] px-6">
-          {/* Logo */}
           <Link to="/" className="flex items-center">
             <img
               src={logo}
@@ -86,12 +110,11 @@ export default function NavBar() {
             />
           </Link>
 
-          {/* Navigation */}
           <div className="flex space-x-6 font-semibold uppercase text-[14px] relative">
             {navLinks.map((link) => {
               const isActive =
                 location.pathname === link.path ||
-                (link.path !== "/" && location.pathname.startsWith(link.path));
+                (link.path !== '/' && location.pathname.startsWith(link.path))
 
               return (
                 <div key={link.path} className="relative group">
@@ -99,44 +122,44 @@ export default function NavBar() {
                     to={link.path}
                     className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${
                       isActive
-                        ? "border-white bg-[#f9d7d7] text-[#b91c1c]"
-                        : "border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]"
+                        ? 'border-white bg-[#f9d7d7] text-[#b91c1c]'
+                        : 'border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]'
                     }`}
                   >
                     {link.label}
                   </Link>
 
-                  {/* Dropdown Thực đơn */}
                   {link.dropdown && link.dropdown.length > 0 && (
                     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[750px] bg-white text-black rounded-xl shadow-lg p-5 z-50 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-300 ease-out">
                       <div className="grid grid-cols-4 gap-5">
                         {link.dropdown.map((item) => (
-                          <div
-                            key={item.slug}
-                            onClick={() => navigate(`/menu?category=${item.slug}`)}
+                          <button
+                            type="button"
+                            key={item.slug || item.id}
+                            onClick={() => navigate(`/menu?category=${item.slug || item.id}`)}
                             className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-pointer"
                           >
                             <img
-                              src={item.image || item.image_url || "/default.jpg"}
+                              src={item.image || item.image_url || '/default.jpg'}
                               alt={item.name}
                               className="w-20 h-20 object-contain mb-2"
                             />
                             <span className="font-semibold text-sm text-gray-800 text-center">
                               {item.name}
                             </span>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
-              );
+              )
             })}
-            
           </div>
 
-          {/* Giỏ hàng + Người dùng */}
           <div className="flex items-center space-x-6">
+            {user && <NotificationBell />}
+
             {user && (
               <Link
                 to="/cart"
@@ -151,10 +174,10 @@ export default function NavBar() {
               </Link>
             )}
 
-            {user && (
-              <div className="relative">
+            {user ? (
+              <div className="relative" ref={menuRef}>
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onClick={() => setShowUserMenu((prev) => !prev)}
                   className="flex items-center space-x-2 text-white hover:text-yellow-300 transition-colors"
                 >
                   <div className="w-8 h-8 bg-white text-[#e21b1b] rounded-full flex items-center justify-center font-bold">
@@ -205,8 +228,8 @@ export default function NavBar() {
                       )}
                       <button
                         onClick={() => {
-                          logout();
-                          setShowUserMenu(false);
+                          logout()
+                          setShowUserMenu(false)
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
                       >
@@ -216,10 +239,25 @@ export default function NavBar() {
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-white hover:text-yellow-300 transition-colors"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 bg-white text-[#e21b1b] rounded-lg hover:bg-[#f9d7d7] transition-colors"
+                >
+                  Đăng ký
+                </Link>
+              </div>
             )}
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }

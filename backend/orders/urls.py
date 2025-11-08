@@ -6,6 +6,7 @@ from .views import (
     CheckoutView,
     OrdersWorkViewSet,
     OrdersAdminViewSet,
+    NotificationViewSet,
     stripe_webhook,
     ConfirmSavedCardPaymentView,
     cancel_payment_authorization,
@@ -18,6 +19,7 @@ router = DefaultRouter()
 router.register("my", MyOrdersView, basename="my-orders")
 router.register("work", OrdersWorkViewSet, basename="work-orders")
 router.register("admin", OrdersAdminViewSet, basename="admin-orders")
+router.register("notifications", NotificationViewSet, basename="notifications")
 
 urlpatterns = [
     path("checkout/", CheckoutView.as_view()),

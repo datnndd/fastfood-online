@@ -152,11 +152,12 @@ export function AuthProvider({ children }) {
 
   const resetPasswordForEmail = useCallback(async (email) => {
     const cleanedEmail = (email || '').trim().toLowerCase()
-    const redirectTo = import.meta.env.VITE_PASSWORD_RESET_URL || (window.location.origin + '/update-password');
+    if (!cleanedEmail) throw new Error('Vui lòng nhập email')
+    const redirectTo = import.meta.env.VITE_PASSWORD_RESET_URL || (window.location.origin + '/update-password')
 
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanedEmail, { redirectTo });
-    if (error) throw error;
-  }, []);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanedEmail, { redirectTo })
+    if (error) throw error
+  }, [])
 
   const loginWithProvider = useCallback(async (provider) => {
     const options = {}
@@ -223,3 +224,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
+
+export { useAuth, useRole } from './authContext'

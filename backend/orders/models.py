@@ -53,3 +53,30 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        ORDER_PLACED = "ORDER_PLACED", "Đơn hàng đã đặt"
+        ORDER_CONFIRMED = "ORDER_CONFIRMED", "Đơn hàng đã xác nhận"
+        ORDER_READY = "ORDER_READY", "Đơn hàng sẵn sàng giao"
+        ORDER_DELIVERING = "ORDER_DELIVERING", "Đơn hàng đang giao"
+        ORDER_COMPLETED = "ORDER_COMPLETED", "Đơn hàng đã hoàn thành"
+        ORDER_CANCELLED = "ORDER_CANCELLED", "Đơn hàng đã hủy"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
+    type = models.CharField(max_length=20, choices=Type.choices)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"

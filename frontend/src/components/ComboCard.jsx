@@ -25,12 +25,19 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
 
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl">
-      <div className="aspect-[3/2] overflow-hidden">
+      <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={combo.image_url || PLACEHOLDER_IMG}
           alt={combo.name}
           className="w-full h-full object-cover"
         />
+        {discountLabel && (
+          <div className="absolute top-0 right-0">
+            <div className="bg-[#ee4d2d] text-white text-xs font-bold px-2 py-1 rounded-bl-lg">
+              {discountLabel}
+            </div>
+          </div>
+        )}
       </div>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -71,7 +78,7 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-lg font-bold text-red-600">
+            <div className="text-lg font-bold text-[#ee4d2d]">
               {formatCurrency(combo.final_price)}₫
             </div>
             <div className="text-xs text-gray-400 line-through">
@@ -79,11 +86,6 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
             </div>
           </div>
           <div className="text-right">
-            {discountLabel && (
-              <div className="text-xs font-semibold text-green-600">
-                {discountLabel}
-              </div>
-            )}
             <button
               onClick={handleAdd}
               disabled={combo?.is_available === false}

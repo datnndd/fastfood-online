@@ -6,6 +6,7 @@ import { AccountsAPI } from '../lib/api'
 const INITIAL_FORM = {
   username: '',
   password: '',
+  confirm_password: '',
   email: '',
   full_name: '',
   phone: '',
@@ -136,6 +137,14 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      if (!formData.password || formData.password.length < 6) {
+        setErrors({ general: 'Mật khẩu phải từ 6 ký tự' })
+        return
+      }
+      if (formData.password !== formData.confirm_password) {
+        setErrors({ general: 'Mật khẩu xác nhận không khớp' })
+        return
+      }
       const result = await register(formData)
       if (result?.profileSynced === false) {
         alert('Đăng ký thành công nhưng không thể đặt địa chỉ mặc định. Vui lòng cập nhật trong hồ sơ sau khi đăng nhập.')
@@ -270,6 +279,19 @@ export default function RegisterPage() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
             {renderFieldErrors('password')}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Xác nhận mật khẩu *
+            </label>
+            <input
+              type="password"
+              required
+              value={formData.confirm_password}
+              onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+            />
           </div>
 
           <div>

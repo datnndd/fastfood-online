@@ -78,6 +78,11 @@ export default function LoginPage() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            <div className="mt-2 text-right">
+              <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-500">
+                Quên mật khẩu?
+              </Link>
+            </div>
           </div>
 
           <div className="text-right">

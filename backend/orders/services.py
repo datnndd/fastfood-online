@@ -7,7 +7,15 @@ from .models import Order, OrderItem
 from decimal import Decimal, ROUND_HALF_UP
 
 @transaction.atomic
-def create_order_from_cart(user, payment_method="cash", note="", delivery_address=None, clear_cart=True):
+def create_order_from_cart(
+    user,
+    payment_method="cash",
+    note="",
+    delivery_address=None,
+    clear_cart=True,
+    selected_item_ids=None,
+    selected_combo_ids=None,
+):
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
@@ -40,7 +48,15 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
     
     total = Decimal("0.00")
     
-    for cart_item in cart.items.select_related("menu_item").prefetch_related("selected_options"):
+    # Normalize selections
+    item_id_set = set(selected_item_ids or [])
+    combo_id_set = set(selected_combo_ids or [])
+
+    items_qs = cart.items.select_related("menu_item").prefetch_related("selected_options")
+    if item_id_set:
+        items_qs = items_qs.filter(id__in=item_id_set)
+
+    for cart_item in items_qs:
         base_price = cart_item.menu_item.price
         options_price = Decimal("0.00")
         selected_options_names = []
@@ -66,10 +82,14 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
         
         total += unit_price * cart_item.quantity
     
-    for cart_combo in cart.combos.select_related("combo").prefetch_related(
+    combos_qs = cart.combos.select_related("combo").prefetch_related(
         "combo__items__menu_item",
         "combo__items__selected_options"
-    ):
+    )
+    if combo_id_set:
+        combos_qs = combos_qs.filter(id__in=combo_id_set)
+
+    for cart_combo in combos_qs:
         combo = cart_combo.combo
         
         combo_description = f"COMBO: {combo.name}"
@@ -105,9 +125,15 @@ def create_order_from_cart(user, payment_method="cash", note="", delivery_addres
     order.total_amount = total
     order.save()
     
-    # Chỉ xóa giỏ hàng nếu clear_cart=True (mặc định cho thanh toán tiền mặt/chuyển khoản)
-    if clear_cart:
+    # Dọn giỏ hàng theo cấu hình
+    if item_id_set:
+        cart.items.filter(id__in=item_id_set).delete()
+    elif clear_cart:
         cart.items.all().delete()
+
+    if combo_id_set:
+        cart.combos.filter(id__in=combo_id_set).delete()
+    elif clear_cart:
         cart.combos.all().delete()
     
     return order
