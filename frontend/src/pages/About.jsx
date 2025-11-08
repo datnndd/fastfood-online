@@ -7,47 +7,128 @@ import herobanner2 from "../assets/images/herobanner2.jpg";
 import online from "../assets/images/online.jpg";
 
 export default function About() {
+  const storyMoments = [
+    {
+      tag: "Midnight Lab",
+      title: "Burger Giờ Chạng Vạng ra đời",
+      description:
+        "Ba anh em sáng lập thử 12 phiên bản sốt trên chiếc bếp từ trong căn hộ Cầu Giấy, ghi chú bằng bút dạ và mời hàng xóm nếm thử đến 2h sáng.",
+      stat: "120 phần bán hết sau 02 giờ mở bán",
+      image: "https://placehold.co/600x400/FFF5EB/FF6845?text=Anh+dang+cap+nhat",
+    },
+    {
+      tag: "Pop-up Tour",
+      title: "Xe bếp đỏ rực chạy khắp 5 quận",
+      description:
+        "Thay vì chờ khách, McDono dựng quầy lưu động tại các sự kiện đêm. Khói BBQ, playlist hiphop và tiếng reo khi 200 đơn đầu tiên chốt trong 45 phút.",
+      stat: "5 quận • 1.400 phần ăn mỗi đêm",
+      image: "https://placehold.co/600x400/FDEBDD/EC4C29?text=Anh+dang+cap+nhat",
+    },
+    {
+      tag: "Delivery Live",
+      title: "Tiệc 8 phút ở chung cư mới",
+      description:
+        "Đội giao nhận kết hợp livestream hành trình đơn hàng khiến khách thấy burger vẫn bốc khói ngay trước cửa, tạo nên hàng dài feedback 5 ⭐.",
+      stat: "8 phút/giao • 98% đánh giá 5⭐",
+      image: "https://placehold.co/600x400/FFE9F1/E11D48?text=Anh+dang+cap+nhat",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fff7e6] via-[#ffe1cc] to-[#ffcccc] text-gray-800 overflow-hidden">
       {/* HERO */}
       <section className="relative py-24 text-center text-white">
         <img
           src={heroAbout}
-          alt="Mc Dono Hero"
+          alt="McDono hero"
           className="absolute inset-0 w-full h-full object-cover brightness-50"
         />
         <div className="relative z-10 max-w-4xl mx-auto px-6">
           <h1 className="text-6xl font-extrabold drop-shadow-xl mb-6">
-            Về Mc Dono 🍔
+            Về McDono 🍔
           </h1>
           <p className="text-lg font-medium text-white/90">
-            Hành trình mang hạnh phúc và hương vị giòn tan đến mọi gia đình Việt.
+            Những câu chuyện fast-food được kể bằng vị giòn tan, nhịp sống trẻ và
+            nụ cười thật ở từng cửa hàng Hà Nội.
           </p>
         </div>
       </section>
 
       {/* STORY */}
-      <section className="max-w-6xl mx-auto py-20 px-6 grid md:grid-cols-2 gap-10 items-center">
+      <section className="max-w-6xl mx-auto py-20 px-6 grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
         <div>
+          <p className="text-xs uppercase tracking-[0.4em] text-[#e21b1b] mb-3">
+            🏆 Câu chuyện McDono
+          </p>
           <h2 className="text-4xl font-bold text-[#e21b1b] mb-6">
-            🏆 Câu chuyện Mc Dono
+            Hành trình từ căn bếp chung cư đến bản đồ fast-food Hà Nội
           </h2>
           <p className="mb-4">
-            Mc Dono được sáng lập với sứ mệnh mang đến những món ăn nhanh ngon
-            miệng, sạch sẽ và vui vẻ. Từ gà rán, burger đến mì Ý, mọi món đều được
-            làm từ nguyên liệu chất lượng cao và công thức riêng biệt.
+            McDono khởi nguồn năm 2019 với chiếc chảo gang duy nhất và lời hứa
+            “giòn - nóng - khác lạ”. Từng chiếc burger thử nghiệm được ghi chú
+            bằng bút dạ, gửi miễn phí cho hàng xóm và đo phản ứng bằng… emoji.
           </p>
-          <p>
-            Mỗi cửa hàng Mc Dono là một không gian đầy màu sắc, thân thiện và gần
-            gũi với mọi lứa tuổi – nơi bạn có thể tận hưởng bữa ăn cùng gia đình
-            và bạn bè trong không khí ấm áp.
+          <p className="mb-6">
+            Hôm nay, các cloud-kitchen và cửa hàng vệ tinh của McDono phục vụ hơn
+            một nghìn đơn mỗi tối nhưng vẫn giữ kỷ luật thủ công: gà tươi nhận vào
+            sáng sớm, ướp trong 4 giờ và chỉ vào chảo khi đơn hàng được xác nhận.
           </p>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {[
+              { value: "5+", label: "năm kể chuyện bằng vị giòn" },
+              { value: "50", label: "điểm giao hoạt động mỗi đêm" },
+              { value: "92%", label: "khách quay lại ngay tuần kế" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="bg-white/80 rounded-2xl border border-[#f7c600]/40 p-4 shadow-sm"
+              >
+                <p className="text-3xl font-black text-[#e21b1b]">
+                  {item.value}
+                </p>
+                <p className="text-sm uppercase tracking-wide text-gray-500">
+                  {item.label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 p-5 bg-white/80 rounded-3xl border border-white/40 shadow-inner">
+            <p className="text-xs text-gray-500 uppercase tracking-[0.4em] mb-2">
+              mantra bếp mcdono
+            </p>
+            <p className="text-lg font-semibold text-gray-700">
+              “Một chiếc burger ngon có thể đổi mood cả ngày của khách, nên từng
+              lớp phải thật chỉnh chu.”
+            </p>
+            <p className="text-sm text-gray-500 mt-2">— Team Bếp McDono</p>
+          </div>
         </div>
-        <img
-          src={herobanner}
-          alt="Mc Dono Restaurant"
-          className="rounded-3xl shadow-2xl border-4 border-[#f7c600]/70"
-        />
+        <div className="space-y-6">
+          {storyMoments.map((moment) => (
+            <article
+              key={moment.title}
+              className="bg-white rounded-3xl shadow-xl overflow-hidden border border-[#ffd4bf]/80"
+            >
+              <img
+                src={moment.image}
+                alt={`Placeholder cho ${moment.title}`}
+                className="w-full h-44 object-cover"
+              />
+              <div className="p-6">
+                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-[#e21b1b]">
+                  {moment.tag}
+                </span>
+                <h3 className="text-2xl font-bold mt-3 mb-2 text-gray-900">
+                  {moment.title}
+                </h3>
+                <p className="text-gray-600 mb-4">{moment.description}</p>
+                <span className="inline-flex items-center gap-2 bg-[#fff7e6] text-[#b91c1c] font-semibold text-sm px-4 py-2 rounded-full">
+                  {moment.stat}
+                </span>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       {/* MISSION */}
@@ -61,7 +142,7 @@ export default function About() {
           <div>
             <h3 className="text-3xl font-bold mb-4">🎯 Sứ mệnh</h3>
             <p className="text-lg mb-6">
-              Mc Dono cam kết mang đến trải nghiệm ẩm thực thú vị nhất – nơi món
+              McDono cam kết mang đến trải nghiệm ẩm thực thú vị nhất – nơi món
               ăn ngon, dịch vụ nhanh chóng và nụ cười thân thiện luôn song hành.
             </p>
             <h3 className="text-3xl font-bold mb-4">🌟 Tầm nhìn</h3>
@@ -86,7 +167,7 @@ export default function About() {
             },
             {
               title: "Trải nghiệm vui vẻ",
-              desc: "Không chỉ là bữa ăn, Mc Dono mang đến niềm vui, tiếng cười và sự ấm cúng trong từng khoảnh khắc.",
+              desc: "Không chỉ là bữa ăn, McDono mang đến niềm vui, tiếng cười và sự ấm cúng trong từng khoảnh khắc.",
               img: herobanner2,
               color: "border-[#e21b1b]",
             },
@@ -118,14 +199,14 @@ export default function About() {
       {/* GALLERY */}
       <section className="py-20 bg-white">
         <h2 className="text-4xl font-bold text-[#e21b1b] text-center mb-10">
-          📸 Khoảnh khắc Mc Dono
+          📸 Khoảnh khắc McDono
         </h2>
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 px-6">
           {[herobanner, hamberger, garan].map((img, i) => (
             <img
               key={i}
               src={img}
-              alt="Mc Dono moment"
+              alt="McDono moment"
               className="rounded-2xl shadow-lg hover:scale-105 transition-transform duration-300"
             />
           ))}
@@ -135,7 +216,7 @@ export default function About() {
       {/* CTA */}
       <section className="text-center py-20 bg-[#e21b1b] text-white">
         <h2 className="text-4xl font-extrabold mb-6">
-          Ghé Mc Dono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
+          Ghé McDono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
         </h2>
         <a
           href="/menu"
