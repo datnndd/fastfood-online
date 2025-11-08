@@ -69,12 +69,32 @@ export default function ManagerDashboard() {
     const loadStats = async () => {
         try {
             const today = new Date().toISOString().split('T')[0]
-            const response = await OrderAPI.work.getStats(today)
+
+            // Lấy thống kê doanh thu hôm nay
+            const revenueResponse = await OrderAPI.stats.getRevenue({
+                from_date: today,
+                to_date: today
+            })
+
+            // Lấy danh sách đơn hàng hôm nay để đếm pending và completed
+            const ordersResponse = await OrderAPI.stats.getOrderStats({
+                from_date: today,
+                to_date: today
+            })
+
+            const orders = ordersResponse.data.orders || []
+            const pendingCount = orders.filter(order =>
+                ['pending', 'confirmed', 'preparing'].includes(order.status)
+            ).length
+            const completedCount = orders.filter(order =>
+                order.status === 'completed'
+            ).length
+
             setStats({
-                todayOrders: response.data.total_orders || 0,
-                todayRevenue: response.data.total_revenue || 0,
-                pendingOrders: response.data.pending_orders || 0,
-                completedOrders: response.data.completed_orders || 0
+                todayOrders: revenueResponse.data.total_orders || 0,
+                todayRevenue: parseFloat(revenueResponse.data.total_revenue) || 0,
+                pendingOrders: pendingCount,
+                completedOrders: completedCount
             })
         } catch (err) {
             console.error('Load stats error:', err)
