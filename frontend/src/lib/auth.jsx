@@ -1,8 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, subscribeToSession, getCurrentSession } from './supabaseClient'
 import { AuthAPI, setApiAccessToken } from './api'
+import { AuthContext } from './authContext'
 
-const AuthContext = createContext(null)
 const defaultRedirect = typeof window !== 'undefined' ? window.location.origin : undefined
 const oauthRedirectTo = import.meta.env.VITE_SUPABASE_REDIRECT_URL || defaultRedirect
 
@@ -152,11 +152,12 @@ export function AuthProvider({ children }) {
 
   const resetPasswordForEmail = useCallback(async (email) => {
     const cleanedEmail = (email || '').trim().toLowerCase()
-    const redirectTo = import.meta.env.VITE_PASSWORD_RESET_URL || (window.location.origin + '/update-password');
+    if (!cleanedEmail) throw new Error('Vui lòng nhập email')
+    const redirectTo = import.meta.env.VITE_PASSWORD_RESET_URL || (window.location.origin + '/update-password')
 
-    const { error } = await supabase.auth.resetPasswordForEmail(cleanedEmail, { redirectTo });
-    if (error) throw error;
-  }, []);
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanedEmail, { redirectTo })
+    if (error) throw error
+  }, [])
 
   const loginWithProvider = useCallback(async (provider) => {
     const options = {}
@@ -222,23 +223,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
-
-export const useRole = () => {
-  const { user } = useAuth()
-  const role = user?.role
-  const hasStaffAccess = role === 'staff' || role === 'manager'
-  return {
-    role,
-    hasStaffAccess,
-    isManager: role === 'manager'
-  }
 }

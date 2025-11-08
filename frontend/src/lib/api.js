@@ -98,7 +98,11 @@ export const CatalogAPI = {
   deleteItem: (id) => api.delete(`/catalog/items/${id}/`),
   listCombos: (params = {}) => api.get('/catalog/combos/', { params }),
   getCombo: (id) => api.get(`/catalog/combos/${id}/`),
-  uploadComboImage: (id, file) => uploadImage(`/catalog/combos/${id}/upload-image/`, file)
+  createCombo: (data) => api.post('/catalog/combos/', data),
+  updateCombo: (id, data) => api.put(`/catalog/combos/${id}/`, data),
+  patchCombo: (id, data) => api.patch(`/catalog/combos/${id}/`, data),
+  uploadComboImage: (id, file) => uploadImage(`/catalog/combos/${id}/upload-image/`, file),
+  deleteCombo: (id) => api.delete(`/catalog/combos/${id}/`)
 }
 
 // =============================================================================
@@ -167,9 +171,49 @@ export const OrderAPI = {
       if (status) searchParams.append('status', status)
       return api.get(`/orders/my/?${searchParams.toString()}`)
     },
+    get: (id) => api.get(`/orders/my/${id}/`),
     cancel: (orderId) => api.patch(`/orders/my/${orderId}/cancel/`)
   },
-  checkout: (data) => api.post('/orders/checkout/', data)
+  checkout: (data) => api.post('/orders/checkout/', data),
+  // Statistics APIs
+  stats: {
+    getRevenue: (params) => api.get('/orders/stats/revenue/', { params }),
+    getOrderStats: (params) => api.get('/orders/stats/orders/', { params }),
+    getTopItems: (params) => api.get('/orders/stats/top-items/', { params }),
+    getTopCombos: (params) => api.get('/orders/stats/top-combos/', { params }),
+    exportReport: (params, format = 'pdf') =>
+      api.get(`/orders/stats/export/${format}/`, {
+        params,
+        responseType: 'blob'
+      })
+  }
+}
+
+// =============================================================================
+// FEEDBACK APIs
+// =============================================================================
+export const FeedbackAPI = {
+  submit: (data) => api.post('/feedback/feedbacks/', data),
+  list: (params = {}) => api.get('/feedback/feedbacks/', { params })
+}
+
+// =============================================================================
+// NOTIFICATIONS APIs
+// =============================================================================
+export const NotificationAPI = {
+  list: async (params = {}) => {
+    const searchParams = new URLSearchParams()
+    if (params.page) searchParams.append('page', params.page.toString())
+    if (params.limit) searchParams.append('limit', params.limit.toString())
+    if (params.is_read !== undefined) searchParams.append('is_read', params.is_read.toString())
+    const queryString = searchParams.toString()
+    const url = queryString ? `/orders/notifications/?${queryString}` : '/orders/notifications/'
+    return api.get(url)
+  },
+  get: (id) => api.get(`/orders/notifications/${id}/`),
+  unreadCount: () => api.get('/orders/notifications/unread_count/'),
+  markRead: (id) => api.patch(`/orders/notifications/${id}/mark_read/`),
+  markAllRead: () => api.patch('/orders/notifications/mark_all_read/')
 }
 
 export default api

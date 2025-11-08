@@ -1,6 +1,6 @@
 # orders/admin.py
 from django.contrib import admin
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Notification
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -25,3 +25,11 @@ class OrderAdmin(admin.ModelAdmin):
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ("id", "order", "menu_item", "combo", "quantity", "unit_price")
     search_fields = ("order__id", "menu_item__name", "combo__name")
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "type", "title", "is_read", "created_at", "order")
+    list_filter = ("type", "is_read", "created_at")
+    search_fields = ("user__username", "user__email", "title", "message")
+    readonly_fields = ("created_at",)
+    date_hierarchy = "created_at"

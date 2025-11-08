@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ loginInput: '', password: '' })
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const location = useLocation()
 
   const from = location.state?.from || '/'
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -78,6 +82,11 @@ export default function LoginPage() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
+            <div className="mt-2 text-right">
+              <Link to="/forgot-password" className="text-sm text-red-600 hover:text-red-500">
+                Quên mật khẩu?
+              </Link>
+            </div>
           </div>
 
           <div className="text-right">

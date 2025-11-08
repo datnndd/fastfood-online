@@ -109,6 +109,9 @@ class DeliveryAddressViewSet(viewsets.ModelViewSet):
             .order_by("-is_default", "-updated_at")
         )
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def get_email_for_username(request):

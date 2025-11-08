@@ -57,11 +57,12 @@ class User(AbstractUser):
     province = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
     ward = models.ForeignKey(Ward, null=True, blank=True, on_delete=models.SET_NULL, related_name="users", db_index=True)
 
-    
     supabase_id = models.UUIDField(null=True, blank=True, unique=True, db_index=True)
     auth_provider = models.CharField(max_length=30, blank=True)
     email_verified = models.BooleanField(default=False)
     phone_verified = models.BooleanField(default=False)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)  # Stripe Customer ID
+    stripe_payment_method_id = models.CharField(max_length=255, blank=True, null=True)  # Saved payment method ID
 
     def set_unusable_password_if_oauth(self):
         if self.auth_provider and self.auth_provider != "email":

@@ -7,9 +7,12 @@ const toNumber = (value) => {
 
 const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
 
-export default function ComboCard({ combo, onAddToCart }) {
+export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick, status = 'idle' }) {
   const itemsPreview = (combo.items ?? []).slice(0, 3)
   const remainingCount = Math.max((combo.items?.length ?? 0) - itemsPreview.length, 0)
+  const rawStock = Number(combo?.stock)
+  const hasStockInfo = Number.isFinite(rawStock)
+  const isOutOfStock = combo?.is_available === false || (hasStockInfo && rawStock <= 0)
   const discountLabel = (() => {
     const discount = combo.discount_percentage ?? combo.savings
     const numeric = toNumber(discount)
@@ -18,24 +21,48 @@ export default function ComboCard({ combo, onAddToCart }) {
   })()
 
   const handleAdd = () => {
-    if (combo?.is_available !== false && typeof onAddToCart === 'function') {
+    if (!isOutOfStock && typeof onAddToCart === 'function') {
       onAddToCart(combo)
     }
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="aspect-[3/2] overflow-hidden">
+    <div className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl">
+      <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={combo.image_url || PLACEHOLDER_IMG}
           alt={combo.name}
           className="w-full h-full object-cover"
         />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-semibold uppercase tracking-wide text-white">
+            Hết hàng
+          </div>
+        )}
+        {discountLabel && (
+          <div className="absolute top-0 right-0">
+            <div className="bg-[#ee4d2d] text-white text-xs font-bold px-2 py-1 rounded-bl-lg">
+              {discountLabel}
+            </div>
+          </div>
+        )}
       </div>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold text-gray-900">{combo.name}</h3>
-          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">
+          <div>
+            {categoryName && (
+              <button
+                type="button"
+                onClick={() => onCategoryClick && onCategoryClick()}
+                className="mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 hover:border-amber-300"
+              >
+                <span className="text-[9px] text-amber-500">Danh mục</span>
+                {categoryName}
+              </button>
+            )}
+            <h3 className="font-semibold text-gray-900">{combo.name}</h3>
+          </div>
+          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
             Combo
           </span>
         </div>
@@ -59,25 +86,41 @@ export default function ComboCard({ combo, onAddToCart }) {
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-lg font-bold text-red-600">
+            <div className="text-lg font-bold text-[#ee4d2d]">
               {formatCurrency(combo.final_price)}₫
             </div>
             <div className="text-xs text-gray-400 line-through">
               {formatCurrency(combo.original_price)}₫
             </div>
+            <div className="text-xs text-gray-500">
+              {isOutOfStock
+                ? 'Combo tạm hết'
+                : hasStockInfo
+                  ? `Còn lại: ${rawStock} suất`
+                  : 'Còn hàng'}
+            </div>
           </div>
           <div className="text-right">
-            {discountLabel && (
-              <div className="text-xs font-semibold text-green-600">
-                {discountLabel}
-              </div>
-            )}
             <button
               onClick={handleAdd}
-              disabled={combo?.is_available === false}
-              className="mt-2 inline-flex items-center justify-center rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+              disabled={isOutOfStock || status === 'pending'}
+              className={`mt-2 inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white shadow transition ${
+                isOutOfStock
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : status === 'pending'
+                    ? 'bg-amber-400 cursor-wait'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+              }`}
             >
-              Thêm combo
+              {isOutOfStock
+                ? 'Hết hàng'
+                : status === 'pending'
+                  ? 'Đang thêm...'
+                  : status === 'success'
+                    ? 'Đã thêm ✓'
+                    : status === 'error'
+                      ? 'Thử lại'
+                      : 'Thêm combo'}
             </button>
           </div>
         </div>

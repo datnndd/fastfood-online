@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 
 export default function UpdatePasswordPage() {
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' })
@@ -15,7 +15,7 @@ export default function UpdatePasswordPage() {
 
   // Lắng nghe sự kiện PASSWORD_RECOVERY
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         // Khi Supabase xác nhận token từ URL là hợp lệ,
         // nó sẽ kích hoạt sự kiện này và cung cấp một session tạm thời.

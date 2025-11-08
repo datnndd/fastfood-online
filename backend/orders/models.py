@@ -21,9 +21,20 @@ class Order(models.Model):
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PREPARING)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
-    payment_method = models.CharField(max_length=20, default="cash")  # temporary cash
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.0"))
+    payment_method = models.CharField(max_length=20, default="cash")  # cash, card
+    payment_status = models.CharField(max_length=50, default="pending")  # pending, paid, failed
     note = models.CharField(max_length=255, blank=True)
+    stripe_checkout_session_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_status = models.CharField(max_length=50, blank=True, null=True)
+    payment_completed_at = models.DateTimeField(null=True, blank=True)  # Thời gian thanh toán hoàn tất (capture)
+    authorized_at = models.DateTimeField(null=True, blank=True)  # Thời gian authorization (status requires_capture)
+    authorization_expires_at = models.DateTimeField(null=True, blank=True)  # Thời gian hết hạn authorization (60s sau authorized_at)
+    captured_at = models.DateTimeField(null=True, blank=True)  # Thời gian capture thành công
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
@@ -42,3 +53,30 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        ORDER_PLACED = "ORDER_PLACED", "Đơn hàng đã đặt"
+        ORDER_CONFIRMED = "ORDER_CONFIRMED", "Đơn hàng đã xác nhận"
+        ORDER_READY = "ORDER_READY", "Đơn hàng sẵn sàng giao"
+        ORDER_DELIVERING = "ORDER_DELIVERING", "Đơn hàng đang giao"
+        ORDER_COMPLETED = "ORDER_COMPLETED", "Đơn hàng đã hoàn thành"
+        ORDER_CANCELLED = "ORDER_CANCELLED", "Đơn hàng đã hủy"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
+    type = models.CharField(max_length=20, choices=Type.choices)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"

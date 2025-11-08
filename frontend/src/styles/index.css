@@ -4,3 +4,30 @@
 :root {
   --brand: #ff3b30;
 }
+/* Hiệu ứng dropdown mượt cho menu */
+.dropdown-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dropdown-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-leave {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-leave-active {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Hiệu ứng dropdown mượt */
+.menu-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
