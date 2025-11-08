@@ -165,6 +165,17 @@ export default function MenuPage() {
   const [itemPage, setItemPage] = useState(1)
   const normalizedSearch = searchTerm.trim().toLowerCase()
   const normalizedSelectedCategory = selectedCategorySlug ? slugify(selectedCategorySlug) : null
+  const isMenuEntryAvailable = (entry) => {
+    if (!entry) return false
+    if (entry.is_available === false) return false
+    const numericStock = Number(entry.stock)
+    if (Number.isFinite(numericStock)) {
+      return numericStock > 0
+    }
+    return true
+  }
+  const isItemAvailable = (item) => isMenuEntryAvailable(item)
+  const isComboAvailable = (combo) => isMenuEntryAvailable(combo)
 
   const requireAuth = () => {
     if (user) return true
@@ -341,6 +352,10 @@ export default function MenuPage() {
 
   const handleAddToCartClick = (item) => {
     if (!requireAuth()) return
+    if (!isItemAvailable(item)) {
+      alert('Món này đã hết hàng.')
+      return
+    }
     if (item.option_groups && item.option_groups.length > 0) {
       setSelectedItem(item)
       setShowPopup(true)
@@ -361,19 +376,25 @@ export default function MenuPage() {
       alert('Đã thêm vào giỏ hàng!')
     } catch (error) {
       console.error('Failed to add to cart:', error)
-      alert('Có lỗi xảy ra khi thêm vào giỏ hàng')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng'
+      alert(message)
     }
   }
 
   const handleAddComboToCart = async (combo) => {
     if (!requireAuth()) return
+    if (!isComboAvailable(combo)) {
+      alert('Combo này đã hết hàng.')
+      return
+    }
     try {
       await CartAPI.addCombo({ combo_id: combo.id, quantity: 1 })
       window.dispatchEvent(new CustomEvent('cartUpdated'))
       alert('Đã thêm combo vào giỏ hàng!')
     } catch (error) {
       console.error('Failed to add combo:', error)
-      alert('Có lỗi xảy ra khi thêm combo vào giỏ hàng')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Có lỗi xảy ra khi thêm combo vào giỏ hàng'
+      alert(message)
     }
   }
 

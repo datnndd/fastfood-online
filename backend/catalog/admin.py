@@ -48,7 +48,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(MenuItem)
 class MenuItemAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "category", "price", "is_available", "slug", "image_thumb")
+    list_display = ("id", "name", "category", "price", "stock", "is_available", "slug", "image_thumb")
     list_filter = ("category", "is_available")
     search_fields = ("name", "description", "category__name")
     prepopulated_fields = {"slug": ("name",)}
@@ -83,6 +83,7 @@ class ComboAdmin(admin.ModelAdmin):
         "name",
         "category",
         "discount_percentage",
+        "stock",
         "is_available",
         "original_price_display",
         "final_price_display",

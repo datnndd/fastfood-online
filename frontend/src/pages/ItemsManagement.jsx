@@ -14,6 +14,8 @@ export default function ItemsManagement() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
     const [viewMode, setViewMode] = useState('grid') // 'grid' or 'table'
+    const [bulkStockValue, setBulkStockValue] = useState('')
+    const [bulkUpdatingItems, setBulkUpdatingItems] = useState(false)
 
     const loadItems = useCallback(async () => {
         try {
@@ -91,6 +93,41 @@ export default function ItemsManagement() {
         await loadItems()
         setShowModal(false)
         setSelectedItem(null)
+    }
+
+    const handleBulkStockUpdate = async () => {
+        if (bulkStockValue === '') {
+            alert('Vui lòng nhập số lượng tồn kho mong muốn.')
+            return
+        }
+        const targetStock = parseInt(bulkStockValue, 10)
+        if (Number.isNaN(targetStock) || targetStock < 0) {
+            alert('Số lượng tồn kho phải là số không âm.')
+            return
+        }
+        if (filteredItems.length === 0) {
+            alert('Không có món ăn nào trong danh sách hiện tại để cập nhật.')
+            return
+        }
+
+        setBulkUpdatingItems(true)
+        try {
+            await Promise.all(
+                filteredItems.map((item) =>
+                    CatalogAPI.patchItem(item.id, {
+                        stock: targetStock
+                    })
+                )
+            )
+            await loadItems()
+            alert(`Đã cập nhật ${filteredItems.length} món ăn về ${targetStock} phần.`)
+        } catch (err) {
+            console.error('Bulk stock update failed:', err)
+            const message = err.response?.data?.detail || err.message || 'Không thể cập nhật tồn kho hàng loạt.'
+            alert(message)
+        } finally {
+            setBulkUpdatingItems(false)
+        }
     }
 
     const handleToggleAvailability = async (item) => {
@@ -217,6 +254,30 @@ export default function ItemsManagement() {
                             </button>
                         </div>
                     </div>
+                    <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t border-gray-100 pt-4">
+                        <div className="text-sm text-gray-600">
+                            Nhập số lượng tồn kho mong muốn và nhấn nút để áp dụng cho tất cả món ăn đang hiển thị (sau khi lọc).
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={bulkStockValue}
+                                onChange={(e) => setBulkStockValue(e.target.value)}
+                                placeholder="VD: 100"
+                                className="w-full sm:w-40 px-4 py-2 border-2 border-gray-200 rounded-xl text-base font-semibold focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleBulkStockUpdate}
+                                disabled={bulkUpdatingItems}
+                                className="px-5 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {bulkUpdatingItems ? 'Đang cập nhật...' : 'Áp dụng tồn kho'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Grid View */}
@@ -265,6 +326,9 @@ export default function ItemsManagement() {
                                     <div className="text-2xl font-black text-red-600 mb-4">
                                         {item.price.toLocaleString('vi-VN')} ₫
                                     </div>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Kho: {Number.isFinite(Number(item.stock)) ? item.stock : 0} phần
+                                    </p>
 
                                     {/* Actions */}
                                     <div className="flex gap-2">
@@ -305,6 +369,7 @@ export default function ItemsManagement() {
                                         <th className="px-6 py-4 text-left text-sm font-bold uppercase">Tên món</th>
                                         <th className="px-6 py-4 text-left text-sm font-bold uppercase">Danh mục</th>
                                         <th className="px-6 py-4 text-left text-sm font-bold uppercase">Giá</th>
+                                        <th className="px-6 py-4 text-left text-sm font-bold uppercase">Kho</th>
                                         <th className="px-6 py-4 text-left text-sm font-bold uppercase">Trạng thái</th>
                                         <th className="px-6 py-4 text-center text-sm font-bold uppercase">Thao tác</th>
                                     </tr>
@@ -337,6 +402,11 @@ export default function ItemsManagement() {
                                             <td className="px-6 py-4">
                                                 <span className="text-xl font-black text-red-600">
                                                     {item.price.toLocaleString('vi-VN')} ₫
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    {Number.isFinite(Number(item.stock)) ? item.stock : 0} phần
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">

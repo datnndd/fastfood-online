@@ -31,6 +31,24 @@ const toNumber = (value) => {
 }
 
 const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
+const getNumericStock = (value) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+const isMenuItemInStock = (menuItem) => {
+  if (!menuItem) return false
+  if (menuItem.is_available === false) return false
+  const stock = getNumericStock(menuItem.stock)
+  if (stock === null) return true
+  return stock > 0
+}
+const isComboInStock = (combo) => {
+  if (!combo) return false
+  if (combo.is_available === false) return false
+  const stock = getNumericStock(combo.stock)
+  if (stock === null) return true
+  return stock > 0
+}
 
 export default function CartPage() {
   const [cart, setCart] = useState(null)
@@ -69,9 +87,14 @@ export default function CartPage() {
         cart_total: data?.cart_total ?? '0'
       }
       setCart(normalized)
-      // Initialize selection to all items/combos when cart loads
-      setSelectedItemIds(new Set((normalized.items || []).map((i) => i.id)))
-      setSelectedComboIds(new Set((normalized.combos || []).map((c) => c.id)))
+      const selectableItemIds = (normalized.items || [])
+        .filter((item) => isMenuItemInStock(item.menu_item))
+        .map((item) => item.id)
+      const selectableComboIds = (normalized.combos || [])
+        .filter((combo) => isComboInStock(combo.combo))
+        .map((combo) => combo.id)
+      setSelectedItemIds(new Set(selectableItemIds))
+      setSelectedComboIds(new Set(selectableComboIds))
       if (syncBadge) {
         window.dispatchEvent(new CustomEvent('cartUpdated'))
       }
@@ -141,7 +164,8 @@ export default function CartPage() {
       await loadCart(true)
     } catch (error) {
       console.error('Failed to update quantity:', error)
-      alert('Không thể cập nhật số lượng món. Vui lòng thử lại.')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể cập nhật số lượng món. Vui lòng thử lại.'
+      alert(message)
     }
   }
 
@@ -151,7 +175,8 @@ export default function CartPage() {
       await loadCart(true)
     } catch (error) {
       console.error('Failed to remove item:', error)
-      alert('Không thể xóa món khỏi giỏ hàng.')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể xóa món khỏi giỏ hàng.'
+      alert(message)
     }
   }
 
@@ -162,7 +187,8 @@ export default function CartPage() {
       await loadCart(true)
     } catch (error) {
       console.error('Failed to update combo quantity:', error)
-      alert('Không thể cập nhật số lượng combo.')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể cập nhật số lượng combo.'
+      alert(message)
     }
   }
 
@@ -172,7 +198,8 @@ export default function CartPage() {
       await loadCart(true)
     } catch (error) {
       console.error('Failed to remove combo:', error)
-      alert('Không thể xóa combo khỏi giỏ hàng.')
+      const message = error.response?.data?.detail || error.response?.data?.error || 'Không thể xóa combo khỏi giỏ hàng.'
+      alert(message)
     }
   }
 
@@ -263,6 +290,7 @@ export default function CartPage() {
 
     const itemsTotal = (cart.items ?? []).reduce((sum, item) => {
       if (!selectedItemIds.has(item.id)) return sum
+      if (!isMenuItemInStock(item.menu_item)) return sum
       if (item.item_total !== undefined && item.item_total !== null) {
         return sum + toNumber(item.item_total)
       }
@@ -273,6 +301,7 @@ export default function CartPage() {
 
     const combosTotal = (cart.combos ?? []).reduce((sum, comboItem) => {
       if (!selectedComboIds.has(comboItem.id)) return sum
+      if (!isComboInStock(comboItem.combo)) return sum
       if (comboItem.combo_total !== undefined && comboItem.combo_total !== null) {
         return sum + toNumber(comboItem.combo_total)
       }
@@ -383,13 +412,20 @@ export default function CartPage() {
         ) : (
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-4">
-              {(cart?.items ?? []).map((item) => (
-                <div key={`item-${item.id}`} className="bg-white border rounded-lg p-4">
+              {(cart?.items ?? []).map((item) => {
+                const itemOutOfStock = !isMenuItemInStock(item.menu_item)
+                const stockCount = getNumericStock(item.menu_item?.stock)
+                const canIncreaseItem =
+                  !itemOutOfStock && (stockCount === null || item.quantity < stockCount)
+                return (
+                  <div key={`item-${item.id}`} className="bg-white border rounded-lg p-4">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <input
                       type="checkbox"
-                      checked={selectedItemIds.has(item.id)}
+                      checked={selectedItemIds.has(item.id) && !itemOutOfStock}
+                      disabled={itemOutOfStock}
                       onChange={(e) => {
+                        if (itemOutOfStock) return
                         setSelectedItemIds((prev) => {
                           const next = new Set(prev)
                           if (e.target.checked) next.add(item.id)
@@ -397,7 +433,7 @@ export default function CartPage() {
                           return next
                         })
                       }}
-                      className="h-4 w-4 mt-1"
+                      className="h-4 w-4 mt-1 disabled:opacity-40"
                     />
                     <img
                       src={item.menu_item?.image_url || PLACEHOLDER_IMG}
@@ -417,19 +453,31 @@ export default function CartPage() {
                       {item.note && (
                         <p className="text-xs text-gray-500 mt-2">Ghi chú: {item.note}</p>
                       )}
+                      {itemOutOfStock ? (
+                        <p className="text-sm font-medium text-red-600 mt-2">
+                          Món này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
+                        </p>
+                      ) : stockCount !== null ? (
+                        <p className="text-xs text-gray-500 mt-2">Còn lại: {stockCount} phần</p>
+                      ) : null}
                       <div className="flex items-center gap-2 mt-4">
                         <button
                           type="button"
                           onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                          disabled={item.quantity <= 1}
+                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                         >
                           -
                         </button>
                         <span className="px-3 text-sm font-medium">{item.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                          onClick={() => {
+                            if (!canIncreaseItem) return
+                            updateItemQuantity(item.id, item.quantity + 1)
+                          }}
+                          disabled={!canIncreaseItem}
+                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                         >
                           +
                         </button>
@@ -449,15 +497,23 @@ export default function CartPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
 
-              {(cart?.combos ?? []).map((comboItem) => (
-                <div key={`combo-${comboItem.id}`} className="bg-white border rounded-lg p-4">
+              {(cart?.combos ?? []).map((comboItem) => {
+                const comboOutOfStock = !isComboInStock(comboItem.combo)
+                const comboStock = getNumericStock(comboItem.combo?.stock)
+                const canIncreaseCombo =
+                  !comboOutOfStock && (comboStock === null || comboItem.quantity < comboStock)
+                return (
+                  <div key={`combo-${comboItem.id}`} className="bg-white border rounded-lg p-4">
                   <div className="flex flex-col md:flex-row md:items-start gap-4">
                     <input
                       type="checkbox"
-                      checked={selectedComboIds.has(comboItem.id)}
+                      checked={selectedComboIds.has(comboItem.id) && !comboOutOfStock}
+                      disabled={comboOutOfStock}
                       onChange={(e) => {
+                        if (comboOutOfStock) return
                         setSelectedComboIds((prev) => {
                           const next = new Set(prev)
                           if (e.target.checked) next.add(comboItem.id)
@@ -465,7 +521,7 @@ export default function CartPage() {
                           return next
                         })
                       }}
-                      className="h-4 w-4 mt-1"
+                      className="h-4 w-4 mt-1 disabled:opacity-40"
                     />
                     <img
                       src={comboItem.combo?.image_url || PLACEHOLDER_IMG}
@@ -485,6 +541,13 @@ export default function CartPage() {
                       <p className="text-xs text-gray-500 mt-1">
                         Tiết kiệm {comboItem.combo?.discount_percentage}% so với giá lẻ.
                       </p>
+                      {comboOutOfStock ? (
+                        <p className="text-sm font-medium text-red-600 mt-2">
+                          Combo này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
+                        </p>
+                      ) : comboStock !== null ? (
+                        <p className="text-xs text-gray-500 mt-2">Còn lại: {comboStock} suất</p>
+                      ) : null}
 
                       {comboItem.combo?.items?.length > 0 && (
                         <ul className="mt-3 space-y-1 text-sm text-gray-600">
@@ -507,15 +570,20 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => updateComboQuantity(comboItem.id, comboItem.quantity - 1)}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                          disabled={comboItem.quantity <= 1}
+                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                         >
                           -
                         </button>
                         <span className="px-3 text-sm font-medium">{comboItem.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateComboQuantity(comboItem.id, comboItem.quantity + 1)}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100"
+                          onClick={() => {
+                            if (!canIncreaseCombo) return
+                            updateComboQuantity(comboItem.id, comboItem.quantity + 1)
+                          }}
+                          disabled={!canIncreaseCombo}
+                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                         >
                           +
                         </button>
@@ -535,7 +603,8 @@ export default function CartPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="bg-white border rounded-lg p-6 space-y-6 h-fit">

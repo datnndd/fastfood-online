@@ -7,6 +7,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
         description: '',
         category: '',
         price: '',
+        stock: '',
         is_available: true,
         option_groups: []
     })
@@ -22,6 +23,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                 description: item.description || '',
                 category: item.category_id || item.category || '',
                 price: item.price || '',
+                stock: item.stock ?? '',
                 is_available: item.is_available ?? true,
                 option_groups: item.option_groups?.map(group => ({
                     id: group.id,
@@ -50,6 +52,17 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
             if (numValue >= 100000000) {
                 setError('Giá không được vượt quá 99,999,999 VNĐ')
                 return
+            }
+        }
+        if (name === 'stock') {
+            if (value === '') {
+                newValue = ''
+            } else {
+                const parsed = parseInt(value, 10)
+                if (Number.isNaN(parsed) || parsed < 0) {
+                    return
+                }
+                newValue = parsed
             }
         }
 
@@ -169,6 +182,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                 description: formData.description.trim(),
                 category: parseInt(formData.category),
                 price: parseFloat(formData.price),
+                stock: formData.stock === '' ? 0 : parseInt(formData.stock, 10),
                 is_available: formData.is_available,
                 option_groups: formData.option_groups.map(group => ({
                     name: group.name.trim(),
@@ -348,7 +362,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                         </div>
 
                         {/* Category & Price Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                                     <span className="text-2xl">📂</span>
@@ -395,6 +409,25 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
                                 <p className="text-sm text-gray-500 mt-2">
                                     💡 Tối đa: 99,999,999 VNĐ
                                 </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                    <span className="text-2xl">📦</span>
+                                    Tồn kho *
+                                </label>
+                                <input
+                                    type="number"
+                                    name="stock"
+                                    value={formData.stock}
+                                    onChange={handleChange}
+                                    required
+                                    min="0"
+                                    step="1"
+                                    placeholder="100"
+                                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all"
+                                />
+                                <p className="text-sm text-gray-500 mt-2">🧮 Nhập số lượng hiện có trong kho.</p>
                             </div>
                         </div>
 

@@ -4,6 +4,9 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
   const hasDiscount =
     (typeof item?.discount_percentage === 'number' && item.discount_percentage > 0) ||
     (item?.original_price && Number(item.original_price) > Number(item.price))
+  const rawStock = Number(item?.stock)
+  const hasStockInfo = Number.isFinite(rawStock)
+  const isOutOfStock = item?.is_available === false || (hasStockInfo && rawStock <= 0)
 
   const discountLabel = (() => {
     if (typeof item?.discount_percentage === 'number' && item.discount_percentage > 0) {
@@ -24,6 +27,11 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
           alt={item.name}
           className="w-full h-full object-cover"
         />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-semibold uppercase tracking-wide text-white">
+            Hết hàng
+          </div>
+        )}
         {discountLabel && (
           <div className="absolute top-0 right-0">
             <div className="bg-[#ee4d2d] text-white text-xs font-bold px-2 py-1 rounded-bl-lg">
@@ -49,6 +57,13 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
             <div className="text-lg font-bold text-[#ee4d2d]">
               {Number(item.price).toLocaleString()}₫
             </div>
+            <div className="text-xs text-gray-500">
+              {isOutOfStock
+                ? 'Đã hết hàng'
+                : hasStockInfo
+                  ? `Còn lại: ${rawStock} phần`
+                  : 'Còn hàng'}
+            </div>
             {hasDiscount && (
               <div className="text-xs text-gray-400 line-through">
                 {Number(item.original_price || 0).toLocaleString()}₫
@@ -56,10 +71,13 @@ export default function ItemCard({ item, onAddToCart, categoryName, onCategoryCl
             )}
           </div>
           <button
-            onClick={() => onAddToCart(item)}
-            className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:from-red-600 hover:to-red-700"
+            onClick={() => {
+              if (!isOutOfStock) onAddToCart(item)
+            }}
+            disabled={isOutOfStock}
+            className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:from-red-600 hover:to-red-700 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
           >
-            Thêm vào giỏ
+            {isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
           </button>
         </div>
       </div>

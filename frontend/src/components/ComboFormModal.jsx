@@ -7,6 +7,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         description: '',
         category: '',
         discount_percentage: 0,
+        stock: '',
         is_available: true,
         items: []
     })
@@ -24,6 +25,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                 description: combo.description || '',
                 category: combo.category_id || '',
                 discount_percentage: combo.discount_percentage || 0,
+                stock: combo.stock ?? '',
                 is_available: combo.is_available ?? true,
                 items: combo.items?.map(item => ({
                     menu_item_id: item.menu_item?.id,
@@ -47,9 +49,23 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target
+        let newValue = type === 'checkbox' ? checked : value
+
+        if (name === 'stock') {
+            if (value === '') {
+                newValue = ''
+            } else {
+                const parsed = parseInt(value, 10)
+                if (Number.isNaN(parsed) || parsed < 0) {
+                    return
+                }
+                newValue = parsed
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: newValue
         }))
     }
 
@@ -138,6 +154,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                 description: formData.description.trim(),
                 category_id: parseInt(formData.category),
                 discount_percentage: parseFloat(formData.discount_percentage),
+                stock: formData.stock === '' ? 0 : parseInt(formData.stock, 10),
                 is_available: formData.is_available,
                 items: formData.items.map(item => ({
                     menu_item_id: parseInt(item.menu_item_id),
@@ -296,7 +313,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         </div>
 
                         {/* Category & Discount */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                                     <span className="text-2xl">📂</span>
@@ -334,6 +351,25 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                                     placeholder="10"
                                     className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-bold text-purple-600 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                    <span className="text-2xl">📦</span>
+                                    Tồn kho combo *
+                                </label>
+                                <input
+                                    type="number"
+                                    name="stock"
+                                    value={formData.stock}
+                                    onChange={handleChange}
+                                    required
+                                    min="0"
+                                    step="1"
+                                    placeholder="50"
+                                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
+                                />
+                                <p className="text-sm text-gray-500 mt-2">📊 Nhập số combo còn khả dụng.</p>
                             </div>
                         </div>
 

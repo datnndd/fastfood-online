@@ -10,6 +10,9 @@ const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
 export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick }) {
   const itemsPreview = (combo.items ?? []).slice(0, 3)
   const remainingCount = Math.max((combo.items?.length ?? 0) - itemsPreview.length, 0)
+  const rawStock = Number(combo?.stock)
+  const hasStockInfo = Number.isFinite(rawStock)
+  const isOutOfStock = combo?.is_available === false || (hasStockInfo && rawStock <= 0)
   const discountLabel = (() => {
     const discount = combo.discount_percentage ?? combo.savings
     const numeric = toNumber(discount)
@@ -18,7 +21,7 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
   })()
 
   const handleAdd = () => {
-    if (combo?.is_available !== false && typeof onAddToCart === 'function') {
+    if (!isOutOfStock && typeof onAddToCart === 'function') {
       onAddToCart(combo)
     }
   }
@@ -31,6 +34,11 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
           alt={combo.name}
           className="w-full h-full object-cover"
         />
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-semibold uppercase tracking-wide text-white">
+            Hết hàng
+          </div>
+        )}
         {discountLabel && (
           <div className="absolute top-0 right-0">
             <div className="bg-[#ee4d2d] text-white text-xs font-bold px-2 py-1 rounded-bl-lg">
@@ -84,14 +92,21 @@ export default function ComboCard({ combo, onAddToCart, categoryName, onCategory
             <div className="text-xs text-gray-400 line-through">
               {formatCurrency(combo.original_price)}₫
             </div>
+            <div className="text-xs text-gray-500">
+              {isOutOfStock
+                ? 'Combo tạm hết'
+                : hasStockInfo
+                  ? `Còn lại: ${rawStock} suất`
+                  : 'Còn hàng'}
+            </div>
           </div>
           <div className="text-right">
             <button
               onClick={handleAdd}
-              disabled={combo?.is_available === false}
+              disabled={isOutOfStock}
               className="mt-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
             >
-              Thêm combo
+              {isOutOfStock ? 'Hết hàng' : 'Thêm combo'}
             </button>
           </div>
         </div>

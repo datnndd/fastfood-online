@@ -1,10 +1,10 @@
 # orders/services.py
-from decimal import Decimal
 from django.db import transaction
 from cart.models import Cart
-from catalog.models import Option
+from catalog.models import Option, MenuItem, Combo
 from .models import Order, OrderItem
 from decimal import Decimal, ROUND_HALF_UP
+from collections import Counter
 
 @transaction.atomic
 def create_order_from_cart(
@@ -56,6 +56,70 @@ def create_order_from_cart(
     if item_id_set:
         items_qs = items_qs.filter(id__in=item_id_set)
 
+    items_qs = list(items_qs)
+    combos_qs = cart.combos.select_related("combo").prefetch_related(
+        "combo__items__menu_item",
+        "combo__items__selected_options"
+    )
+    if combo_id_set:
+        combos_qs = combos_qs.filter(id__in=combo_id_set)
+    combos_qs = list(combos_qs)
+
+    if not items_qs and not combos_qs:
+        raise ValueError("Không có sản phẩm nào được chọn để đặt hàng.")
+
+    menu_item_quantities = Counter()
+    for cart_item in items_qs:
+        if cart_item.menu_item_id:
+            menu_item_quantities[cart_item.menu_item_id] += cart_item.quantity
+
+    menu_items_to_update = []
+    if menu_item_quantities:
+        locked_items = {
+            item.id: item
+            for item in MenuItem.objects.select_for_update().filter(id__in=menu_item_quantities.keys())
+        }
+        missing_items = set(menu_item_quantities.keys()) - set(locked_items.keys())
+        if missing_items:
+            raise ValueError("Một số món ăn không còn tồn tại. Vui lòng làm mới giỏ hàng.")
+        for menu_item_id, required_qty in menu_item_quantities.items():
+            menu_item = locked_items[menu_item_id]
+            available_stock = menu_item.stock or 0
+            if not menu_item.is_available or available_stock <= 0:
+                raise ValueError(f"{menu_item.name} đã hết hàng. Vui lòng bỏ món này khỏi giỏ.")
+            if required_qty > available_stock:
+                raise ValueError(f"{menu_item.name} chỉ còn {available_stock} phần trong kho.")
+            menu_item.stock = max(available_stock - required_qty, 0)
+            if menu_item.stock == 0:
+                menu_item.is_available = False
+            menu_items_to_update.append(menu_item)
+
+    combo_quantities = Counter()
+    for cart_combo in combos_qs:
+        if cart_combo.combo_id:
+            combo_quantities[cart_combo.combo_id] += cart_combo.quantity
+
+    combos_to_update = []
+    if combo_quantities:
+        locked_combos = {
+            combo.id: combo
+            for combo in Combo.objects.select_for_update().filter(id__in=combo_quantities.keys())
+        }
+        missing_combos = set(combo_quantities.keys()) - set(locked_combos.keys())
+        if missing_combos:
+            raise ValueError("Một số combo không còn tồn tại. Vui lòng làm mới giỏ hàng.")
+        for combo_id, required_qty in combo_quantities.items():
+            combo = locked_combos[combo_id]
+            available_stock = combo.stock or 0
+            if not combo.is_available or available_stock <= 0:
+                raise ValueError(f"{combo.name} đã hết hàng. Vui lòng bỏ combo này khỏi giỏ.")
+            if required_qty > available_stock:
+                raise ValueError(f"{combo.name} chỉ còn {available_stock} suất trong kho.")
+            combo.stock = max(available_stock - required_qty, 0)
+            if combo.stock == 0:
+                combo.is_available = False
+            combos_to_update.append(combo)
+
     for cart_item in items_qs:
         base_price = cart_item.menu_item.price
         options_price = Decimal("0.00")
@@ -82,13 +146,6 @@ def create_order_from_cart(
         
         total += unit_price * cart_item.quantity
     
-    combos_qs = cart.combos.select_related("combo").prefetch_related(
-        "combo__items__menu_item",
-        "combo__items__selected_options"
-    )
-    if combo_id_set:
-        combos_qs = combos_qs.filter(id__in=combo_id_set)
-
     for cart_combo in combos_qs:
         combo = cart_combo.combo
         
@@ -125,6 +182,11 @@ def create_order_from_cart(
     order.total_amount = total
     order.save()
     
+    if menu_items_to_update:
+        MenuItem.objects.bulk_update(menu_items_to_update, ["stock", "is_available"])
+    if combos_to_update:
+        Combo.objects.bulk_update(combos_to_update, ["stock", "is_available"])
+
     # Dọn giỏ hàng theo cấu hình
     if item_id_set:
         cart.items.filter(id__in=item_id_set).delete()

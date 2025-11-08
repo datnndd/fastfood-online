@@ -1,5 +1,5 @@
 // components/ItemDetailPopup.jsx
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import OptionPicker from './OptionPicker.jsx'
 
 export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) {
@@ -15,20 +15,27 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
   })
   
   const [quantity, setQuantity] = useState(1)
+  const rawStock = Number(item?.stock)
+  const hasStockInfo = Number.isFinite(rawStock)
+  const isOutOfStock = item?.is_available === false || (hasStockInfo && rawStock <= 0)
+  const maxQuantity = hasStockInfo ? Math.max(0, rawStock) : Infinity
 
   // Reset khi item thay đổi
-  useState(() => {
-    if (item) {
-      const initialOptions = []
-      item.option_groups?.forEach(group => {
-        if (group.required && group.options?.length > 0) {
-          initialOptions.push(group.options[0].id)
-        }
-      })
-      setSelectedOptions(initialOptions)
-      setQuantity(1)
-    }
-  }, [item])
+  useEffect(() => {
+    if (!item) return
+    const initialOptions = []
+    item.option_groups?.forEach(group => {
+      if (group.required && group.options?.length > 0) {
+        initialOptions.push(group.options[0].id)
+      }
+    })
+    setSelectedOptions(initialOptions)
+    setQuantity(() => {
+      if (!hasStockInfo) return 1
+      if (maxQuantity === 0) return 1
+      return Math.min(1, maxQuantity)
+    })
+  }, [item, hasStockInfo, maxQuantity])
 
   // Tính tổng giá
   const calculateTotalPrice = () => {
@@ -58,6 +65,14 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
   const handleAddToCart = () => {
     if (!isValidSelection()) {
       alert('Vui lòng chọn đầy đủ các tùy chọn bắt buộc')
+      return
+    }
+    if (isOutOfStock) {
+      alert('Món này đã hết hàng.')
+      return
+    }
+    if (hasStockInfo && quantity > rawStock) {
+      alert(`Chỉ còn ${rawStock} phần cho món này.`)
       return
     }
 
@@ -110,20 +125,34 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
             <span className="font-medium text-gray-900">Số lượng:</span>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                disabled={quantity <= 1}
+                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 -
               </button>
               <span className="font-medium text-lg">{quantity}</span>
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                onClick={() => {
+                  setQuantity((prev) => {
+                    const next = prev + 1
+                    if (!hasStockInfo) return next
+                    return Math.min(next, Math.max(rawStock, 1))
+                  })
+                }}
+                disabled={isOutOfStock || (hasStockInfo && quantity >= Math.max(rawStock, 1))}
+                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 +
               </button>
             </div>
           </div>
+
+          {hasStockInfo && (
+            <p className="text-sm text-gray-500 mb-6">
+              {isOutOfStock ? 'Món này đã hết hàng.' : `Còn lại: ${rawStock} phần trong kho.`}
+            </p>
+          )}
           
           {/* Total & Add to cart */}
           <div className="border-t border-gray-200 pt-4">
@@ -136,14 +165,14 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
             
             <button
               onClick={handleAddToCart}
-              disabled={!isValidSelection()}
+              disabled={!isValidSelection() || isOutOfStock}
               className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                isValidSelection()
+                isValidSelection() && !isOutOfStock
                   ? 'bg-red-600 text-white hover:bg-red-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Add to Cart
+              {isOutOfStock ? 'Đã hết hàng' : 'Add to Cart'}
             </button>
           </div>
         </div>
