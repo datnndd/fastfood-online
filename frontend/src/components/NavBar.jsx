@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import logo from '../assets/images/logo.jpg'
 import { CatalogAPI, CartAPI } from '../lib/api'
-import { useAuth, useRole } from '../lib/auth'
+import { useAuth, useRole } from '../lib/authContext'
 import NotificationBell from './NotificationBell'
 
 export default function NavBar() {

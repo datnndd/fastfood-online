@@ -1,15 +1,13 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useAuth } from '../lib/auth'
+import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '../lib/authContext'
 import { NotificationAPI } from '../lib/api'
-
-const NotificationContext = createContext(null)
+import { NotificationContext } from './notificationContext'
 
 export function NotificationProvider({ children }) {
   const { user } = useAuth()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [hasLocal, setHasLocal] = useState(false)
 
   const fetchNotifications = useCallback(async (params = {}) => {
     if (!user) {
@@ -96,7 +94,6 @@ export function NotificationProvider({ children }) {
     }
     setNotifications(prev => [local, ...prev])
     setUnreadCount(prev => prev + 1)
-    setHasLocal(true)
   }, [])
 
   // Fetch notifications and unread count when user changes
@@ -154,13 +151,5 @@ export function NotificationProvider({ children }) {
       {children}
     </NotificationContext.Provider>
   )
-}
-
-export function useNotifications() {
-  const context = useContext(NotificationContext)
-  if (!context) {
-    throw new Error('useNotifications must be used within NotificationProvider')
-  }
-  return context
 }
 

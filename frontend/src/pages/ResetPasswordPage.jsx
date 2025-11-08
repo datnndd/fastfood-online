@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 
 export default function ResetPasswordPage() {
   const { updatePassword } = useAuth()

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AccountsAPI, CartAPI, OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useNotifications } from '../hooks/useNotifications'
 
 const PLACEHOLDER_IMG = 'https://via.placeholder.com/100'
 
@@ -320,15 +320,15 @@ export default function CartPage() {
       await loadCart(true)
       
       // Local instant notification (fallback in case backend notification delays)
-      try {
-        const order = response?.data
+      const order = response?.data
+      if (order?.id) {
         pushLocalNotification({
           type: 'ORDER_PLACED',
-          title: `Đơn hàng #${order?.id ?? ''} đã được đặt thành công!`,
+          title: `Đơn hàng #${order.id} đã được đặt thành công!`,
           message: 'Chúng tôi đang xử lý đơn hàng của bạn. Nhấn để xem chi tiết.',
-          order_id: order?.id
+          order_id: order.id
         })
-      } catch (_) {}
+      }
       
       // Refresh notifications sau khi đặt hàng thành công
       try {

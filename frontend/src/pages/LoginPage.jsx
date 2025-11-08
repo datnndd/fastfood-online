@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/authContext'
 
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const location = useLocation()
 
   const from = location.state?.from || '/'
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

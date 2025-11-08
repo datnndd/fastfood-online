@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Protected from '../components/Protected'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 import { AccountsAPI, OrderAPI } from '../lib/api'
 
 // Helper function để unwrap API response

@@ -130,8 +130,6 @@ export default function OrderProgressBar({ order }) {
       // Các bước khác - dùng created_at tạm thời (sau này có thể thêm timestamps riêng từ backend)
       // Tính toán thời gian giả định dựa trên thời điểm hiện tại và trạng thái
       const orderTime = new Date(order.created_at)
-      const now = new Date()
-      
       // Ước tính thời gian dựa trên status hiện tại
       if (stepKey === 'CONFIRMED' && order.status !== 'PREPARING') {
         // Nếu đã qua PREPARING, coi như CONFIRMED là ngay sau PLACED
@@ -219,7 +217,6 @@ export default function OrderProgressBar({ order }) {
             const isCompleted = completedSteps.includes(step.key)
             const isCurrent = index === currentStepIndex
             const isPast = index < currentStepIndex
-            const isUpcoming = index > currentStepIndex
 
             return (
               <div key={step.key} className="flex flex-col items-center flex-1 relative z-10">

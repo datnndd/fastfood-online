@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNotifications } from '../contexts/NotificationContext'
+import { useNotifications } from '../hooks/useNotifications'
 import NotificationPanel from './NotificationPanel'
 
 export default function NotificationBell() {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CatalogAPI, CartAPI } from '../lib/api'
+import { useAuth } from '../lib/authContext'
 import ItemCard from '../components/ItemCard'
 import ItemDetailPopup from '../components/ItemDetailPopup'
 import ComboCard from '../components/ComboCard'
@@ -148,6 +149,7 @@ function PaginationControls({ page, totalPages, onPageChange }) {
 export default function MenuPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
 
   const [categories, setCategories] = useState([])
   const [items, setItems] = useState([])
@@ -163,6 +165,16 @@ export default function MenuPage() {
   const [itemPage, setItemPage] = useState(1)
   const normalizedSearch = searchTerm.trim().toLowerCase()
   const normalizedSelectedCategory = selectedCategorySlug ? slugify(selectedCategorySlug) : null
+
+  const requireAuth = () => {
+    if (user) return true
+    alert('Bạn cần đăng nhập để thêm món vào giỏ hàng.')
+    const returnPath = `${location.pathname}${location.search || ''}`
+    navigate('/login', {
+      state: { from: returnPath || '/menu' }
+    })
+    return false
+  }
 
   const unwrapList = (response) => {
     const data = response?.data
@@ -328,6 +340,7 @@ export default function MenuPage() {
   }
 
   const handleAddToCartClick = (item) => {
+    if (!requireAuth()) return
     if (item.option_groups && item.option_groups.length > 0) {
       setSelectedItem(item)
       setShowPopup(true)
@@ -341,6 +354,7 @@ export default function MenuPage() {
   }
 
   const handleAddToCart = async (cartItem) => {
+    if (!requireAuth()) return
     try {
       await CartAPI.addItem(cartItem)
       window.dispatchEvent(new CustomEvent('cartUpdated'))
@@ -352,6 +366,7 @@ export default function MenuPage() {
   }
 
   const handleAddComboToCart = async (combo) => {
+    if (!requireAuth()) return
     try {
       await CartAPI.addCombo({ combo_id: combo.id, quantity: 1 })
       window.dispatchEvent(new CustomEvent('cartUpdated'))

@@ -25,7 +25,7 @@ export default function OrderDetailPage() {
       try {
         const { data } = await OrderAPI.my.get(id)
         setOrder(data)
-      } catch (e) {
+      } catch {
         navigate('/profile?tab=orders')
       } finally {
         setLoading(false)
@@ -113,8 +113,6 @@ export default function OrderDetailPage() {
                 {(() => {
                   const subtotal = order.items.reduce((s, it) => s + Number(it.unit_price) * Number(it.quantity), 0)
                   const shipping = 0
-                  // Bỏ hiển thị giảm giá trên giao diện
-                  const discount = 0
                   return (
                     <div className="max-w-md ml-auto space-y-2">
                       <div className="flex items-center justify-between text-gray-600">

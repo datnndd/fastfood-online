@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useNotifications } from '../contexts/NotificationContext'
-import { useAuth } from '../lib/auth'
+import { useNotifications } from '../hooks/useNotifications'
+import { useAuth } from '../lib/authContext'
 
 const getNotificationIcon = (type) => {
   switch (type) {
