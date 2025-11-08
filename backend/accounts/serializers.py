@@ -197,6 +197,66 @@ class ProfileSerializer(serializers.ModelSerializer):
         return bool(obj.stripe_customer_id and obj.stripe_payment_method_id)
 
 
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    province_id = serializers.PrimaryKeyRelatedField(
+        source="province",
+        queryset=Province.objects.only("id"),
+        allow_null=True,
+        required=False,
+    )
+    ward_id = serializers.PrimaryKeyRelatedField(
+        source="ward",
+        queryset=Ward.objects.select_related("province").only("id", "province_id"),
+        allow_null=True,
+        required=False,
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "full_name",
+            "gender",
+            "date_of_birth",
+            "phone",
+            "address_line",
+            "province_id",
+            "ward_id",
+        ]
+        extra_kwargs = {
+            "username": {"required": False},
+            "full_name": {"required": False, "allow_blank": True},
+            "gender": {"required": False, "allow_blank": True},
+            "date_of_birth": {"required": False, "allow_null": True},
+            "phone": {"required": False, "allow_blank": True},
+            "address_line": {"required": False, "allow_blank": True},
+        }
+
+    def validate_full_name(self, value):
+        return value.strip() if value else ""
+
+    def validate_gender(self, value):
+        return value or User.Gender.UNSPECIFIED
+
+    def validate_date_of_birth(self, value):
+        if value and value > date.today():
+            raise serializers.ValidationError("Ngày sinh không được ở tương lai")
+        return value
+
+    def validate(self, attrs):
+        province = attrs.get("province")
+        ward = attrs.get("ward")
+
+        if ward and province is None:
+            attrs["province"] = ward.province
+            province = ward.province
+
+        if ward and province and ward.province_id != province.id:
+            raise serializers.ValidationError("Phường/Xã không thuộc tỉnh/thành phố đã chọn")
+
+        return attrs
+
+
 class CreateStaffSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
 

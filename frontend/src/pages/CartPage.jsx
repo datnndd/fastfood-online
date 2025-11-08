@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { AccountsAPI, CartAPI, OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
 import { useNotifications } from '../hooks/useNotifications'
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
 
-const PLACEHOLDER_IMG = 'https://via.placeholder.com/100'
+const PLACEHOLDER_IMG = IMAGE_PLACEHOLDER
 
 const EMPTY_ADDRESS_FORM = {
   label: '',
@@ -109,13 +110,12 @@ export default function CartPage() {
   const loadAddresses = async (preferredId = null) => {
     setAddressesLoading(true)
     try {
-      const [addressesRes, provincesRes] = await Promise.all([
+      const [addressesRes, provinces] = await Promise.all([
         AccountsAPI.addresses.list(),
         AccountsAPI.listProvinces()
       ])
 
       const list = unwrapList(addressesRes)
-      const provinces = unwrapList(provincesRes)
 
       setAddresses(list)
       setLocations((prev) => ({
@@ -252,8 +252,7 @@ export default function CartPage() {
 
     setIsFetchingWards(true)
     try {
-      const res = await AccountsAPI.listWards(value)
-      const wards = unwrapList(res)
+      const wards = await AccountsAPI.listWards(value)
       setLocations((prev) => ({ ...prev, wards }))
     } catch (error) {
       console.error('Failed to load wards:', error)
@@ -905,8 +904,8 @@ export default function CartPage() {
                       required
                     >
                       <option value="">{isFetchingWards ? 'Đang tải...' : 'Chọn phường/xã'}</option>
-                      {locations.wards.map((ward) => (
-                        <option key={ward.id} value={ward.id}>
+                      {locations.wards.map((ward, index) => (
+                        <option key={`ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
                           {ward.name}
                         </option>
                       ))}

@@ -45,7 +45,7 @@ export default function Protected({
   const location = useLocation()
 
   // Hiển thị loading
-  if (loading) {
+  if (loading && !user) {
     return fallback || <LoadingSpinner />
   }
 

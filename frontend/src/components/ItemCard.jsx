@@ -1,3 +1,5 @@
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
+
 // components/ItemCard.jsx
 export default function ItemCard({ item, onViewDetail, categoryName, onCategoryClick, status = 'idle' }) {
   const displayCategory = categoryName || (typeof item.category === 'string' ? item.category : null)
@@ -49,7 +51,7 @@ export default function ItemCard({ item, onViewDetail, categoryName, onCategoryC
     >
       <div className="relative aspect-[3/2] overflow-hidden">
         <img
-          src={item.image_url || 'https://via.placeholder.com/300x200'}
+          src={item.image_url || IMAGE_PLACEHOLDER}
           alt={item.name}
           className="w-full h-full object-cover"
         />

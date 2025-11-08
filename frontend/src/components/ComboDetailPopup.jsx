@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
 
-const PLACEHOLDER_IMG = 'https://via.placeholder.com/600x400'
+const PLACEHOLDER_IMG = IMAGE_PLACEHOLDER
 
 export default function ComboDetailPopup({ combo, isOpen, onClose, onAddToCart }) {
   const [quantity, setQuantity] = useState(1)

@@ -25,14 +25,6 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Khác' }
 ]
 
-const unwrapList = (response) => {
-  const data = response?.data
-  if (!data) return []
-  if (Array.isArray(data)) return data
-  if (Array.isArray(data.results)) return data.results
-  return []
-}
-
 export default function RegisterPage() {
   const [formData, setFormData] = useState(INITIAL_FORM)
   const [errors, setErrors] = useState({})
@@ -48,8 +40,7 @@ export default function RegisterPage() {
     const fetchProvinces = async () => {
       setProvinceLoading(true)
       try {
-        const response = await AccountsAPI.listProvinces()
-        const provinces = unwrapList(response)
+        const provinces = await AccountsAPI.listProvinces()
         if (mounted) {
           setLocations((prev) => ({ ...prev, provinces }))
         }
@@ -73,8 +64,7 @@ export default function RegisterPage() {
 
     setWardLoading(true)
     try {
-      const response = await AccountsAPI.listWards(value)
-      const wards = unwrapList(response)
+      const wards = await AccountsAPI.listWards(value)
       setLocations((prev) => ({ ...prev, wards }))
     } catch (error) {
       console.error('Không thể tải danh sách phường/xã', error)
@@ -343,8 +333,8 @@ export default function RegisterPage() {
                 <option value="">
                   {!formData.province_id ? 'Chọn tỉnh trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
                 </option>
-                {locations.wards.map((ward) => (
-                  <option key={ward.id} value={ward.id}>
+                {locations.wards.map((ward, index) => (
+                  <option key={`ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
                     {ward.name}
                   </option>
                 ))}

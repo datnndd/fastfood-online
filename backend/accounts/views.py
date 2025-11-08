@@ -15,6 +15,7 @@ from .serializers import (
     CreateStaffSerializer,
     UpdateRoleSerializer,
     ProfileSerializer,
+    ProfileUpdateSerializer,
     ProvinceSerializer,
     WardSerializer,
     DeliveryAddressSerializer,
@@ -37,11 +38,24 @@ class RegisterView(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-class MeView(generics.RetrieveAPIView):
-    serializer_class = ProfileSerializer
+class MeView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method in ("PUT", "PATCH"):
+            return ProfileUpdateSerializer
+        return ProfileSerializer
+
     def get_object(self):
         return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(ProfileSerializer(instance).data)
 
 class CreateStaffView(generics.CreateAPIView):
     serializer_class = CreateStaffSerializer
@@ -74,7 +88,9 @@ class UserListView(generics.ListAPIView):
 class ProvinceListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ProvinceSerializer
-    @method_decorator(cache_page(60 * 60 * 24))  # 24h
+    pagination_class = None
+
+    @method_decorator(cache_page(60 * 60 * 24, key_prefix="locations_v2_provinces"))  # 24h
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
@@ -86,8 +102,9 @@ class ProvinceListView(generics.ListAPIView):
 class WardListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = WardSerializer
+    pagination_class = None
 
-    @method_decorator(cache_page(60 * 60 * 24))
+    @method_decorator(cache_page(60 * 60 * 24, key_prefix="locations_v2_wards"))  # 24h
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 

@@ -1,4 +1,6 @@
-const PLACEHOLDER_IMG = 'https://via.placeholder.com/300x200'
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
+
+const PLACEHOLDER_IMG = IMAGE_PLACEHOLDER
 
 const toNumber = (value) => {
   const parsed = Number.parseFloat(value ?? 0)

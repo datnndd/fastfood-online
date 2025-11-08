@@ -1,6 +1,7 @@
 // components/ItemDetailPopup.jsx
 import { useEffect, useMemo, useState } from 'react'
 import OptionPicker from './OptionPicker.jsx'
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
 
 export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) {
   const optionGroups = useMemo(() => {
@@ -130,7 +131,7 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
           <div>
             <div className="overflow-hidden rounded-xl border border-gray-100">
               <img
-                src={item.image_url || 'https://via.placeholder.com/600x400'}
+                src={item.image_url || IMAGE_PLACEHOLDER}
                 alt={item.name}
                 className="h-60 w-full object-cover"
               />

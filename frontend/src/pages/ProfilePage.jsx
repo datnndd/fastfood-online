@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Protected from '../components/Protected'
 import { useAuth } from '../lib/authContext'
-import { AccountsAPI, OrderAPI } from '../lib/api'
+import { AuthAPI, AccountsAPI, OrderAPI } from '../lib/api'
 
 // Helper function để unwrap API response
 const unwrapList = (response) => {
@@ -14,15 +14,15 @@ const unwrapList = (response) => {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshProfile } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
   const [addresses, setAddresses] = useState([])
   const [provinces, setProvinces] = useState([])
-  const [wards, setWards] = useState([])
+  const [addressWards, setAddressWards] = useState([])
+  const [profileWards, setProfileWards] = useState([])
   const [orderStats, setOrderStats] = useState({})
-  const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
   const [editingProfile, setEditingProfile] = useState(false)
   const [editingAddress, setEditingAddress] = useState(null)
@@ -31,24 +31,33 @@ export default function ProfilePage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const tab = params.get('tab')
-    const validTabs = new Set(['profile', 'addresses', 'payments', 'password', 'orders'])
+    const validTabs = new Set(['profile', 'addresses', 'orders'])
     if (tab && validTabs.has(tab) && tab !== activeTab) {
       setActiveTab(tab)
     }
   }, [location.search, activeTab])
 
   // Push query when tab changes (for deep-linking)
+  const latestSearchRef = useRef(location.search)
+
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
+    latestSearchRef.current = location.search
+  }, [location.search])
+
+  useEffect(() => {
+    const params = new URLSearchParams(latestSearchRef.current || '')
     if (params.get('tab') !== activeTab) {
       params.set('tab', activeTab)
       navigate({ search: params.toString() }, { replace: true })
     }
-  }, [activeTab, location.search, navigate])
+  }, [activeTab, navigate])
 
   // Form states
   const [profileForm, setProfileForm] = useState({
     username: '',
+    full_name: '',
+    gender: 'unspecified',
+    date_of_birth: '',
     phone: '',
     address_line: '',
     province_id: '',
@@ -66,17 +75,14 @@ export default function ProfilePage() {
     is_default: false
   })
 
-  const [passwordForm, setPasswordForm] = useState({
-    current_password: '',
-    new_password: '',
-    confirm_password: ''
-  })
-
   // Load data
   useEffect(() => {
     if (user) {
       setProfileForm({
         username: user.username || '',
+        full_name: user.full_name || '',
+        gender: user.gender || 'unspecified',
+        date_of_birth: user.date_of_birth || '',
         phone: user.phone || '',
         address_line: user.address_line || '',
         province_id: user.province?.id || '',
@@ -89,14 +95,23 @@ export default function ProfilePage() {
     loadAddresses()
     loadProvinces()
     loadOrderStats()
-    loadPayments()
   }, [])
 
   useEffect(() => {
     if (addressForm.province_id) {
-      loadWards(addressForm.province_id)
+      loadWards(addressForm.province_id, setAddressWards)
+    } else {
+      setAddressWards([])
     }
   }, [addressForm.province_id])
+
+  useEffect(() => {
+    if (profileForm.province_id) {
+      loadWards(profileForm.province_id, setProfileWards)
+    } else {
+      setProfileWards([])
+    }
+  }, [profileForm.province_id])
 
   const loadAddresses = async () => {
     try {
@@ -111,8 +126,7 @@ export default function ProfilePage() {
 
   const loadProvinces = async () => {
     try {
-      const response = await AccountsAPI.listProvinces()
-      const provincesList = unwrapList(response)
+      const provincesList = await AccountsAPI.listProvinces()
       setProvinces(provincesList)
     } catch (error) {
       console.error('Failed to load provinces:', error)
@@ -120,64 +134,18 @@ export default function ProfilePage() {
     }
   }
 
-  // -------------------------- Payments (frontend only) --------------------------
-  const PAYMENTS_STORAGE_KEY = 'ffo_payment_methods'
-
-  const [paymentForm, setPaymentForm] = useState({
-    cardholder: '',
-    cardNumber: '',
-    expiry: '',
-    brand: 'VISA'
-  })
-
-  const loadPayments = () => {
-    try {
-      const raw = localStorage.getItem(PAYMENTS_STORAGE_KEY)
-      setPayments(raw ? JSON.parse(raw) : [])
-    } catch {
-      setPayments([])
-    }
-  }
-
-  const savePayments = (list) => {
-    setPayments(list)
-    localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(list))
-  }
-
-  const handleAddPayment = (e) => {
-    e.preventDefault()
-    if (!paymentForm.cardholder || !paymentForm.cardNumber || !paymentForm.expiry) {
-      alert('Vui lòng điền đầy đủ thông tin thẻ')
+  const loadWards = async (provinceId, setter = setAddressWards) => {
+    if (!provinceId) {
+      setter([])
       return
     }
-    const masked = `**** **** **** ${paymentForm.cardNumber.slice(-4)}`
-    const next = [
-      ...payments,
-      {
-        id: Date.now(),
-        cardholder: paymentForm.cardholder,
-        masked,
-        expiry: paymentForm.expiry,
-        brand: paymentForm.brand
-      }
-    ]
-    savePayments(next)
-    setPaymentForm({ cardholder: '', cardNumber: '', expiry: '', brand: 'VISA' })
-  }
 
-  const handleRemovePayment = (id) => {
-    const next = payments.filter(p => p.id !== id)
-    savePayments(next)
-  }
-
-  const loadWards = async (provinceId) => {
     try {
-      const response = await AccountsAPI.listWards(provinceId)
-      const wardsList = unwrapList(response)
-      setWards(wardsList)
+      const wardsList = await AccountsAPI.listWards(provinceId)
+      setter(wardsList)
     } catch (error) {
       console.error('Failed to load wards:', error)
-      setWards([])
+      setter([])
     }
   }
 
@@ -200,13 +168,29 @@ export default function ProfilePage() {
   const handleProfileUpdate = async (e) => {
     e.preventDefault()
     setLoading(true)
+    const payload = {
+      username: profileForm.username?.trim() || user?.username || '',
+      full_name: profileForm.full_name?.trim() || '',
+      gender: profileForm.gender || 'unspecified',
+      date_of_birth: profileForm.date_of_birth || null,
+      phone: profileForm.phone?.trim() || '',
+      address_line: profileForm.address_line?.trim() || '',
+      province_id: profileForm.province_id ? Number(profileForm.province_id) : null,
+      ward_id: profileForm.ward_id ? Number(profileForm.ward_id) : null
+    }
+
     try {
-      // TODO: Implement profile update API
-      alert('Tính năng cập nhật hồ sơ sẽ được triển khai sau')
+      await AuthAPI.updateProfile(payload)
+      await refreshProfile()
       setEditingProfile(false)
+      alert('Cập nhật hồ sơ thành công!')
     } catch (error) {
       console.error('Failed to update profile:', error)
-      alert('Có lỗi xảy ra khi cập nhật hồ sơ')
+      const errorDetail =
+        error.response?.data?.detail ||
+        (Array.isArray(error.response?.data) ? error.response.data.join(', ') : null) ||
+        'Có lỗi xảy ra khi cập nhật hồ sơ'
+      alert(errorDetail)
     } finally {
       setLoading(false)
     }
@@ -267,36 +251,10 @@ export default function ProfilePage() {
     }
   }
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault()
-    if (passwordForm.new_password !== passwordForm.confirm_password) {
-      alert('Mật khẩu mới không khớp')
-      return
-    }
-    
-    setLoading(true)
-    try {
-      // TODO: Implement password change API
-      alert('Tính năng đổi mật khẩu sẽ được triển khai sau')
-      setPasswordForm({
-        current_password: '',
-        new_password: '',
-        confirm_password: ''
-      })
-    } catch (error) {
-      console.error('Failed to change password:', error)
-      alert('Có lỗi xảy ra khi đổi mật khẩu')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const getTabIcon = (tabName) => {
     const icons = {
       profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
       addresses: "M17.657 16.657L13.414 12.414m0 0a4 4 0 10-5.657-5.657 4 4 0 005.657 5.657z",
-      payments: "M2 7h20M2 11h20M6 15h6M6 19h6",
-      password: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
       orders: "M3 7h18M3 12h18M3 17h18"
     }
     return icons[tabName] || icons.profile
@@ -334,6 +292,44 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">Họ và tên</label>
+            <input
+              value={profileForm.full_name}
+              onChange={(e) => setProfileForm({...profileForm, full_name: e.target.value})}
+              disabled={!editingProfile}
+              placeholder="Nhập họ tên đầy đủ"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Giới tính</label>
+              <select
+                value={profileForm.gender}
+                onChange={(e) => setProfileForm({...profileForm, gender: e.target.value})}
+                disabled={!editingProfile}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+              >
+                <option value="unspecified">Không xác định</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Ngày sinh</label>
+              <input
+                type="date"
+                value={profileForm.date_of_birth || ''}
+                onChange={(e) => setProfileForm({...profileForm, date_of_birth: e.target.value})}
+                disabled={!editingProfile}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Email</label>
             <input
               value={user?.email || ''}
@@ -354,13 +350,54 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Địa chỉ</label>
+            <label className="block text-sm font-semibold text-gray-700">Chi tiết</label>
             <input
               value={profileForm.address_line}
               onChange={(e) => setProfileForm({...profileForm, address_line: e.target.value})}
               disabled={!editingProfile}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Tỉnh/Thành phố</label>
+              <select
+                value={profileForm.province_id}
+                onChange={(e) =>
+                  setProfileForm({
+                    ...profileForm,
+                    province_id: e.target.value,
+                    ward_id: ''
+                  })
+                }
+                disabled={!editingProfile}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+              >
+                <option value="">Chọn tỉnh/thành phố</option>
+                {provinces.map((province) => (
+                  <option key={province.id} value={province.id}>
+                    {province.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Phường/Xã</label>
+              <select
+                value={profileForm.ward_id}
+                onChange={(e) => setProfileForm({...profileForm, ward_id: e.target.value})}
+                disabled={!editingProfile || !profileForm.province_id}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+              >
+                <option value="">Chọn phường/xã</option>
+                {profileWards.map((ward, index) => (
+                  <option key={`profile-ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
+                    {ward.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -387,165 +424,6 @@ export default function ProfilePage() {
         )}
       </form>
 
-      {/* Password Change Section */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Đổi mật khẩu</h3>
-        <form onSubmit={handlePasswordChange} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Mật khẩu hiện tại</label>
-            <input
-              type="password"
-              value={passwordForm.current_password}
-              onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Mật khẩu mới</label>
-            <input
-              type="password"
-              value={passwordForm.new_password}
-              onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})}
-              required
-              minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Xác nhận mật khẩu mới</label>
-            <input
-              type="password"
-              value={passwordForm.confirm_password}
-              onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Đang đổi...
-              </span>
-            ) : (
-              'Đổi mật khẩu'
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
-
-  const renderPaymentsTab = () => (
-    <div className="animate-fadeIn">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Phương thức thanh toán</h1>
-          <p className="text-gray-600">Quản lý các thẻ thanh toán của bạn</p>
-        </div>
-      </div>
-
-      <form onSubmit={handleAddPayment} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-8 mb-8 border border-gray-200">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Thêm thẻ mới</h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Tên chủ thẻ</label>
-              <input
-                value={paymentForm.cardholder}
-                onChange={(e) => setPaymentForm({ ...paymentForm, cardholder: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Số thẻ</label>
-              <input
-                value={paymentForm.cardNumber}
-                onChange={(e) => setPaymentForm({ ...paymentForm, cardNumber: e.target.value.replace(/\s/g,'') })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                placeholder="4111 1111 1111 1111"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Ngày hết hạn (MM/YY)</label>
-              <input
-                value={paymentForm.expiry}
-                onChange={(e) => setPaymentForm({ ...paymentForm, expiry: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                placeholder="12/28"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Loại thẻ</label>
-              <select
-                value={paymentForm.brand}
-                onChange={(e) => setPaymentForm({ ...paymentForm, brand: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              >
-                <option>VISA</option>
-                <option>Mastercard</option>
-                <option>JCB</option>
-                <option>AMEX</option>
-              </select>
-            </div>
-          </div>
-
-          <button type="submit" className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200">
-            Thêm phương thức
-          </button>
-        </div>
-      </form>
-
-      <div className="space-y-4">
-        {payments.length === 0 ? (
-          <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl border-2 border-dashed border-gray-300">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2 7h20M2 11h20M6 15h6M6 19h6" />
-            </svg>
-            <p className="text-gray-500 text-lg mb-2">Chưa có phương thức thanh toán</p>
-            <p className="text-gray-400">Thêm thẻ để thanh toán nhanh hơn</p>
-          </div>
-        ) : (
-          payments.map(p => (
-            <div key={p.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">{p.brand}</span>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{p.brand} • {p.masked}</div>
-                    <div className="text-sm text-gray-600">{p.cardholder} • Hết hạn {p.expiry}</div>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => handleRemovePayment(p.id)} 
-                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium"
-                >
-                  Xóa
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
     </div>
   )
 
@@ -649,9 +527,9 @@ export default function ProfilePage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
                 >
                   <option value="">Chọn phường/xã</option>
-                  {wards.map(ward => (
-                    <option key={ward.id} value={ward.id}>{ward.name}</option>
-                  ))}
+                {addressWards.map((ward, index) => (
+                  <option key={`address-ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>{ward.name}</option>
+                ))}
                 </select>
               </div>
             </div>
@@ -784,70 +662,6 @@ export default function ProfilePage() {
     </div>
   )
 
-  const renderPasswordTab = () => (
-    <div className="animate-fadeIn">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Bảo mật</h1>
-        <p className="text-gray-600">Thay đổi mật khẩu để bảo vệ tài khoản</p>
-      </div>
-      
-      <div className="max-w-md">
-        <form onSubmit={handlePasswordChange} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Mật khẩu hiện tại</label>
-            <input
-              type="password"
-              value={passwordForm.current_password}
-              onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Mật khẩu mới</label>
-            <input
-              type="password"
-              value={passwordForm.new_password}
-              onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})}
-              required
-              minLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">Xác nhận mật khẩu mới</label>
-            <input
-              type="password"
-              value={passwordForm.confirm_password}
-              onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Đang đổi...
-              </span>
-            ) : (
-              'Đổi mật khẩu'
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
 
   const renderOrdersTab = () => (
     <div className="animate-fadeIn">
@@ -918,13 +732,13 @@ export default function ProfilePage() {
 
       <div className="text-center">
         <button
-          onClick={() => setActiveTab('orders')}
+          onClick={() => navigate('/orders')}
           className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
           </svg>
-          Xem chi tiết đơn hàng
+          Xem đơn hàng
         </button>
       </div>
     </div>
@@ -932,9 +746,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'profile', name: 'Thông tin cá nhân', icon: getTabIcon('profile') },
-    { id: 'addresses', name: 'Địa chỉ', icon: getTabIcon('addresses') },
-    { id: 'payments', name: 'Phương thức thanh toán', icon: getTabIcon('payments') },
-    { id: 'password', name: 'Bảo mật', icon: getTabIcon('password') },
+    { id: 'addresses', name: 'Địa chỉ giao hàng', icon: getTabIcon('addresses') },
     { id: 'orders', name: 'Đơn hàng', icon: getTabIcon('orders') }
   ]
 
@@ -993,8 +805,6 @@ export default function ProfilePage() {
                 <div className="px-8 py-8">
                   {activeTab === 'profile' && renderProfileTab()}
                   {activeTab === 'addresses' && renderAddressesTab()}
-                  {activeTab === 'payments' && renderPaymentsTab()}
-                  {activeTab === 'password' && renderPasswordTab()}
                   {activeTab === 'orders' && renderOrdersTab()}
                 </div>
               </section>
@@ -1005,5 +815,3 @@ export default function ProfilePage() {
     </Protected>
   )
 }
-
-
