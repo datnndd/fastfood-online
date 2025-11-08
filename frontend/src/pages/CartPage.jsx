@@ -106,7 +106,7 @@ export default function CartPage() {
 
       if (list.length === 0) {
         setAddressFormOpen(true)
-        setAddressForm((prev) => ({
+        setAddressForm(() => ({
           ...EMPTY_ADDRESS_FORM,
           is_default: true
         }))

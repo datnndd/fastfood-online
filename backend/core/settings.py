@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework","corsheaders",
-    "accounts","catalog","cart","orders",
+    "accounts","catalog","cart","orders","feedback",
     "drf_spectacular", "drf_spectacular_sidecar",
 ]
 

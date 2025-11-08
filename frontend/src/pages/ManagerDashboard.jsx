@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { OrderAPI } from '../lib/api'
+import { OrderAPI, FeedbackAPI } from '../lib/api'
 
 const DASHBOARD_CARDS = [
     {
@@ -61,9 +61,12 @@ export default function ManagerDashboard() {
         completedOrders: 0
     })
     const [loading, setLoading] = useState(true)
+    const [feedbacks, setFeedbacks] = useState([])
+    const [feedbackLoading, setFeedbackLoading] = useState(true)
 
     useEffect(() => {
         loadStats()
+        loadFeedbacks()
     }, [])
 
     const loadStats = async () => {
@@ -83,6 +86,19 @@ export default function ManagerDashboard() {
         }
     }
 
+    const loadFeedbacks = async () => {
+        try {
+            setFeedbackLoading(true)
+            const response = await FeedbackAPI.list()
+            const items = response.data?.results || response.data || []
+            setFeedbacks(items.slice(0, 5))
+        } catch (err) {
+            console.error('Load feedback error:', err)
+        } finally {
+            setFeedbackLoading(false)
+        }
+    }
+
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('vi-VN', {
             style: 'currency',
@@ -95,6 +111,16 @@ export default function ManagerDashboard() {
         if (hour < 12) return 'Chào buổi sáng'
         if (hour < 18) return 'Chào buổi chiều'
         return 'Chào buổi tối'
+    }
+
+    const formatDateTime = (value) => {
+        if (!value) return ''
+        return new Date(value).toLocaleString('vi-VN')
+    }
+
+    const truncate = (text, limit = 70) => {
+        if (!text) return ''
+        return text.length > limit ? `${text.slice(0, limit)}…` : text
     }
 
     return (
@@ -272,6 +298,89 @@ export default function ManagerDashboard() {
                             </div>
                         </Link>
                     </div>
+                </div>
+
+                {/* Feedback Section */}
+                <div className="bg-white rounded-2xl shadow-xl p-8 mt-8">
+                    <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+                        <div className="flex items-center gap-3">
+                            <span className="text-4xl">💬</span>
+                            <div>
+                                <h2 className="text-3xl font-black text-gray-900">Phản hồi khách hàng</h2>
+                                <p className="text-sm text-gray-500">
+                                    Hiển thị 5 phản hồi gần nhất từ trang Liên hệ
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Link
+                                to="/manager/feedbacks"
+                                className="px-4 py-2 border border-orange-200 text-orange-700 rounded-full font-semibold hover:bg-orange-50 transition-colors"
+                            >
+                                Xem tất cả phản hồi
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={loadFeedbacks}
+                                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-semibold shadow hover:shadow-lg transition-all disabled:opacity-70"
+                                disabled={feedbackLoading}
+                            >
+                                {feedbackLoading ? 'Đang tải...' : 'Làm mới'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {feedbacks.length === 0 && !feedbackLoading && (
+                        <div className="text-center py-10 text-gray-500 font-semibold">
+                            Chưa có phản hồi nào.
+                        </div>
+                    )}
+
+                    {feedbackLoading && (
+                        <div className="animate-pulse space-y-4">
+                            <div className="h-20 bg-gray-100 rounded-xl"></div>
+                            <div className="h-20 bg-gray-100 rounded-xl"></div>
+                            <div className="h-20 bg-gray-100 rounded-xl"></div>
+                        </div>
+                    )}
+
+                    {!feedbackLoading && feedbacks.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                                <thead>
+                                    <tr className="text-left text-sm uppercase text-gray-500 border-b">
+                                        <th className="py-3 font-semibold">Khách hàng</th>
+                                        <th className="py-3 font-semibold">Liên hệ</th>
+                                        <th className="py-3 font-semibold">Chủ đề</th>
+                                        <th className="py-3 font-semibold">Nội dung</th>
+                                        <th className="py-3 font-semibold">Thời gian</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {feedbacks.map((feedback) => (
+                                        <tr key={feedback.id} className="align-top">
+                                            <td className="py-4">
+                                                <div className="font-semibold text-gray-900">{feedback.full_name}</div>
+                                            </td>
+                                            <td className="py-4 text-sm text-gray-600">
+                                                <div>{feedback.email}</div>
+                                                {feedback.phone && <div className="text-gray-500">{feedback.phone}</div>}
+                                            </td>
+                                            <td className="py-4 text-sm text-gray-600">
+                                                {feedback.subject || <span className="text-gray-400 italic">Không có</span>}
+                                            </td>
+                                            <td className="py-4 text-sm text-gray-600">
+                                                {truncate(feedback.message)}
+                                            </td>
+                                            <td className="py-4 text-sm text-gray-500">
+                                                {formatDateTime(feedback.created_at)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* System Info */}

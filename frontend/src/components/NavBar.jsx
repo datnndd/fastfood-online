@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth, useRole } from "../lib/auth";
+import { useAuth, useRole } from "../lib/authContext";
 import { useEffect, useMemo, useState } from "react";
 import { ShoppingCartIcon } from "@heroicons/react/24/outline";
 import logo from "../assets/images/logo.jpg";
@@ -69,32 +69,11 @@ export default function NavBar() {
     { path: "/about", label: "Về Mc Dono" },
     { path: "/menu", label: "Thực đơn", dropdown: categories },
     { path: "/promotions", label: "Khuyến mãi" },
-    { path: "/stores", label: "Cửa hàng" },
     { path: "/contact", label: "Liên hệ" },
   ];
 
   return (
     <>
-      {/* Thanh trên cùng */}
-      <div className="bg-[#f7c600] text-black text-sm">
-        <div className="max-w-7xl mx-auto px-4 py-1 flex justify-between items-center font-semibold">
-          <div className="flex items-center space-x-4">
-            <span>📍 Hồ Chí Minh</span>
-            <span className="cursor-pointer hover:underline">VN / EN</span>
-          </div>
-          {!user && (
-            <div className="flex items-center space-x-4">
-              <Link to="/register" className="flex items-center gap-1 hover:text-[#e21b1b]">
-                <span>🧑‍🍳</span> <span>Đăng ký</span>
-              </Link>
-              <Link to="/login" className="flex items-center gap-1 hover:text-[#e21b1b]">
-                <span>🔑</span> <span>Đăng nhập</span>
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Thanh điều hướng chính */}
       <div className="bg-[#e21b1b] text-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-[90px] px-6">
@@ -154,31 +133,6 @@ export default function NavBar() {
               );
             })}
             
-            {/* Staff/Manager links */}
-            {hasStaffAccess && (
-              <Link
-                to="/work"
-                className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${
-                  location.pathname === "/work" || location.pathname.startsWith("/work")
-                    ? "border-white bg-[#f9d7d7] text-[#b91c1c]"
-                    : "border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]"
-                }`}
-              >
-                Quản lý
-              </Link>
-            )}
-            {isManager && (
-              <Link
-                to="/manager/accounts"
-                className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${
-                  location.pathname === "/manager/accounts" || location.pathname.startsWith("/manager")
-                    ? "border-white bg-[#f9d7d7] text-[#b91c1c]"
-                    : "border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]"
-                }`}
-              >
-                Tài khoản
-              </Link>
-            )}
           </div>
 
           {/* Giỏ hàng + Người dùng */}
@@ -230,7 +184,7 @@ export default function NavBar() {
                       >
                         Đơn hàng của tôi
                       </Link>
-                      {hasStaffAccess && (
+                      {isManager ? (
                         <Link
                           to="/manager/dashboard"
                           className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
@@ -238,15 +192,16 @@ export default function NavBar() {
                         >
                           Dashboard quản lý
                         </Link>
-                      )}
-                      {isManager && (
-                        <Link
-                          to="/manager/accounts"
-                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          Quản lý tài khoản
-                        </Link>
+                      ) : (
+                        hasStaffAccess && (
+                          <Link
+                            to="/work"
+                            className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            Quản lý đơn hàng
+                          </Link>
+                        )
                       )}
                       <button
                         onClick={() => {

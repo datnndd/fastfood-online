@@ -7,7 +7,7 @@ const toNumber = (value) => {
 
 const formatCurrency = (value) => toNumber(value).toLocaleString('vi-VN')
 
-export default function ComboCard({ combo, onAddToCart }) {
+export default function ComboCard({ combo, onAddToCart, categoryName, onCategoryClick }) {
   const itemsPreview = (combo.items ?? []).slice(0, 3)
   const remainingCount = Math.max((combo.items?.length ?? 0) - itemsPreview.length, 0)
   const discountLabel = (() => {
@@ -24,7 +24,7 @@ export default function ComboCard({ combo, onAddToCart }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl">
       <div className="aspect-[3/2] overflow-hidden">
         <img
           src={combo.image_url || PLACEHOLDER_IMG}
@@ -34,8 +34,20 @@ export default function ComboCard({ combo, onAddToCart }) {
       </div>
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold text-gray-900">{combo.name}</h3>
-          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">
+          <div>
+            {categoryName && (
+              <button
+                type="button"
+                onClick={() => onCategoryClick && onCategoryClick()}
+                className="mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 hover:border-amber-300"
+              >
+                <span className="text-[9px] text-amber-500">Danh mục</span>
+                {categoryName}
+              </button>
+            )}
+            <h3 className="font-semibold text-gray-900">{combo.name}</h3>
+          </div>
+          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
             Combo
           </span>
         </div>
@@ -75,7 +87,7 @@ export default function ComboCard({ combo, onAddToCart }) {
             <button
               onClick={handleAdd}
               disabled={combo?.is_available === false}
-              className="mt-2 inline-flex items-center justify-center rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+              className="mt-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-sm font-semibold text-white shadow hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
             >
               Thêm combo
             </button>

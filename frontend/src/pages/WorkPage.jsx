@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
 
@@ -60,7 +60,7 @@ export default function WorkPage() {
   const ordersPerPage = 10
 
   // Load số lượng đơn hàng cho tất cả các tab
-  const loadTabCounts = async () => {
+  const loadTabCounts = useCallback(async () => {
     try {
       const promises = STATUSES.map(async (status) => {
         const res = await OrderAPI.work.list({
@@ -81,9 +81,9 @@ export default function WorkPage() {
     } catch (e) {
       console.error('Failed to load tab counts:', e)
     }
-  }
+  }, [selectedDate])
 
-  const loadOrders = async (page = 1, status = activeTab) => {
+  const loadOrders = useCallback(async (page = 1, status = activeTab) => {
     setLoading(true)
     try {
       const params = {
@@ -105,17 +105,17 @@ export default function WorkPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab, ordersPerPage, selectedDate])
 
   useEffect(() => {
     setCurrentPage(1)
     loadOrders(1, activeTab)
     loadTabCounts() // Load counts khi thay đổi tab hoặc ngày
-  }, [activeTab, selectedDate])
+  }, [activeTab, selectedDate, loadOrders, loadTabCounts])
 
   useEffect(() => {
     loadOrders(currentPage, activeTab)
-  }, [currentPage])
+  }, [currentPage, activeTab, loadOrders])
 
   // Auto refresh every 30 seconds
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function WorkPage() {
       loadTabCounts()
     }, 30000)
     return () => clearInterval(interval)
-  }, [currentPage, activeTab, selectedDate])
+  }, [currentPage, activeTab, loadOrders, loadTabCounts])
 
   const advanceStatus = async (orderId, current) => {
     const next = NEXT_STATUS[current]

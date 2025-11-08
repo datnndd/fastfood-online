@@ -13,13 +13,13 @@ import OrdersPage from './pages/OrdersPage.jsx'
 import WorkPage from './pages/WorkPage.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Promotions from './pages/Promotions.jsx'
-import StoresPage from './pages/StoresPage.jsx'
 import ContactPage from './pages/ContactPage.jsx'
 import ManagerAccountsPage from './pages/ManagerAccountsPage.jsx'
 import ItemsManagement from './pages/ItemsManagement.jsx'
 import CombosManagement from './pages/CombosManagement.jsx'
 import CategoriesManagement from './pages/CategoriesManagement.jsx'
 import ManagerDashboard from './pages/ManagerDashboard.jsx'
+import FeedbackManagement from './pages/FeedbackManagement.jsx'
 import StatisticsPage from './pages/StatisticsPage.jsx'
 import Protected from './components/Protected.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
@@ -40,7 +40,6 @@ const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       { path: 'promotions', element: <Promotions /> },
-      { path: 'stores', element: <StoresPage /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'about', element: <About /> },
 
@@ -110,6 +109,14 @@ const router = createBrowserRouter([
         element: (
           <Protected roles={['manager']}>
             <StatisticsPage />
+          </Protected>
+        )
+      },
+      {
+        path: 'manager/feedbacks',
+        element: (
+          <Protected roles={['manager']}>
+            <FeedbackManagement />
           </Protected>
         )
       },

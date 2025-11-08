@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import ItemCard from '../components/ItemCard'
@@ -20,6 +20,7 @@ const SORT_OPTIONS = [
 const COMBOS_PER_PAGE = 6
 const ITEMS_PER_PAGE = 9
 
+
 const slugify = (value = '') =>
   value
     .toString()
@@ -38,6 +39,54 @@ const CATEGORY_NAME_MAP = {
   'mon-phu': 'Món phụ',
   'trang-mieng': 'Tráng miệng',
   'thuc-uong': 'Thức uống'
+}
+
+const FALLBACK_CATEGORY_NAME = 'Danh mục khác'
+
+const getCategoryMetaFromField = (field) => {
+  if (!field) return { slug: null, name: null }
+  if (typeof field === 'string') {
+    const trimmed = field.trim()
+    if (!trimmed) return { slug: null, name: null }
+    return { slug: slugify(trimmed), name: trimmed }
+  }
+
+  if (typeof field === 'object') {
+    const slugSource = field.slug || field.code || field.identifier || field.name || field.title
+    const slug = slugSource ? slugify(slugSource) : null
+    const name = field.name || field.title || field.label || null
+    return { slug, name }
+  }
+
+  return { slug: null, name: null }
+}
+
+const getCategoryMetaFromEntity = (entity) => {
+  if (!entity) return { slug: null, name: null }
+
+  const fieldCandidates = [
+    entity.categorySlug,
+    entity.category_slug,
+    entity.category_info,
+    entity.catalog,
+    entity.category,
+    entity.category_name,
+    entity.categoryName,
+    entity.categoryLabel,
+    entity.categoryTitle
+  ]
+
+  for (const candidate of fieldCandidates) {
+    const meta = getCategoryMetaFromField(candidate)
+    if (meta.slug) {
+      return {
+        slug: meta.slug,
+        name: meta.name || CATEGORY_NAME_MAP[meta.slug] || FALLBACK_CATEGORY_NAME
+      }
+    }
+  }
+
+  return { slug: null, name: null }
 }
 
 const parsePrice = (value) => {
@@ -112,9 +161,8 @@ export default function MenuPage() {
   const [sortOption, setSortOption] = useState('default')
   const [comboPage, setComboPage] = useState(1)
   const [itemPage, setItemPage] = useState(1)
-  const comboSectionRef = useRef(null)
-  const singleSectionRef = useRef(null)
   const normalizedSearch = searchTerm.trim().toLowerCase()
+  const normalizedSelectedCategory = selectedCategorySlug ? slugify(selectedCategorySlug) : null
 
   const unwrapList = (response) => {
     const data = response?.data
@@ -140,20 +188,8 @@ export default function MenuPage() {
         const itemsData = unwrapList(itemsRes)
         const combosData = unwrapList(combosRes)
 
-        const filteredByCatalog = categoryFromURL
-          ? itemsData.filter((item) => {
-              const catField = item.category ?? item.catalog ?? item.category_name
-              const catSlug =
-                typeof catField === 'string'
-                  ? slugify(catField)
-                  : slugify(catField?.slug || catField?.name || '')
-
-              return catSlug === slugify(categoryFromURL)
-            })
-          : itemsData
-
         setCategories(cats)
-        setItems(filteredByCatalog)
+        setItems(itemsData)
         setCombos(combosData)
       })
       .catch((error) => {
@@ -164,34 +200,78 @@ export default function MenuPage() {
 
   const filteredItems = useMemo(() => {
     const matches = items.filter((item) => {
-      if (!normalizedSearch) return true
-      return (
-        item.name?.toLowerCase().includes(normalizedSearch) ||
-        item.description?.toLowerCase().includes(normalizedSearch)
-      )
+      if (normalizedSearch) {
+        const inName = item.name?.toLowerCase().includes(normalizedSearch)
+        const inDesc = item.description?.toLowerCase().includes(normalizedSearch)
+        if (!inName && !inDesc) return false
+      }
+
+      if (normalizedSelectedCategory) {
+        const { slug } = getCategoryMetaFromEntity(item)
+        if (!slug || slug !== normalizedSelectedCategory) return false
+      }
+
+      return true
     })
     return sortCollection(matches, sortOption, getItemPrice)
-  }, [items, normalizedSearch, sortOption])
+  }, [items, normalizedSearch, sortOption, normalizedSelectedCategory])
 
   const filteredCombos = useMemo(() => {
     const matches = combos.filter((combo) => {
-      if (!normalizedSearch) return true
-      return (
-        combo.name?.toLowerCase().includes(normalizedSearch) ||
-        combo.description?.toLowerCase().includes(normalizedSearch)
-      )
+      if (normalizedSearch) {
+        const inName = combo.name?.toLowerCase().includes(normalizedSearch)
+        const inDesc = combo.description?.toLowerCase().includes(normalizedSearch)
+        if (!inName && !inDesc) return false
+      }
+
+      if (normalizedSelectedCategory) {
+        const { slug } = getCategoryMetaFromEntity(combo)
+        if (!slug || slug !== normalizedSelectedCategory) return false
+      }
+
+      return true
     })
     return sortCollection(matches, sortOption, getComboPrice)
-  }, [combos, normalizedSearch, sortOption])
+  }, [combos, normalizedSearch, sortOption, normalizedSelectedCategory])
+
+  const categoryOptions = useMemo(() => {
+    const map = new Map()
+
+    const addCategory = (slug, name) => {
+      if (!slug) return
+      const key = slug.toLowerCase()
+      if (map.has(key)) return
+      map.set(key, {
+        slug,
+        name: name || CATEGORY_NAME_MAP[slug] || FALLBACK_CATEGORY_NAME
+      })
+    }
+
+    categories.forEach((category) => {
+      const slug = slugify(category.slug || category.name || category.title || '')
+      if (!slug) return
+      const name = category.name || category.title || CATEGORY_NAME_MAP[slug] || FALLBACK_CATEGORY_NAME
+      addCategory(slug, name)
+    })
+
+    items.forEach((item) => {
+      const { slug, name } = getCategoryMetaFromEntity(item)
+      addCategory(slug, name)
+    })
+
+    combos.forEach((combo) => {
+      const { slug, name } = getCategoryMetaFromEntity(combo)
+      addCategory(slug, name)
+    })
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi', { sensitivity: 'base' }))
+  }, [categories, items, combos])
 
   const selectedCategoryName = useMemo(() => {
-    if (!selectedCategorySlug) return null
-    const matchingCategory = categories.find((cat) => {
-      const slug = slugify(cat.slug || cat.name || cat.title || '')
-      return slug && slug === slugify(selectedCategorySlug)
-    })
-    return matchingCategory?.name || matchingCategory?.title || CATEGORY_NAME_MAP[selectedCategorySlug] || selectedCategorySlug
-  }, [selectedCategorySlug, categories])
+    if (!normalizedSelectedCategory) return null
+    const matchingCategory = categoryOptions.find((cat) => slugify(cat.slug) === normalizedSelectedCategory)
+    return matchingCategory?.name || CATEGORY_NAME_MAP[normalizedSelectedCategory] || selectedCategorySlug
+  }, [normalizedSelectedCategory, categoryOptions, selectedCategorySlug])
 
   const shouldShowCombos = (viewMode === 'all' || viewMode === 'combo') && filteredCombos.length > 0
   const shouldShowSingles = viewMode === 'all' || viewMode === 'single'
@@ -229,14 +309,8 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (viewMode === 'combo' && comboSectionRef.current) {
-      comboSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else if (viewMode === 'single' && singleSectionRef.current) {
-      singleSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else if (viewMode === 'all') {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [viewMode])
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   const handleCategorySelect = (slug) => {
     if (!slug) {
@@ -317,12 +391,12 @@ export default function MenuPage() {
 
         <div className="rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50 via-orange-50 to-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex w-full gap-2 rounded-2xl bg-white/80 p-1 lg:w-auto">
+            <div className="flex w-full flex-wrap gap-2 rounded-2xl bg-white/80 p-1 lg:w-auto">
               {VIEW_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => handleViewModeChange(tab.id)}
-                  className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                  className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
                     viewMode === tab.id ? 'bg-red-600 text-white shadow-lg' : 'text-red-500 hover:text-red-700'
                   }`}
                 >
@@ -371,24 +445,23 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {viewMode !== 'combo' && (
+        {categoryOptions.length > 0 && (
           <div className="overflow-x-auto pb-2">
             <div className="flex gap-2">
               <button
                 onClick={() => handleCategorySelect(null)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
-                  !selectedCategorySlug ? 'bg-red-600 text-white shadow' : 'bg-white text-gray-600 border border-gray-200'
+                  !normalizedSelectedCategory ? 'bg-red-600 text-white shadow' : 'bg-white text-gray-600 border border-gray-200'
                 }`}
               >
                 Danh mục: Tất cả
               </button>
-              {categories.map((category) => {
-                const slug = category.slug || slugify(category.name || category.title || '')
-                const name = category.name || category.title || slug
-                const isActive = selectedCategorySlug && slugify(selectedCategorySlug) === slugify(slug)
+              {categoryOptions.map((category) => {
+                const { slug, name } = category
+                const isActive = normalizedSelectedCategory === slug
                 return (
                   <button
-                    key={category.id ?? slug}
+                    key={slug}
                     onClick={() => handleCategorySelect(slug)}
                     className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border ${
                       isActive
@@ -405,19 +478,57 @@ export default function MenuPage() {
         )}
 
         {shouldShowCombos ? (
-          <section ref={comboSectionRef} className="space-y-4" id="combo-section">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-red-600">Combo ưu đãi</p>
-                <h2 className="text-2xl font-semibold text-gray-900">Tiết kiệm hơn khi chọn combo</h2>
-                <p className="text-gray-500">Giá đã bao gồm món chính, món phụ và nước uống hài hòa khẩu vị.</p>
+          <section className="space-y-4" id="combo-section">
+            <div className="rounded-2xl border border-amber-100 bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 p-6 shadow-sm">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-amber-600">
+                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+                    Combo ưu đãi
+                  </div>
+                  <h2 className="mt-3 text-2xl font-semibold text-amber-900">Combo đậm vị • tiết kiệm hết ý</h2>
+                  <p className="mt-2 text-sm text-amber-900/90">
+                    Ghép đôi món chính, món phụ và nước uống đã được cân chỉnh khẩu vị giúp bạn thưởng thức trọn vẹn mà vẫn tiết kiệm.
+                  </p>
+                </div>
+                <div className="flex flex-1 flex-col gap-4 text-sm text-amber-900/80">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white/90 px-4 py-3 shadow-sm">
+                      <div className="text-4xl font-bold text-amber-900">{filteredCombos.length}</div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-amber-500">Combo mở bán</p>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3 text-amber-800">
+                      <span className="text-2xl" role="img" aria-label="hot deal">
+                        🔥
+                      </span>
+                      <p className="text-sm font-semibold">Đặt combo hot trong tuần</p>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 text-center text-amber-800 sm:flex sm:items-center sm:justify-between sm:text-left">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-amber-500">Gợi ý</p>
+                      <p className="text-base font-semibold">Phù hợp nhóm 2-4 người</p>
+                    </div>
+                    <p className="mt-2 text-sm text-amber-700 sm:mt-0 sm:max-w-xs">
+                      Chọn combo kèm món phụ & thức uống đồng bộ khẩu vị, tiết kiệm hơn so với gọi lẻ từng món.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <span className="text-sm text-gray-500">{filteredCombos.length} combo đang mở bán</span>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {paginatedCombos.map((combo) => (
-                <ComboCard key={combo.id} combo={combo} onAddToCart={handleAddComboToCart} />
-              ))}
+              {paginatedCombos.map((combo) => {
+                const { slug, name } = getCategoryMetaFromEntity(combo)
+                return (
+                  <ComboCard
+                    key={combo.id}
+                    combo={combo}
+                    onAddToCart={handleAddComboToCart}
+                    categoryName={name}
+                    onCategoryClick={slug ? () => handleCategorySelect(slug) : undefined}
+                  />
+                )
+              })}
             </div>
             <PaginationControls
               page={comboPage}
@@ -436,22 +547,49 @@ export default function MenuPage() {
 
         {shouldShowSingles && (
           filteredItems.length > 0 ? (
-            <section ref={singleSectionRef} className="space-y-6" id="single-section">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">Món lẻ</p>
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {selectedCategorySlug ? selectedCategoryName : 'Tất cả món lẻ'}
-                </h2>
-                <p className="text-gray-500">
-                  {selectedCategorySlug
-                    ? `Có ${filteredItems.length} lựa chọn cho danh mục này.`
-                    : 'Lựa chọn từng món để cá nhân hóa khẩu phần theo sở thích.'}
-                </p>
+            <section className="space-y-6" id="single-section">
+              <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-cyan-50 to-indigo-50 p-6 shadow-sm">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex-1">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">
+                      <span className="h-2 w-2 rounded-full bg-sky-500"></span>
+                      Món lẻ
+                    </div>
+                    <h2 className="mt-3 text-2xl font-semibold text-indigo-950">
+                      {selectedCategorySlug ? `${selectedCategoryName} • chọn món theo gu` : 'Tự tay mix & match món lẻ'}
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {selectedCategorySlug
+                        ? `Có ${filteredItems.length} lựa chọn đang chờ bạn trong danh mục này.`
+                        : 'Chọn từng món yêu thích để cá nhân hóa khẩu phần, thêm topping hoặc mix cùng combo có sẵn.'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-center text-sm text-slate-700">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+                      <p className="text-xs uppercase tracking-widest text-sky-500">Tổng món</p>
+                      <p className="text-3xl font-bold text-indigo-900">{filteredItems.length}</p>
+                    </div>
+                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/90 p-4">
+                      <p className="text-xs uppercase tracking-widest text-indigo-500">Tùy chọn</p>
+                      <p className="text-sm font-semibold">Topping, combo mini</p>
+                      <p className="text-xs text-indigo-500/80">Chọn nhanh trong pop-up</p>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {paginatedItems.map((item) => (
-                  <ItemCard key={item.id} item={item} onAddToCart={handleAddToCartClick} />
-                ))}
+                {paginatedItems.map((item) => {
+                  const { slug, name } = getCategoryMetaFromEntity(item)
+                  return (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onAddToCart={handleAddToCartClick}
+                      categoryName={name}
+                      onCategoryClick={slug ? () => handleCategorySelect(slug) : undefined}
+                    />
+                  )
+                })}
               </div>
               <PaginationControls
                 page={itemPage}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CatalogAPI } from '../lib/api'
 import ItemFormModal from '../components/ItemFormModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
@@ -15,17 +15,7 @@ export default function ItemsManagement() {
     const [filterCategory, setFilterCategory] = useState('')
     const [viewMode, setViewMode] = useState('grid') // 'grid' or 'table'
 
-    useEffect(() => {
-        loadData()
-    }, [])
-
-    const loadData = async () => {
-        setLoading(true)
-        await Promise.all([loadCategories(), loadItems()])
-        setLoading(false)
-    }
-
-    const loadItems = async () => {
+    const loadItems = useCallback(async () => {
         try {
             const response = await CatalogAPI.listItems()
             const data = response.data.results || response.data
@@ -36,9 +26,9 @@ export default function ItemsManagement() {
             setError(`Không thể tải danh sách món ăn: ${err.response?.data?.detail || err.message}`)
             setItems([])
         }
-    }
+    }, [])
 
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         try {
             const response = await CatalogAPI.listCategories()
             const data = response.data.results || response.data
@@ -47,7 +37,17 @@ export default function ItemsManagement() {
             console.error('Load categories error:', err.response || err)
             setCategories([])
         }
-    }
+    }, [])
+
+    const loadData = useCallback(async () => {
+        setLoading(true)
+        await Promise.all([loadCategories(), loadItems()])
+        setLoading(false)
+    }, [loadCategories, loadItems])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const handleAdd = () => {
         setSelectedItem(null)

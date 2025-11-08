@@ -188,4 +188,12 @@ export const OrderAPI = {
   }
 }
 
+// =============================================================================
+// FEEDBACK APIs
+// =============================================================================
+export const FeedbackAPI = {
+  submit: (data) => api.post('/feedback/feedbacks/', data),
+  list: (params = {}) => api.get('/feedback/feedbacks/', { params })
+}
+
 export default api

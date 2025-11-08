@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CatalogAPI } from '../lib/api'
 import ComboFormModal from '../components/ComboFormModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
@@ -15,17 +15,7 @@ export default function CombosManagement() {
     const [filterCategory, setFilterCategory] = useState('')
     const [viewMode, setViewMode] = useState('grid')
 
-    useEffect(() => {
-        loadData()
-    }, [])
-
-    const loadData = async () => {
-        setLoading(true)
-        await Promise.all([loadCategories(), loadCombos()])
-        setLoading(false)
-    }
-
-    const loadCombos = async () => {
+    const loadCombos = useCallback(async () => {
         try {
             const response = await CatalogAPI.listCombos()
             const data = response.data.results || response.data
@@ -36,9 +26,9 @@ export default function CombosManagement() {
             setError(`Không thể tải danh sách combo: ${err.response?.data?.detail || err.message}`)
             setCombos([])
         }
-    }
+    }, [])
 
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         try {
             const response = await CatalogAPI.listCategories()
             const data = response.data.results || response.data
@@ -47,7 +37,17 @@ export default function CombosManagement() {
             console.error('Load categories error:', err.response || err)
             setCategories([])
         }
-    }
+    }, [])
+
+    const loadData = useCallback(async () => {
+        setLoading(true)
+        await Promise.all([loadCategories(), loadCombos()])
+        setLoading(false)
+    }, [loadCategories, loadCombos])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const handleAdd = () => {
         setSelectedCombo(null)

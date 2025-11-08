@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { OrderAPI } from '../lib/api'
 import Protected from '../components/Protected'
 
@@ -70,7 +70,7 @@ export default function OrdersPage() {
   const [timeRemaining, setTimeRemaining] = useState({})
 
 
-  const loadOrders = async (status = activeTab) => {
+  const loadOrders = useCallback(async (status = activeTab) => {
     setLoading(true)
     try {
       const response = await OrderAPI.my.list(1, status)
@@ -90,7 +90,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab])
 
   const cancelOrder = async (orderId) => {
     if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
@@ -112,7 +112,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrders(activeTab)
-  }, [activeTab])
+  }, [activeTab, loadOrders])
 
   // Auto refresh mỗi 30 giây và cập nhật countdown timer
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function OrdersPage() {
       loadOrders(activeTab)
     }, 30000)
     return () => clearInterval(interval)
-  }, [activeTab])
+  }, [activeTab, loadOrders])
 
   // Timer để cập nhật thời gian còn lại mỗi giây cho tab PREPARING
   useEffect(() => {

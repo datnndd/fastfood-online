@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ loginInput: '', password: '' })

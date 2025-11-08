@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth } from '../lib/authContext'
 
 // Loading component có thể tùy chỉnh
 function LoadingSpinner() {
