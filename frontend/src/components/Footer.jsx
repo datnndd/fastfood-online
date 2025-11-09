@@ -5,7 +5,7 @@ import {
   MapPinIcon,
   PhoneIcon,
 } from '@heroicons/react/24/outline'
-import logo from '../assets/images/logo.jpg'
+import logo from '../assets/images/logo.png'
 
 const navSections = [
   {

@@ -595,37 +595,37 @@ export default function MenuPage() {
 
         {shouldShowCombos ? (
           <section className="space-y-4" id="combo-section">
-            <div className="rounded-2xl border border-amber-100 bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 p-6 shadow-sm">
+            <div className="rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 via-rose-100 to-pink-50 p-6 shadow-sm">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex-1">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-amber-600">
-                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-600">
+                    <span className="h-2 w-2 rounded-full bg-rose-500"></span>
                     Combo ưu đãi
                   </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-amber-900">Combo đậm vị • tiết kiệm hết ý</h2>
-                  <p className="mt-2 text-sm text-amber-900/90">
+                  <h2 className="mt-3 text-2xl font-semibold text-rose-900">Combo đậm vị • tiết kiệm hết ý</h2>
+                  <p className="mt-2 text-sm text-rose-900/90">
                     Ghép đôi món chính, món phụ và nước uống đã được cân chỉnh khẩu vị giúp bạn thưởng thức trọn vẹn mà vẫn tiết kiệm.
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col gap-4 text-sm text-amber-900/80">
+                <div className="flex flex-1 flex-col gap-4 text-sm text-rose-800/80">
                   <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-white/90 px-4 py-3 shadow-sm">
-                      <div className="text-4xl font-bold text-amber-900">{filteredCombos.length}</div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-amber-500">Combo mở bán</p>
+                    <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-white/90 px-4 py-3 shadow-sm">
+                      <div className="text-4xl font-bold text-rose-900">{filteredCombos.length}</div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500">Combo mở bán</p>
                     </div>
-                    <div className="flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50/80 px-4 py-3 text-amber-800">
+                    <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/80 px-4 py-3 text-rose-700">
                       <span className="text-2xl" role="img" aria-label="hot deal">
                         🔥
                       </span>
                       <p className="text-sm font-semibold">Đặt combo hot trong tuần</p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 text-center text-amber-800 sm:flex sm:items-center sm:justify-between sm:text-left">
+                  <div className="rounded-2xl border border-rose-200 bg-white/80 p-4 text-center text-rose-800 sm:flex sm:items-center sm:justify-between sm:text-left">
                     <div>
-                      <p className="text-xs uppercase tracking-widest text-amber-500">Gợi ý</p>
+                      <p className="text-xs uppercase tracking-widest text-rose-500">Gợi ý</p>
                       <p className="text-base font-semibold">Phù hợp nhóm 2-4 người</p>
                     </div>
-                    <p className="mt-2 text-sm text-amber-700 sm:mt-0 sm:max-w-xs">
+                    <p className="mt-2 text-sm text-rose-700 sm:mt-0 sm:max-w-xs">
                       Chọn combo kèm món phụ & thức uống đồng bộ khẩu vị, tiết kiệm hơn so với gọi lẻ từng món.
                     </p>
                   </div>
@@ -665,31 +665,31 @@ export default function MenuPage() {
         {shouldShowSingles && (
           filteredItems.length > 0 ? (
             <section className="space-y-6" id="single-section">
-              <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-cyan-50 to-indigo-50 p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex-1">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">
-                      <span className="h-2 w-2 rounded-full bg-sky-500"></span>
+            <div className="rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 via-rose-100 to-pink-50 p-6 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex-1">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-600">
+                      <span className="h-2 w-2 rounded-full bg-rose-500"></span>
                       Món lẻ
                     </div>
-                    <h2 className="mt-3 text-2xl font-semibold text-indigo-950">
+                    <h2 className="mt-3 text-2xl font-semibold text-rose-900">
                       {selectedCategorySlug ? `${selectedCategoryName} • chọn món theo gu` : 'Tự tay mix & match món lẻ'}
                     </h2>
-                    <p className="mt-2 text-sm text-slate-600">
+                    <p className="mt-2 text-sm text-rose-700/90">
                       {selectedCategorySlug
                         ? `Có ${filteredItems.length} lựa chọn đang chờ bạn trong danh mục này.`
                         : 'Chọn từng món yêu thích để cá nhân hóa khẩu phần, thêm topping hoặc mix cùng combo có sẵn.'}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-center text-sm text-slate-700">
+                  <div className="grid grid-cols-2 gap-4 text-center text-sm text-rose-700">
                     <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-widest text-sky-500">Tổng món</p>
-                      <p className="text-3xl font-bold text-indigo-900">{filteredItems.length}</p>
+                      <p className="text-xs uppercase tracking-widest text-rose-500">Tổng món</p>
+                      <p className="text-3xl font-bold text-rose-900">{filteredItems.length}</p>
                     </div>
-                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/90 p-4">
-                      <p className="text-xs uppercase tracking-widest text-indigo-500">Tùy chọn</p>
+                    <div className="rounded-2xl border border-rose-100 bg-rose-50/90 p-4">
+                      <p className="text-xs uppercase tracking-widest text-rose-500">Tùy chọn</p>
                       <p className="text-sm font-semibold">Topping, combo mini</p>
-                      <p className="text-xs text-indigo-500/80">Chọn nhanh trong pop-up</p>
+                      <p className="text-xs text-rose-500/80">Chọn nhanh trong pop-up</p>
                     </div>
                   </div>
                 </div>

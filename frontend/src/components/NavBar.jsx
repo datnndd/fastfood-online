@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
-import logo from '../assets/images/logo.jpg'
+import logo from '../assets/images/logo.png'
 import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import { useAuth, useRole } from '../lib/authContext'
@@ -108,7 +108,7 @@ export default function NavBar() {
 
   return (
     <>
-      <div className="bg-[#e21b1b] text-white shadow-md sticky top-0 z-50">
+      <div className="bg-gradient-to-r from-rose-800 via-red-900 to-slate-900 text-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-[90px] px-6">
           <Link to="/" className="flex items-center">
             <img
@@ -128,10 +128,10 @@ export default function NavBar() {
                 <div key={link.path} className="relative group">
                   <Link
                     to={link.path}
-                    className={`px-4 py-2 border-2 transition-all duration-200 rounded-full ${
+                    className={`px-4 py-2 border-2 text-sm transition-all duration-200 rounded-full ${
                       isActive
-                        ? 'border-white bg-[#f9d7d7] text-[#b91c1c]'
-                        : 'border-transparent hover:border-white hover:bg-[#f9d7d7] hover:text-[#b91c1c]'
+                        ? 'border-white bg-white text-slate-900'
+                        : 'border-transparent text-white/80 hover:border-white hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     {link.label}

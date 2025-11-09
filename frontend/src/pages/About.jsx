@@ -39,7 +39,7 @@ export default function About() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff7e6] via-[#ffe1cc] to-[#ffcccc] text-gray-800 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff1f0] via-[#ffe5e3] to-[#ffd1cf] text-gray-800 overflow-hidden">
       {/* HERO */}
       <section className="relative py-24 text-center text-white">
         <img
@@ -47,6 +47,7 @@ export default function About() {
           alt="McDono hero"
           className="absolute inset-0 w-full h-full object-cover brightness-50"
         />
+        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/80 via-red-700/60 to-black/70" />
         <div className="relative z-10 max-w-4xl mx-auto px-6">
           <h1 className="text-6xl font-extrabold drop-shadow-xl mb-6">
             Về McDono 🍔
@@ -61,10 +62,10 @@ export default function About() {
       {/* STORY */}
       <section className="max-w-6xl mx-auto py-20 px-6 grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
         <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-[#e21b1b] mb-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-rose-600 mb-3">
             🏆 Câu chuyện McDono
           </p>
-          <h2 className="text-4xl font-bold text-[#e21b1b] mb-6">
+          <h2 className="text-4xl font-bold text-rose-600 mb-6">
             Hành trình từ căn bếp chung cư đến bản đồ fast-food Hà Nội
           </h2>
           <p className="mb-4">
@@ -85,9 +86,9 @@ export default function About() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="bg-white/80 rounded-2xl border border-[#f7c600]/40 p-4 shadow-sm"
+                className="bg-white/90 rounded-2xl border border-rose-200 p-4 shadow-sm"
               >
-                <p className="text-3xl font-black text-[#e21b1b]">
+                <p className="text-3xl font-black text-rose-600">
                   {item.value}
                 </p>
                 <p className="text-sm uppercase tracking-wide text-gray-500">
@@ -111,7 +112,7 @@ export default function About() {
           {storyMoments.map((moment) => (
             <article
               key={moment.title}
-              className="bg-white rounded-3xl shadow-xl overflow-hidden border border-[#ffd4bf]/80"
+              className="bg-white rounded-3xl shadow-xl overflow-hidden border border-rose-100"
             >
               <img
                 src={moment.image}
@@ -119,14 +120,14 @@ export default function About() {
                 className="w-full h-44 object-cover"
               />
               <div className="p-6">
-                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-[#e21b1b]">
+                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-600">
                   {moment.tag}
                 </span>
                 <h3 className="text-2xl font-bold mt-3 mb-2 text-gray-900">
                   {moment.title}
                 </h3>
                 <p className="text-gray-600 mb-4">{moment.description}</p>
-                <span className="inline-flex items-center gap-2 bg-[#fff7e6] text-[#b91c1c] font-semibold text-sm px-4 py-2 rounded-full">
+                <span className="inline-flex items-center gap-2 bg-white/80 text-rose-600 font-semibold text-sm px-4 py-2 rounded-full">
                   {moment.stat}
                 </span>
               </div>
@@ -136,7 +137,7 @@ export default function About() {
       </section>
 
       {/* MISSION */}
-      <section className="bg-[#e21b1b] text-white py-20">
+      <section className="bg-gradient-to-br from-rose-600 via-red-600 to-red-700 text-white py-20">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           <img
             src={hamberger}
@@ -160,26 +161,26 @@ export default function About() {
 
       {/* CORE VALUES */}
       <section className="max-w-6xl mx-auto py-20 px-6 text-center space-y-10">
-        <h2 className="text-4xl font-bold text-[#e21b1b]">💡 Giá trị cốt lõi</h2>
+        <h2 className="text-4xl font-bold text-rose-600">💡 Giá trị cốt lõi</h2>
         <div className="grid md:grid-cols-3 gap-10">
           {[
             {
               title: "Chất lượng hàng đầu",
               desc: "Mỗi miếng gà, mỗi chiếc burger đều được chế biến cẩn thận với nguyên liệu tươi ngon.",
               img: garan,
-              color: "border-[#f7c600]",
+              color: "border-rose-300",
             },
             {
               title: "Trải nghiệm vui vẻ",
               desc: "Không chỉ là bữa ăn, McDono mang đến niềm vui, tiếng cười và sự ấm cúng trong từng khoảnh khắc.",
               img: herobanner2,
-              color: "border-[#e21b1b]",
+              color: "border-rose-500",
             },
             {
               title: "Đổi mới liên tục",
               desc: "Không ngừng sáng tạo và cải tiến menu để mang đến những hương vị mới mẻ cho khách hàng.",
               img: online,
-              color: "border-[#ff9900]",
+              color: "border-pink-400",
             },
           ].map((item, i) => (
             <div
@@ -202,7 +203,7 @@ export default function About() {
 
       {/* GALLERY */}
       <section className="py-20 bg-white">
-        <h2 className="text-4xl font-bold text-[#e21b1b] text-center mb-10">
+        <h2 className="text-4xl font-bold text-rose-600 text-center mb-10">
           📸 Khoảnh khắc McDono
         </h2>
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 px-6">
@@ -218,13 +219,13 @@ export default function About() {
       </section>
 
       {/* CTA */}
-      <section className="text-center py-20 bg-[#e21b1b] text-white">
+      <section className="text-center py-20 bg-gradient-to-br from-rose-600 to-red-600 text-white">
         <h2 className="text-4xl font-extrabold mb-6">
           Ghé McDono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
         </h2>
         <a
           href="/menu"
-          className="inline-block bg-[#f7c600] hover:bg-[#ffd633] text-[#b91c1c] font-bold text-lg px-10 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+          className="inline-block bg-white hover:bg-gray-50 text-rose-600 font-bold text-lg px-10 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
         >
           Xem thực đơn ngay
         </a>

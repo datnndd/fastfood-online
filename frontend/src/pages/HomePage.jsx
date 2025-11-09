@@ -83,7 +83,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900">
-      <section className="relative isolate overflow-hidden bg-gradient-to-br from-red-600 via-rose-600 to-amber-500 text-white">
+      <section className="relative isolate overflow-hidden bg-gradient-to-br from-red-700 via-rose-500 to-pink-300 text-white">
         <div className="absolute inset-0 opacity-30" aria-hidden>
           <div className="absolute -right-24 top-0 h-80 w-80 rounded-full bg-white/20 blur-3xl" />
           <div className="absolute left-10 bottom-0 h-64 w-64 rounded-full bg-amber-300/30 blur-3xl" />
@@ -108,7 +108,7 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 to="/menu"
-                className="rounded-full bg-white px-8 py-3 font-semibold text-red-600 transition hover:bg-slate-100"
+                className="rounded-full bg-white px-8 py-3 font-semibold text-slate-900 transition hover:bg-slate-100"
               >
                 Khám phá thực đơn
               </Link>
@@ -162,7 +162,7 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 md:grid-cols-4">
           {highlightStats.map((stat) => (
             <div key={stat.label} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100">
-              <p className="text-3xl font-black text-red-600">{stat.value}</p>
+              <p className="text-3xl font-black text-rose-600">{stat.value}</p>
               <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-gray-500">{stat.label}</p>
               <p className="mt-2 text-sm text-gray-600">{stat.description}</p>
             </div>
@@ -178,7 +178,7 @@ export default function HomePage() {
                 Menu fusion lấy cảm hứng từ đường phố châu Á, kết hợp dịch vụ giao siêu tốc và hệ thống phần thưởng realtime.
               </p>
             </div>
-            <Link to="/menu" className="text-sm font-semibold text-red-600 hover:text-red-700">
+            <Link to="/menu" className="text-sm font-semibold text-rose-600 hover:text-rose-700">
               Khám phá menu signature →
             </Link>
           </div>
@@ -196,7 +196,7 @@ export default function HomePage() {
                     </span>
                     <h3 className="text-3xl font-semibold text-gray-900">{slide.title}</h3>
                     <p className="text-base text-gray-600">{slide.description}</p>
-                    <div className="text-sm font-semibold text-red-600">Khám phá món này →</div>
+                    <div className="text-sm font-semibold text-rose-600">Khám phá món này →</div>
                   </div>
                   <div className="flex flex-1 items-center justify-center">
                     <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-gray-100 shadow-md">
@@ -214,7 +214,7 @@ export default function HomePage() {
               <span
                 key={index}
                 className={`h-2 w-10 rounded-full transition-colors duration-500 ${
-                  index === currentSlide ? 'bg-red-600' : 'bg-gray-200'
+                  index === currentSlide ? 'bg-rose-600' : 'bg-gray-200'
                 }`}
               />
             ))}
@@ -246,7 +246,7 @@ export default function HomePage() {
             <div className="mt-8 space-y-8">
               {workflowSteps.map((step, index) => (
                 <div key={step.title} className="relative pl-10">
-                  <span className="absolute left-0 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-sm font-semibold text-red-600">
+                  <span className="absolute left-0 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-sm font-semibold text-rose-600">
                     {index + 1}
                   </span>
                   <p className="text-xl font-semibold">{step.title}</p>
@@ -274,7 +274,7 @@ export default function HomePage() {
             Dù bạn ăn tại chỗ, mang đi hay ship, hệ thống loyalty cộng điểm tự động và đề xuất món theo thời tiết, lịch tập luyện hay lịch làm việc của bạn.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link to="/menu" className="rounded-full bg-red-600 px-8 py-3 font-semibold text-white transition hover:bg-red-700">
+            <Link to="/menu" className="rounded-full bg-rose-600 px-8 py-3 font-semibold text-white transition hover:bg-rose-700">
               Bắt đầu đặt món
             </Link>
             {!user && (

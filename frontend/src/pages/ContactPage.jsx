@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import logo from "../assets/images/logo.jpg";
+import logo from "../assets/images/logo.png";
 import hotline from "../assets/images/hotline.png";
 import locationImg from "../assets/images/location.jpg";
 import { FeedbackAPI } from "../lib/api";
@@ -104,27 +104,27 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-50 via-white to-white text-gray-900 pb-16">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff1f0] via-[#ffe5e3] to-[#ffe0e4] text-gray-900 pb-16">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#e21b1b] text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-rose-700 via-rose-600 to-red-600 text-white">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,_#ffffff_0%,_transparent_55%)]" />
         <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20 relative z-10">
           <div className="grid gap-10 lg:grid-cols-2 items-center">
             <div>
               <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/15 rounded-full border border-white/30 mb-6">
                 <img src={logo} alt="McDono" className="w-10 h-10 rounded-full border border-white/40" />
-                <span className="uppercase tracking-widest text-xs font-semibold text-yellow-200">
+                <span className="uppercase tracking-widest text-xs font-semibold text-rose-100">
                   Kết nối & ghé thăm McDono
                 </span>
               </div>
               <h1 className="text-4xl md:text-5xl font-black leading-tight drop-shadow-sm">
                 Liên hệ ngay để được giao đơn nóng hổi hoặc đặt bàn tại các chi nhánh Hà Nội.
               </h1>
-              <p className="mt-4 text-lg text-yellow-50/90 max-w-xl">
+              <p className="mt-4 text-lg text-white/90 max-w-xl">
                 Đội ngũ McDono luôn trực 24/7 để hỗ trợ mọi thắc mắc từ khách hàng, đối tác sự kiện
                 tới cộng đồng tài xế giao hàng.
               </p>
-              <p className="mt-3 text-base text-yellow-100 max-w-xl font-semibold">
+              <p className="mt-3 text-base text-white/80 max-w-xl font-semibold">
                 🚚 Giao hàng miễn phí toàn bộ nội thành Hà Nội cho mọi đơn hàng online trong giờ hoạt động.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
@@ -169,7 +169,7 @@ export default function ContactPage() {
       {/* Kênh liên hệ */}
       <section className="max-w-6xl mx-auto px-6 -mt-12">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-yellow-100">
+          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
             <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Hotline</p>
             <div className="flex items-center gap-4 mt-3">
               <img src={hotline} alt="Hotline" className="w-12 h-12 object-contain" />
@@ -179,12 +179,12 @@ export default function ContactPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-yellow-100">
+          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
             <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Email</p>
             <p className="text-2xl font-semibold mt-3 break-words">support@mcdono.com</p>
             <p className="text-sm text-gray-500 mt-2">Hỗ trợ đối tác & nhượng quyền</p>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-yellow-100">
+          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
             <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Giao hàng</p>
             <p className="text-2xl font-semibold mt-3 text-[#e21b1b]">Miễn phí nội thành</p>
             <p className="text-sm text-gray-500 mt-2">
@@ -220,7 +220,7 @@ export default function ContactPage() {
           {storeLocations.map((store) => (
             <div
               key={store.city}
-              className="bg-white rounded-3xl border border-yellow-100 shadow-lg p-7 flex flex-col gap-4"
+              className="bg-white rounded-3xl border border-rose-100 shadow-lg p-7 flex flex-col gap-4"
             >
               <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
                 {store.city}
@@ -258,7 +258,7 @@ export default function ContactPage() {
 
       {/* Form phản hồi */}
       <section className="max-w-6xl mx-auto px-6 mt-16">
-        <div className="bg-white rounded-3xl shadow-2xl border border-yellow-100 p-8">
+        <div className="bg-white rounded-3xl shadow-2xl border border-rose-100 p-8">
           <p className="text-xs uppercase tracking-[0.4em] text-gray-400 font-semibold">Phản hồi</p>
           <h3 className="text-3xl font-black text-[#e21b1b] mt-2">Chia sẻ trải nghiệm</h3>
           <p className="text-gray-500 mt-2">
