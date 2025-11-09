@@ -2,10 +2,28 @@
 from rest_framework import serializers
 from .models import Cart, CartItem, CartCombo
 from catalog.models import MenuItem, Combo
-from catalog.serializers import MenuItemSerializer, OptionSerializer, ComboDetailSerializer
+from catalog.serializers import OptionSerializer, ComboDetailSerializer
+
+class MenuItemInCartSerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
+
+    class Meta:
+        model = MenuItem
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "price",
+            "is_available",
+            "stock",
+            "image_url",
+            "category_id",
+            "category_name",
+        ]
 
 class CartItemSerializer(serializers.ModelSerializer):
-    menu_item = MenuItemSerializer(read_only=True)
+    menu_item = MenuItemInCartSerializer(read_only=True)
     selected_options = OptionSerializer(many=True, read_only=True)
     menu_item_id = serializers.IntegerField(write_only=True)
     option_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)

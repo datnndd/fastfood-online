@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import logo from '../assets/images/logo.jpg'
+import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
 import { CatalogAPI, CartAPI } from '../lib/api'
 import { useAuth, useRole } from '../lib/authContext'
 import NotificationBell from './NotificationBell'
@@ -28,17 +29,24 @@ export default function NavBar() {
     return source.charAt(0).toUpperCase()
   }, [displayName, user])
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await CatalogAPI.listCategories()
-        setCategories(res.data.results || res.data)
-      } catch (error) {
-        console.error('Lỗi khi lấy danh mục:', error)
-      }
+  const loadCategories = useCallback(async () => {
+    try {
+      const res = await CatalogAPI.listCategories()
+      setCategories(res.data.results || res.data)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh mục:', error)
     }
-    fetchCategories()
   }, [])
+
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
+
+  useEffect(() => {
+    const handleCategoriesUpdated = () => loadCategories()
+    window.addEventListener('categoriesUpdated', handleCategoriesUpdated)
+    return () => window.removeEventListener('categoriesUpdated', handleCategoriesUpdated)
+  }, [loadCategories])
 
   useEffect(() => {
     if (!user) {
@@ -132,23 +140,33 @@ export default function NavBar() {
                   {link.dropdown && link.dropdown.length > 0 && (
                     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[750px] bg-white text-black rounded-xl shadow-lg p-5 z-50 opacity-0 invisible group-hover:visible group-hover:opacity-100 group-hover:translate-y-2 transition-all duration-300 ease-out">
                       <div className="grid grid-cols-4 gap-5">
-                        {link.dropdown.map((item) => (
-                          <button
-                            type="button"
-                            key={item.slug || item.id}
-                            onClick={() => navigate(`/menu?category=${item.slug || item.id}`)}
-                            className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-pointer"
-                          >
-                            <img
-                              src={item.image || item.image_url || '/default.jpg'}
-                              alt={item.name}
-                              className="w-20 h-20 object-contain mb-2"
-                            />
-                            <span className="font-semibold text-sm text-gray-800 text-center">
-                              {item.name}
-                            </span>
-                          </button>
-                        ))}
+                        {link.dropdown.map((item) => {
+                          const slug = item.slug || item.id
+                          const fallbackImg = IMAGE_PLACEHOLDER
+                          const imageSrc = item.image_url || item.image || fallbackImg
+                          return (
+                            <button
+                              type="button"
+                              key={slug}
+                              onClick={() => navigate(`/menu?category=${slug}`)}
+                              className="flex flex-col items-center hover:scale-105 transition-transform duration-200 cursor-pointer"
+                            >
+                              <img
+                                src={imageSrc}
+                                alt={item.name}
+                                loading="lazy"
+                                className="w-20 h-20 object-cover rounded-full border border-gray-200 shadow-sm mb-2"
+                                onError={(event) => {
+                                  event.currentTarget.onerror = null
+                                  event.currentTarget.src = fallbackImg
+                                }}
+                              />
+                              <span className="font-semibold text-sm text-gray-800 text-center">
+                                {item.name}
+                              </span>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   )}

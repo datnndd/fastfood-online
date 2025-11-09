@@ -47,9 +47,9 @@ export default function UpdatePasswordPage() {
 
     try {
       await updatePassword(formData.password)
-      setMessage('Cập nhật mật khẩu thành công! Bạn sẽ được chuyển hướng đến trang đăng nhập.')
+      setMessage('Cập nhật mật khẩu thành công! Bạn đang được chuyển hướng về trang chủ.')
       setTimeout(() => {
-        navigate('/login', { replace: true })
+        navigate('/', { replace: true })
       }, 3000)
     } catch (error) {
       setError(error.message || 'Không thể cập nhật mật khẩu.')

@@ -200,6 +200,67 @@ def create_order_from_cart(
     
     return order
 
+
+@transaction.atomic
+def restock_order_inventory(order):
+    """Hoàn lại tồn kho cho các món/combo thuộc đơn hàng đã hủy."""
+    order_items = list(
+        order.items.select_related("menu_item", "combo").only(
+            "menu_item_id", "combo_id", "quantity"
+        )
+    )
+    if not order_items:
+        return
+
+    menu_item_quantities = Counter()
+    combo_quantities = Counter()
+
+    for order_item in order_items:
+        if order_item.menu_item_id:
+            menu_item_quantities[order_item.menu_item_id] += order_item.quantity
+        elif order_item.combo_id:
+            combo_quantities[order_item.combo_id] += order_item.quantity
+
+    menu_items_to_update = []
+    if menu_item_quantities:
+        locked_items = {
+            item.id: item
+            for item in MenuItem.objects.select_for_update().filter(
+                id__in=menu_item_quantities.keys()
+            )
+        }
+        for menu_item_id, qty in menu_item_quantities.items():
+            menu_item = locked_items.get(menu_item_id)
+            if not menu_item:
+                continue
+            current_stock = menu_item.stock or 0
+            menu_item.stock = current_stock + qty
+            if menu_item.stock > 0:
+                menu_item.is_available = True
+            menu_items_to_update.append(menu_item)
+        if menu_items_to_update:
+            MenuItem.objects.bulk_update(menu_items_to_update, ["stock", "is_available"])
+
+    combos_to_update = []
+    if combo_quantities:
+        locked_combos = {
+            combo.id: combo
+            for combo in Combo.objects.select_for_update().filter(
+                id__in=combo_quantities.keys()
+            )
+        }
+        for combo_id, qty in combo_quantities.items():
+            combo = locked_combos.get(combo_id)
+            if not combo:
+                continue
+            combo.stock = (combo.stock or 0) + qty
+            if combo.stock > 0:
+                combo.is_available = True
+            combos_to_update.append(combo)
+        if combos_to_update:
+            Combo.objects.bulk_update(combos_to_update, ["stock", "is_available"])
+
+
 def calculate_cart_total(cart):
     total = Decimal("0.00")
     

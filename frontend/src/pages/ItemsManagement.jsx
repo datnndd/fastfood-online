@@ -17,6 +17,7 @@ export default function ItemsManagement() {
     const [viewMode, setViewMode] = useState('grid') // 'grid' or 'table'
     const [bulkStockValue, setBulkStockValue] = useState('')
     const [bulkUpdatingItems, setBulkUpdatingItems] = useState(false)
+    const [successMessage, setSuccessMessage] = useState(null)
 
     const loadItems = useCallback(async () => {
         try {
@@ -89,11 +90,23 @@ export default function ItemsManagement() {
         }
     }
 
+    useEffect(() => {
+        if (!successMessage) return
+        const timer = setTimeout(() => setSuccessMessage(null), 4000)
+        return () => clearTimeout(timer)
+    }, [successMessage])
+
     const handleSave = async () => {
+        const wasEditing = Boolean(selectedItem)
         setError(null)
         await loadItems()
         setShowModal(false)
         setSelectedItem(null)
+        const message = wasEditing ? 'Đã cập nhật món ăn thành công!' : 'Đã thêm món ăn mới thành công!'
+        setSuccessMessage(message)
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
     }
 
     const handleBulkStockUpdate = async () => {
@@ -202,6 +215,14 @@ export default function ItemsManagement() {
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">⚠️</span>
                             <p className="font-semibold">{error}</p>
+                        </div>
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="mb-6 bg-green-100 border-l-4 border-green-600 text-green-800 px-6 py-4 rounded-lg shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">✅</span>
+                            <p className="font-semibold">{successMessage}</p>
                         </div>
                     </div>
                 )}

@@ -217,10 +217,12 @@ class ComboCreateUpdateSerializer(serializers.ModelSerializer):
         source="category",
         queryset=Category.objects.all(),
     )
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Combo
         fields = [
+            "id",
             "name",
             "description",
             "discount_percentage",

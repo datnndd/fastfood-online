@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/authContext'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ loginInput: '', password: '' })
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [socialLoading, setSocialLoading] = useState('')
-  const { login, loginWithProvider } = useAuth()
+  const { login, loginWithProvider, user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const from = location.state?.from || '/'
+  const from = (typeof location.state?.from === 'string' && location.state.from) || '/'
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -20,7 +20,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    setSubmitting(true)
 
     try {
       await login(formData.loginInput, formData.password)
@@ -28,7 +28,7 @@ export default function LoginPage() {
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại')
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
@@ -41,6 +41,18 @@ export default function LoginPage() {
       setError(error.message || `Không thể đăng nhập bằng ${provider}`)
       setSocialLoading('')
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">Đang kiểm tra phiên đăng nhập...</p>
+      </div>
+    )
+  }
+
+  if (user) {
+    return <Navigate to={from} replace />
   }
 
   return (
@@ -89,21 +101,12 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="text-right">
-            <Link
-              to="/forgot-password"
-              className="text-sm font-medium text-red-600 hover:text-red-500"
-            >
-              Quên mật khẩu?
-            </Link>
-          </div>
-
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
           >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
 
           <div className="flex items-center gap-3">
@@ -138,21 +141,6 @@ export default function LoginPage() {
                 />
               </svg>
               {socialLoading === 'google' ? 'Đang chuyển hướng...' : 'Tiếp tục với Google'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSocialLogin('facebook')}
-              disabled={!!socialLoading}
-              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-md py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#1877F2"
-                  d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24h11.495v-9.294H9.691V11.01h3.129V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.794.143v3.24l-1.918.001c-1.504 0-1.796.715-1.796 1.763v2.315h3.588l-.467 3.696h-3.121V24h6.116C23.407 24 24 23.407 24 22.676V1.325C24 .593 23.407 0 22.675 0"
-                />
-              </svg>
-              {socialLoading === 'facebook' ? 'Đang chuyển hướng...' : 'Tiếp tục với Facebook'}
             </button>
           </div>
 

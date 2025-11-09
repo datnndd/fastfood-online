@@ -53,6 +53,9 @@ export default function CategoriesManagement() {
             setError(null)
             await CatalogAPI.deleteCategory(selectedCategory.id)
             await loadCategories()
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('categoriesUpdated'))
+            }
             setShowDeleteModal(false)
             setSelectedCategory(null)
         } catch (err) {
@@ -71,6 +74,9 @@ export default function CategoriesManagement() {
     const handleSave = async () => {
         setError(null)
         await loadCategories()
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('categoriesUpdated'))
+        }
         setShowModal(false)
         setSelectedCategory(null)
     }

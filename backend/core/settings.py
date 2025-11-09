@@ -25,7 +25,24 @@ SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 SUPABASE_JWT_AUDIENCE = os.getenv("SUPABASE_JWT_AUDIENCE", "authenticated")
-SUPABASE_STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "mcdono-assets")
+SUPABASE_STORAGE_BUCKET = os.getenv(
+    "SUPABASE_STORAGE_BUCKET",
+    os.getenv("S3_BUCKET", "mcdono-assets"),
+)
+
+# S3-compatible storage (Supabase S3 API)
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "")
+S3_REGION = os.getenv("S3_REGION", "ap-southeast-1")
+S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
+S3_BUCKET = os.getenv("S3_BUCKET", SUPABASE_STORAGE_BUCKET)
+_DEFAULT_PUBLIC_BASE = ""
+if SUPABASE_URL:
+    _DEFAULT_PUBLIC_BASE = (
+        f"{SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{S3_BUCKET}".rstrip("/")
+    )
+S3_PUBLIC_BASE_URL = os.getenv("S3_PUBLIC_BASE_URL", _DEFAULT_PUBLIC_BASE)
+UPLOAD_IMAGE_MAX_DIMENSION = int(os.getenv("UPLOAD_IMAGE_MAX_DIMENSION", "1280"))
 
 # Stripe configuration
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")

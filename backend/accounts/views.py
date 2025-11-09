@@ -24,6 +24,7 @@ from .serializers import (
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):

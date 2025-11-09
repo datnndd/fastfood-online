@@ -244,7 +244,7 @@ export default function ItemFormModal({ item, categories, onClose, onSave }) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl transform animate-slideUp">
                 {/* Header với gradient */}
                 <div className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6 relative overflow-hidden">

@@ -1,10 +1,14 @@
 # accounts/serializers.py
 from datetime import date
+import re
 
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from rest_framework import serializers
 
 from .models import User, Province, Ward, DeliveryAddress
+
+PHONE_REGEX = re.compile(r"^\d{10}$")
 
 
 class ProvinceSerializer(serializers.ModelSerializer):
@@ -24,7 +28,6 @@ class WardSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
     supabase_id = serializers.UUIDField(required=False, allow_null=True)
-    set_default_address = serializers.BooleanField(default=False, write_only=True)
     province_id = serializers.PrimaryKeyRelatedField(
         source="province",
         queryset=Province.objects.only("id").all(),
@@ -53,11 +56,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             "ward_id",
             "role",
             "supabase_id",
-            "set_default_address",
         ]
         extra_kwargs = {
             "role": {"read_only": True},
             "email": {"required": True},
+            "phone": {"required": True, "allow_blank": False},
             "full_name": {"required": False, "allow_blank": True},
             "gender": {"required": False, "allow_blank": True},
             "date_of_birth": {"required": False, "allow_null": True},
@@ -66,53 +69,48 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated):
         pwd = validated.pop("password", None)
         supabase_id = validated.pop("supabase_id", None)
-        set_default_address = validated.pop("set_default_address", False)
-
         user_defaults = validated.copy()
         if supabase_id:
             user_defaults["supabase_id"] = supabase_id
 
-        full_name = user_defaults.get("full_name")
-        if full_name:
-            user_defaults["full_name"] = full_name.strip()
-        else:
-            user_defaults["full_name"] = ""
+        full_name = (user_defaults.get("full_name") or "").strip()
+        user_defaults["full_name"] = full_name
+
+        address_line = (user_defaults.get("address_line") or "").strip()
+        user_defaults["address_line"] = address_line
+
+        phone_value = (user_defaults.get("phone") or "").strip()
+        user_defaults["phone"] = phone_value
 
         gender = user_defaults.get("gender") or User.Gender.UNSPECIFIED
         user_defaults["gender"] = gender
 
-        username = user_defaults.get("username")
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults=user_defaults,
-        )
+        with transaction.atomic():
+            username = user_defaults.get("username")
+            user = None
 
-        if not created:
-            for field, value in user_defaults.items():
-                setattr(user, field, value)
+            if supabase_id:
+                user = User.objects.filter(supabase_id=supabase_id).first()
 
-        if pwd:
-            validate_password(pwd, user)
-            user.set_password(pwd)
-        elif created:
-            user.set_unusable_password()
+            if user is None and username:
+                user = User.objects.filter(username=username).first()
 
-        user.save()
+            is_new_user = user is None
 
-        if set_default_address:
-            DeliveryAddress.objects.update_or_create(
-                user=user,
-                label="Địa chỉ mặc định",
-                defaults={
-                    "contact_name": user.full_name or user.username,
-                    "contact_phone": user.phone or "",
-                    "street_address": user.address_line,
-                    "additional_info": "",
-                    "province": user.province,
-                    "ward": user.ward,
-                    "is_default": True,
-                },
-            )
+            if is_new_user:
+                user = User(**user_defaults)
+            else:
+                for field, value in user_defaults.items():
+                    setattr(user, field, value)
+
+            if pwd:
+                validate_password(pwd, user)
+                user.set_password(pwd)
+            elif is_new_user:
+                user.set_unusable_password()
+
+            user.save()
+            user.refresh_from_db(fields=["full_name", "phone", "address_line", "province", "ward"])
 
         return user
 
@@ -127,7 +125,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         province = attrs.get("province")
         ward = attrs.get("ward")
-        set_default = attrs.get("set_default_address")
 
         if ward and province is None:
             attrs["province"] = ward.province
@@ -136,22 +133,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         if ward and province and ward.province_id != province.id:
             raise serializers.ValidationError("Phường/Xã không thuộc tỉnh/thành phố đã chọn")
 
-        if set_default:
-            missing = []
-            if not attrs.get("address_line"):
-                missing.append("address_line")
-            if not attrs.get("phone"):
-                missing.append("phone")
-            if province is None:
-                missing.append("province_id")
-            if ward is None:
-                missing.append("ward_id")
-            if missing:
-                raise serializers.ValidationError({
-                    "set_default_address": "Cần nhập đầy đủ thông tin để tạo địa chỉ giao hàng mặc định",
-                    "missing_fields": missing,
-                })
-
         return attrs
 
     def validate_password(self, value):
@@ -159,6 +140,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             validate_password(value)
         return value
 
+    def validate_phone(self, value):
+        cleaned = (value or "").strip()
+        if not cleaned:
+            raise serializers.ValidationError("Số điện thoại là bắt buộc và phải gồm 10 chữ số")
+        if not PHONE_REGEX.match(cleaned):
+            raise serializers.ValidationError("Số điện thoại phải gồm 10 chữ số")
+        return cleaned
 
     def validate_date_of_birth(self, value):
         if value and value > date.today():
@@ -192,7 +180,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "has_saved_card",
         ]
         read_only_fields = fields
-    
+
     def get_has_saved_card(self, obj):
         return bool(obj.stripe_customer_id and obj.stripe_payment_method_id)
 
@@ -234,6 +222,14 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     def validate_full_name(self, value):
         return value.strip() if value else ""
+
+    def validate_phone(self, value):
+        cleaned = (value or "").strip()
+        if not cleaned:
+            return ""
+        if not PHONE_REGEX.match(cleaned):
+            raise serializers.ValidationError("Số điện thoại phải gồm 10 chữ số")
+        return cleaned
 
     def validate_gender(self, value):
         return value or User.Gender.UNSPECIFIED

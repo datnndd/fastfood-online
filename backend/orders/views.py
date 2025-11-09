@@ -17,7 +17,11 @@ from cart.models import Cart
 from .models import Order, Notification
 from .serializers import OrderSerializer, NotificationSerializer
 from .permissions import IsStaffOrManager
-from .services import create_order_from_cart, calculate_cart_total
+from .services import (
+    create_order_from_cart,
+    calculate_cart_total,
+    restock_order_inventory,
+)
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -134,6 +138,9 @@ class MyOrdersView(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
                         'error': f'Không thể hoàn tiền tự động. Vui lòng liên hệ hỗ trợ. Lỗi: {str(e)}'
                     }, status=500)
         
+        # Hoàn lại tồn kho trước khi chuyển sang trạng thái hủy
+        restock_order_inventory(order)
+
         # Cập nhật trạng thái
         order.status = 'CANCELLED'
         order.save()
@@ -210,6 +217,9 @@ class OrdersWorkViewSet(viewsets.ModelViewSet):
         if time_diff.total_seconds() <= 60:
             return Response({'error': 'Đơn hàng chưa đủ thời gian xử lý (cần chờ 60 giây)'}, status=400)
         
+        if new_status == 'CANCELLED' and old_status != 'CANCELLED':
+            restock_order_inventory(order)
+
         order.status = new_status
         order.save()
         
@@ -802,6 +812,8 @@ def stripe_webhook(request):
             order_id = payment_intent.metadata.get('order_id')
             if order_id:
                 order = Order.objects.get(id=order_id)
+                if order.status != Order.Status.CANCELLED:
+                    restock_order_inventory(order)
                 order.stripe_payment_status = 'canceled'
                 order.status = Order.Status.CANCELLED
                 order.save()
@@ -840,6 +852,8 @@ def cancel_payment_authorization(request, order_id):
         )
         
         # Cập nhật order status
+        if order.status != Order.Status.CANCELLED:
+            restock_order_inventory(order)
         order.stripe_payment_status = 'canceled'
         order.status = Order.Status.CANCELLED
         order.save()

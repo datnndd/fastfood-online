@@ -132,14 +132,14 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl transform animate-slideUp">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl transform animate-slideUp">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6 relative overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-5 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
                     <div className="relative flex items-center justify-between">
                         <div>
-                            <h2 className="text-3xl font-black text-white mb-1">
+                            <h2 className="text-2xl font-black text-white mb-1">
                                 {category ? '✏️ CHỈNH SỬA DANH MỤC' : '➕ THÊM DANH MỤC MỚI'}
                             </h2>
                             <p className="text-indigo-100 text-sm">
@@ -169,10 +169,10 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                 )}
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     {/* Image Upload */}
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border-2 border-dashed border-indigo-200">
-                        <label className="block text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-5 border-2 border-dashed border-indigo-200">
+                        <label className="block text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <span className="text-2xl">📸</span>
                             Hình ảnh danh mục
                         </label>
@@ -182,11 +182,11 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                                     <img
                                         src={imagePreview}
                                         alt="Preview"
-                                        className="w-48 h-48 object-cover rounded-2xl shadow-lg ring-4 ring-white"
+                                        className="w-40 h-40 object-cover rounded-2xl shadow-lg ring-4 ring-white"
                                     />
                                 ) : (
-                                    <div className="w-48 h-48 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center">
-                                        <span className="text-6xl">📂</span>
+                                    <div className="w-40 h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center">
+                                        <span className="text-5xl">📂</span>
                                     </div>
                                 )}
                             </div>
@@ -200,7 +200,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                                 />
                                 <label
                                     htmlFor="image-upload"
-                                    className="cursor-pointer inline-flex items-center gap-2 bg-white border-2 border-indigo-300 text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-all duration-200 hover:scale-105 transform"
+                                    className="cursor-pointer inline-flex items-center gap-2 bg-white border-2 border-indigo-300 text-indigo-600 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all duration-200 hover:scale-105 transform"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -213,7 +213,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
 
                     {/* Name Field */}
                     <div>
-                        <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
                             <span className="text-2xl">📂</span>
                             Tên danh mục *
                         </label>
@@ -224,13 +224,13 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                             onChange={handleChange}
                             required
                             placeholder="VD: Burger, Pizza, Combo..."
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                         />
                     </div>
 
                     {/* Slug Field */}
                     <div>
-                        <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
                             <span className="text-2xl">🔗</span>
                             Đường dẫn (Slug)
                         </label>
@@ -240,7 +240,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                             value={formData.slug}
                             onChange={handleChange}
                             placeholder="burger, pizza, combo..."
-                            className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-mono focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base font-mono focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
                         />
                         <p className="text-sm text-gray-500 mt-2">
                             💡 Để trống để tự động tạo từ tên danh mục
@@ -248,11 +248,11 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-4 pt-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-8 py-4 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-100 transition-all duration-200 flex items-center justify-center gap-2"
+                            className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-100 transition-all duration-200 flex items-center justify-center gap-2"
                         >
                             <span>❌</span>
                             Hủy bỏ
@@ -260,7 +260,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 transform"
+                            className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 transform"
                         >
                             {loading ? (
                                 <>

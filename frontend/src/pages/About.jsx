@@ -6,6 +6,10 @@ import herobanner from "../assets/images/herobanner.jpg";
 import herobanner2 from "../assets/images/herobanner2.jpg";
 import online from "../assets/images/online.jpg";
 
+import a1 from "../assets/images/about/a1.png";
+import a2 from "../assets/images/about/a2.png";
+import a3 from "../assets/images/about/a3.png";
+
 export default function About() {
   const storyMoments = [
     {
@@ -14,7 +18,7 @@ export default function About() {
       description:
         "Ba anh em sáng lập thử 12 phiên bản sốt trên chiếc bếp từ trong căn hộ Cầu Giấy, ghi chú bằng bút dạ và mời hàng xóm nếm thử đến 2h sáng.",
       stat: "120 phần bán hết sau 02 giờ mở bán",
-      image: "https://placehold.co/600x400/FFF5EB/FF6845?text=Anh+dang+cap+nhat",
+      image: a1,
     },
     {
       tag: "Pop-up Tour",
@@ -22,7 +26,7 @@ export default function About() {
       description:
         "Thay vì chờ khách, McDono dựng quầy lưu động tại các sự kiện đêm. Khói BBQ, playlist hiphop và tiếng reo khi 200 đơn đầu tiên chốt trong 45 phút.",
       stat: "5 quận • 1.400 phần ăn mỗi đêm",
-      image: "https://placehold.co/600x400/FDEBDD/EC4C29?text=Anh+dang+cap+nhat",
+      image: a2,
     },
     {
       tag: "Delivery Live",
@@ -30,7 +34,7 @@ export default function About() {
       description:
         "Đội giao nhận kết hợp livestream hành trình đơn hàng khiến khách thấy burger vẫn bốc khói ngay trước cửa, tạo nên hàng dài feedback 5 ⭐.",
       stat: "8 phút/giao • 98% đánh giá 5⭐",
-      image: "https://placehold.co/600x400/FFE9F1/E11D48?text=Anh+dang+cap+nhat",
+      image: a3,
     },
   ];
 

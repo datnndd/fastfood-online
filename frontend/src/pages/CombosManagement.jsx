@@ -17,6 +17,8 @@ export default function CombosManagement() {
     const [viewMode, setViewMode] = useState('grid')
     const [bulkComboStockValue, setBulkComboStockValue] = useState('')
     const [bulkUpdatingCombos, setBulkUpdatingCombos] = useState(false)
+    const [successMessage, setSuccessMessage] = useState(null)
+    const [isFetchingComboDetail, setIsFetchingComboDetail] = useState(false)
 
     const loadCombos = useCallback(async () => {
         try {
@@ -57,9 +59,19 @@ export default function CombosManagement() {
         setShowModal(true)
     }
 
-    const handleEdit = (combo) => {
-        setSelectedCombo(combo)
-        setShowModal(true)
+    const handleEdit = async (combo) => {
+        setError(null)
+        setIsFetchingComboDetail(true)
+        try {
+            const { data } = await CatalogAPI.getCombo(combo.id)
+            setSelectedCombo(data)
+            setShowModal(true)
+        } catch (err) {
+            console.error('Load combo detail error:', err.response || err)
+            setError('Không thể tải dữ liệu combo để chỉnh sửa. Vui lòng thử lại.')
+        } finally {
+            setIsFetchingComboDetail(false)
+        }
     }
 
     const handleDelete = (combo) => {
@@ -87,11 +99,23 @@ export default function CombosManagement() {
         }
     }
 
+    useEffect(() => {
+        if (!successMessage) return
+        const timer = setTimeout(() => setSuccessMessage(null), 4000)
+        return () => clearTimeout(timer)
+    }, [successMessage])
+
     const handleSave = async () => {
+        const wasEditing = Boolean(selectedCombo)
         setError(null)
         await loadCombos()
         setShowModal(false)
         setSelectedCombo(null)
+        const message = wasEditing ? 'Đã cập nhật combo thành công!' : 'Đã thêm combo mới thành công!'
+        setSuccessMessage(message)
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
     }
 
     const handleToggleAvailability = async (combo) => {
@@ -193,12 +217,28 @@ export default function CombosManagement() {
             </div>
 
             <div className="container mx-auto px-4 py-8">
-                {/* Error Alert */}
+                {/* Error & status alerts */}
                 {error && (
                     <div className="mb-6 bg-red-100 border-l-4 border-red-600 text-red-800 px-6 py-4 rounded-lg shadow-lg">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">⚠️</span>
                             <p className="font-semibold">{error}</p>
+                        </div>
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="mb-6 bg-green-100 border-l-4 border-green-600 text-green-800 px-6 py-4 rounded-lg shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">🎉</span>
+                            <p className="font-semibold">{successMessage}</p>
+                        </div>
+                    </div>
+                )}
+                {isFetchingComboDetail && (
+                    <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 text-blue-900 px-6 py-4 rounded-lg shadow-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">⏳</span>
+                            <p className="font-semibold">Đang tải dữ liệu combo để chỉnh sửa...</p>
                         </div>
                     </div>
                 )}

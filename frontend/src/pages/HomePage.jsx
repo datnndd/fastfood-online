@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/authContext'
+
+import Banner1 from '../assets/images/home/Banner1.png'
+import Banner2 from '../assets/images/home/2.png'
+import Banner3 from '../assets/images/home/3.png'
 
 const highlightStats = [
   { value: '50+', label: 'Món signature', description: 'Luôn sẵn sàng cho mọi khẩu vị' },
@@ -32,25 +36,19 @@ const featuredSlides = [
     tag: 'Chef’s pick',
     title: 'McDono Midnight Burger',
     description: 'Wagyu sear, phô mai raclette và sốt muối biển hun khói tạo nên combo đêm huyền ảo.',
-    gradient: 'from-rose-500 via-red-500 to-amber-400'
+    image: Banner1
   },
   {
     tag: 'Vegan glow',
     title: 'Green Crunch Bowl',
     description: 'Kale giòn, hạt quinoa rang và sốt miso gừng cân bằng vị béo bùi.',
-    gradient: 'from-emerald-500 via-lime-400 to-teal-500'
+    image: Banner2
   },
   {
     tag: 'Collab limited',
     title: 'Saigon Heat Fries',
     description: 'Khoai tây hai textures cùng sốt sả ớt caramel hoá với hành tím ngâm.',
-    gradient: 'from-orange-500 via-amber-400 to-yellow-300'
-  },
-  {
-    tag: 'Sweet pause',
-    title: 'Cold Brew Cream Float',
-    description: 'Cold brew ủ 18h, kem mascarpone và muối hồng Himalaya đầy đối lập thú vị.',
-    gradient: 'from-slate-900 via-indigo-700 to-purple-600'
+    image: Banner3
   }
 ]
 
@@ -72,20 +70,12 @@ const workflowSteps = [
 export default function HomePage() {
   const { user } = useAuth()
   const [currentSlide, setCurrentSlide] = useState(0)
-  const slideDirectionRef = useRef(1)
 
   useEffect(() => {
     if (featuredSlides.length <= 1) return undefined
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => {
-        if (prev === featuredSlides.length - 1) {
-          slideDirectionRef.current = -1
-        } else if (prev === 0) {
-          slideDirectionRef.current = 1
-        }
-        return prev + slideDirectionRef.current
-      })
+      setCurrentSlide((prev) => (prev + 1) % featuredSlides.length)
     }, 4000)
 
     return () => clearInterval(interval)
@@ -146,8 +136,12 @@ export default function HomePage() {
 
           <div className="w-full max-w-xl flex-1">
             <div className="rounded-[32px] border border-white/30 bg-white/10 p-6 backdrop-blur">
-              <div className="flex aspect-[4/3] items-center justify-center rounded-3xl border-2 border-dashed border-white/60 bg-white/5 text-xs font-semibold uppercase tracking-[0.4em] text-white/60">
-                Placeholder image
+              <div className="aspect-[4/3] overflow-hidden rounded-3xl border border-white/40 bg-white/5">
+                <img
+                  src={Banner1}
+                  alt="Combo Urban Bánh Mì"
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-white/30 bg-white/10 p-4">
@@ -189,33 +183,25 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-[40px] border border-gray-200 bg-white shadow-xl">
+          <div className="overflow-hidden rounded-[40px] border border-gray-200 bg-white/60 shadow-xl backdrop-blur">
             <div
               className="flex transition-transform duration-[1200ms] ease-in-out"
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
               {featuredSlides.map((slide) => (
-                <div key={slide.title} className="flex w-full flex-col gap-8 p-8 md:flex-row md:p-12">
-                  <div className="flex-1 space-y-4">
-                    <span className="inline-flex w-fit items-center rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-500">
+                <div key={slide.title} className="flex min-w-full flex-col gap-6 p-8 md:flex-row md:p-12">
+                  <div className="flex flex-1 flex-col gap-4">
+                    <span className="inline-flex w-fit items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-500 shadow">
                       {slide.tag}
                     </span>
                     <h3 className="text-3xl font-semibold text-gray-900">{slide.title}</h3>
                     <p className="text-base text-gray-600">{slide.description}</p>
-                    <div className="flex items-center gap-4 pt-2">
-                      <div className="h-10 w-10 rounded-full border border-gray-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 flex items-center justify-center">
-                        Img
-                      </div>
-                      <p className="text-sm text-gray-500">Placeholder visuals sẽ được thay bằng ảnh thật</p>
-                    </div>
+                    <div className="text-sm font-semibold text-red-600">Khám phá món này →</div>
                   </div>
-                  <div className="flex-1">
-                    <div className={`relative h-72 w-full overflow-hidden rounded-3xl bg-gradient-to-br ${slide.gradient}`}>
-                      <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold uppercase tracking-[0.4em] text-white/70">
-                        Placeholder image
-                      </div>
-                      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20 blur-2xl" />
-                      <div className="absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-white/10 blur-xl" />
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className="relative h-72 w-full overflow-hidden rounded-3xl border border-gray-100 shadow-md">
+                      <img src={slide.image} alt={slide.title} className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                     </div>
                   </div>
                 </div>
@@ -269,8 +255,8 @@ export default function HomePage() {
               ))}
             </div>
             <div className="mt-10 rounded-2xl border border-dashed border-gray-300 p-6 text-center">
-              <div className="flex aspect-video items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 text-[10px] font-semibold uppercase tracking-[0.4em] text-gray-400">
-                Placeholder image
+              <div className="aspect-video overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <img src={Banner3} alt="Banner3" className="h-full w-full object-cover" />
               </div>
               <p className="mt-4 text-sm text-gray-500">Video/ảnh giới thiệu sẽ được thêm tại đây</p>
             </div>

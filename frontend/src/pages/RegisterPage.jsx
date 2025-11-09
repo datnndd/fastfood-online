@@ -14,8 +14,7 @@ const INITIAL_FORM = {
   date_of_birth: '',
   address_line: '',
   province_id: '',
-  ward_id: '',
-  set_default_address: true
+  ward_id: ''
 }
 
 const GENDER_OPTIONS = [
@@ -24,6 +23,8 @@ const GENDER_OPTIONS = [
   { value: 'female', label: 'Nữ' },
   { value: 'other', label: 'Khác' }
 ]
+
+const PHONE_REGEX = /^\d{10}$/
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState(INITIAL_FORM)
@@ -72,13 +73,6 @@ export default function RegisterPage() {
     } finally {
       setWardLoading(false)
     }
-  }
-
-  const toggleDefaultAddress = () => {
-    setFormData((prev) => ({
-      ...prev,
-      set_default_address: !prev.set_default_address
-    }))
   }
 
   const selectedProvince = useMemo(
@@ -135,11 +129,30 @@ export default function RegisterPage() {
         setErrors({ general: 'Mật khẩu xác nhận không khớp' })
         return
       }
-      const result = await register(formData)
+
+      const trimValue = (value) => (value || '').trim()
+      const normalizedPhone = trimValue(formData.phone)
+      if (!PHONE_REGEX.test(normalizedPhone)) {
+        setErrors({ phone: 'Số điện thoại phải gồm 10 chữ số' })
+        return
+      }
+      const payload = {
+        ...formData,
+        username: trimValue(formData.username),
+        email: trimValue(formData.email),
+        full_name: trimValue(formData.full_name),
+        phone: normalizedPhone,
+        address_line: trimValue(formData.address_line),
+        province_id: formData.province_id ? Number(formData.province_id) : null,
+        ward_id: formData.ward_id ? Number(formData.ward_id) : null,
+        date_of_birth: formData.date_of_birth || null,
+      }
+      const { confirm_password, ...payloadToSend } = payload
+      const result = await register(payloadToSend)
       if (result?.profileSynced === false) {
-        alert('Đăng ký thành công nhưng không thể đặt địa chỉ mặc định. Vui lòng cập nhật trong hồ sơ sau khi đăng nhập.')
+        alert('Đăng ký thành công nhưng không thể đồng bộ hồ sơ. Bạn có thể cập nhật lại trong trang hồ sơ sau khi đăng nhập.')
       } else {
-        alert('Đăng ký thành công! Vui lòng đăng nhập.')
+        alert('Đăng ký thành công! Click để chuyển hướng')
       }
       setFormData(INITIAL_FORM)
       navigate('/login')
@@ -156,245 +169,249 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Đăng ký</h2>
-          <p className="mt-2 text-gray-600">Tạo tài khoản FastFood One mới</p>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wide text-red-500">McDono</p>
+          <h1 className="mt-2 text-4xl font-bold text-gray-900 sm:text-5xl">Bắt đầu hành trình giao hàng nhanh chóng</h1>
+          <p className="mt-3 text-lg text-gray-600">
+            Tạo tài khoản để lưu địa chỉ yêu thích, xem lịch sử đơn hàng và hưởng ưu đãi dành riêng cho thành viên.
+          </p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {errors.general && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded whitespace-pre-line">
-              {errors.general}
-            </div>
-          )}
+        <div className="grid gap-10 lg:grid-cols-[1.2fr,0.9fr]">
+          <section className="rounded-3xl border border-white bg-white p-8 shadow-2xl shadow-red-100/70">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {errors.general && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {errors.general}
+                </div>
+              )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Tên đăng nhập *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-            {renderFieldErrors('username')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-            {renderFieldErrors('email')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Họ và tên
-            </label>
-            <input
-              type="text"
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-            {renderFieldErrors('full_name')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Số điện thoại
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-            {renderFieldErrors('phone')}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Giới tính
-              </label>
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-              >
-                {GENDER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {renderFieldErrors('gender')}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Ngày sinh
-              </label>
-              <input
-                type="date"
-                value={formData.date_of_birth}
-                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                max={new Date().toISOString().split('T')[0]}
-              />
-              {renderFieldErrors('date_of_birth')}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Mật khẩu *
-            </label>
-            <input
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-            {renderFieldErrors('password')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Xác nhận mật khẩu *
-            </label>
-            <input
-              type="password"
-              required
-              value={formData.confirm_password}
-              onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Địa chỉ chi tiết
-            </label>
-            <textarea
-              rows={3}
-              value={formData.address_line}
-              onChange={(e) => setFormData({ ...formData, address_line: e.target.value })}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-              placeholder="Số nhà, đường, khu vực..."
-            />
-            {renderFieldErrors('address_line')}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Tỉnh/Thành phố
-              </label>
-              <select
-                value={formData.province_id}
-                onChange={(e) => handleProvinceChange(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-              >
-                <option value="">
-                  {provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}
-                </option>
-                {locations.provinces.map((province) => (
-                  <option key={province.id} value={province.id}>
-                    {province.name}
-                  </option>
-                ))}
-              </select>
-              {renderFieldErrors('province_id')}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Phường/Xã
-              </label>
-              <select
-                value={formData.ward_id}
-                onChange={(e) => setFormData({ ...formData, ward_id: e.target.value })}
-                disabled={!formData.province_id}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-gray-50"
-              >
-                <option value="">
-                  {!formData.province_id ? 'Chọn tỉnh trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
-                </option>
-                {locations.wards.map((ward, index) => (
-                  <option key={`ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
-                    {ward.name}
-                  </option>
-                ))}
-              </select>
-              {renderFieldErrors('ward_id')}
-            </div>
-          </div>
-
-          <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Thông tin đăng ký chi tiết</h3>
-                <p className="text-sm text-gray-500">Kiểm tra lại thông tin, bạn có thể dùng để tạo địa chỉ giao hàng mặc định.</p>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Tài khoản
+                  </label>
+                  <div className="mt-2 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                    <label className="text-xs font-medium text-gray-700">Tên đăng nhập *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-transparent px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    />
+                    {renderFieldErrors('username')}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                  {renderFieldErrors('email')}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={toggleDefaultAddress}
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  formData.set_default_address
-                    ? 'bg-green-100 text-green-800 border border-green-200'
-                    : 'bg-gray-100 text-gray-700 border border-gray-200'
-                }`}
-              >
-                {formData.set_default_address ? 'Đã chọn làm địa chỉ mặc định' : 'Đặt làm địa chỉ mặc định'}
-              </button>
-            </div>
 
-            <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Mật khẩu *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                  {renderFieldErrors('password')}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Xác nhận mật khẩu *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.confirm_password}
+                    onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                </div>
+              </div>
+
+              <fieldset className="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2">
+                <legend className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Thông tin cá nhân
+                </legend>
+                <div>
+                  <label className="text-xs font-medium text-gray-700">Tên đầy đủ</label>
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                  {renderFieldErrors('full_name')}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-700">Số điện thoại</label>
+                  <input
+                    type="tel"
+                    required
+                    minLength={10}
+                    maxLength={10}
+                    inputMode="numeric"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                  {formData.phone && formData.phone.length > 0 && formData.phone.length < 10 && (
+                    <p className="mt-1 text-xs text-red-500">Số điện thoại phải gồm 10 chữ số.</p>
+                  )}
+                  {renderFieldErrors('phone')}
+                </div>
+              </fieldset>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Giới tính
+                  </label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  >
+                    {GENDER_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldErrors('gender')}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Ngày sinh
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                  {renderFieldErrors('date_of_birth')}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Địa chỉ chi tiết
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.address_line}
+                  onChange={(e) => setFormData({ ...formData, address_line: e.target.value })}
+                  className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  placeholder="Số nhà, đường, khu vực..."
+                />
+                {renderFieldErrors('address_line')}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Tỉnh/Thành phố
+                  </label>
+                  <select
+                    value={formData.province_id}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  >
+                    <option value="">
+                      {provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}
+                    </option>
+                    {locations.provinces.map((province) => (
+                      <option key={province.id} value={province.id}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldErrors('province_id')}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Phường/Xã
+                  </label>
+                  <select
+                    value={formData.ward_id}
+                    onChange={(e) => setFormData({ ...formData, ward_id: e.target.value })}
+                    disabled={!formData.province_id}
+                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:bg-white/50"
+                  >
+                    <option value="">
+                      {!formData.province_id ? 'Chọn tỉnh trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
+                    </option>
+                    {locations.wards.map((ward, index) => (
+                      <option key={`ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
+                        {ward.name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldErrors('ward_id')}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/40 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loading ? 'Đang đăng ký...' : 'Hoàn tất đăng ký'}
+              </button>
+
+              <div className="text-center text-sm text-gray-500">
+                Đã có tài khoản?{' '}
+                <Link to="/login" className="font-semibold text-red-600 hover:text-red-500">
+                  Đăng nhập
+                </Link>
+              </div>
+            </form>
+          </section>
+
+          <aside className="rounded-3xl border border-red-100 bg-white/90 p-8 shadow-xl shadow-red-100/60 backdrop-blur">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Bảng xác nhận</h2>
+              <span className="text-xs font-semibold uppercase tracking-wide text-red-500">Tóm tắt</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              Thông tin bên cạnh cập nhật theo thời gian thực để bạn kiểm tra trước khi gửi.
+            </p>
+            <div className="mt-6 space-y-3 text-sm text-gray-700">
               {detailRows.map((row) => (
-                <div key={row.label}>
-                  <dt className="text-gray-500">{row.label}</dt>
-                  <dd className="font-medium text-gray-900">{row.value}</dd>
+                <div key={row.label} className="flex justify-between rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
+                  <dt className="font-medium text-gray-500">{row.label}</dt>
+                  <dd className="text-gray-900">{row.value}</dd>
                 </div>
               ))}
-            </dl>
-
-            {formData.set_default_address && (
-              <p className="mt-4 text-sm text-gray-600">
-                Chúng tôi sẽ tạo một địa chỉ giao hàng mặc định từ thông tin bên trên sau khi đăng ký thành công.
+            </div>
+            <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
+              <p className="font-semibold text-gray-800">Lưu ý</p>
+              <p className="mt-2 text-xs text-gray-500">
+                Bạn có thể điều chỉnh lại thông tin này bất cứ lúc nào trong trang hồ sơ sau khi đăng nhập.
               </p>
-            )}
-
-            {renderFieldErrors('set_default_address')}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-          >
-            {loading ? 'Đang đăng ký...' : 'Đăng ký'}
-          </button>
-
-          <div className="text-center">
-            <span className="text-gray-600">Đã có tài khoản? </span>
-            <Link to="/login" className="text-red-600 hover:text-red-500 font-medium">
-              Đăng nhập
-            </Link>
-          </div>
-        </form>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   )

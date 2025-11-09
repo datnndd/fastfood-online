@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import { CatalogAPI } from '../lib/api'
 
+const buildEmptyFormState = () => ({
+    name: '',
+    description: '',
+    category: '',
+    discount_percentage: 0,
+    stock: '',
+    is_available: true,
+    items: []
+})
+
 export default function ComboFormModal({ combo, categories, onClose, onSave }) {
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        category: '',
-        discount_percentage: 0,
-        stock: '',
-        is_available: true,
-        items: []
-    })
+    const [formData, setFormData] = useState(buildEmptyFormState)
     const [imageFile, setImageFile] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
     const [menuItems, setMenuItems] = useState([])
@@ -19,22 +21,35 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
 
     useEffect(() => {
         loadMenuItems()
-        if (combo) {
-            setFormData({
-                name: combo.name || '',
-                description: combo.description || '',
-                category: combo.category_id || '',
-                discount_percentage: combo.discount_percentage || 0,
-                stock: combo.stock ?? '',
-                is_available: combo.is_available ?? true,
-                items: combo.items?.map(item => ({
-                    menu_item_id: item.menu_item?.id,
-                    quantity: item.quantity,
-                    option_ids: item.selected_options?.map(opt => opt.id) || []
-                })) || []
-            })
-            setImagePreview(combo.image_url)
+    }, [])
+
+    useEffect(() => {
+        if (!combo) {
+            setFormData(buildEmptyFormState())
+            setImagePreview(null)
+            setImageFile(null)
+            return
         }
+
+        setFormData({
+            name: combo.name || '',
+            description: combo.description || '',
+            category: combo.category_id || combo.category?.id || '',
+            discount_percentage: combo.discount_percentage ?? 0,
+            stock: combo.stock ?? '',
+            is_available: combo.is_available ?? true,
+            items:
+                combo.items?.map((item) => ({
+                    menu_item_id: item.menu_item?.id || item.menu_item_id || '',
+                    quantity: item.quantity ?? 1,
+                    option_ids:
+                        item.selected_options?.map((opt) => opt.id) ||
+                        item.option_ids ||
+                        []
+                })) || []
+        })
+        setImagePreview(combo.image_url || null)
+        setImageFile(null)
     }, [combo])
 
     const loadMenuItems = async () => {
@@ -149,21 +164,51 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                 throw new Error('Combo phải có ít nhất 1 món')
             }
 
+            const categoryId = parseInt(formData.category, 10)
+            if (Number.isNaN(categoryId)) {
+                throw new Error('Danh mục không hợp lệ')
+            }
+
+            const discount = parseFloat(formData.discount_percentage)
+            if (Number.isNaN(discount)) {
+                throw new Error('Giảm giá phải là một số hợp lệ')
+            }
+
+            const normalizedItems = formData.items.map((item, index) => {
+                const menuItemId = parseInt(item.menu_item_id, 10)
+                if (Number.isNaN(menuItemId)) {
+                    throw new Error(`Món #${index + 1} chưa được chọn`)
+                }
+
+                const quantity = parseInt(item.quantity, 10)
+                if (Number.isNaN(quantity) || quantity <= 0) {
+                    throw new Error(`Số lượng của món #${index + 1} phải lớn hơn 0`)
+                }
+
+                return {
+                    menu_item_id: menuItemId,
+                    quantity,
+                    option_ids: (item.option_ids || [])
+                        .map((id) => parseInt(id, 10))
+                        .filter((id) => !Number.isNaN(id))
+                }
+            })
+
+            const stockValue =
+                formData.stock === '' ? 0 : parseInt(formData.stock, 10)
+            if (Number.isNaN(stockValue) || stockValue < 0) {
+                throw new Error('Tồn kho phải là số không âm')
+            }
+
             const dataToSubmit = {
                 name: formData.name.trim(),
                 description: formData.description.trim(),
-                category_id: parseInt(formData.category),
-                discount_percentage: parseFloat(formData.discount_percentage),
-                stock: formData.stock === '' ? 0 : parseInt(formData.stock, 10),
+                category_id: categoryId,
+                discount_percentage: discount,
+                stock: stockValue,
                 is_available: formData.is_available,
-                items: formData.items.map(item => ({
-                    menu_item_id: parseInt(item.menu_item_id),
-                    quantity: parseInt(item.quantity),
-                    option_ids: item.option_ids || []
-                }))
+                items: normalizedItems
             }
-
-            console.log('Submitting combo data:', dataToSubmit)
 
             let response
             if (combo) {
@@ -172,8 +217,9 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                 response = await CatalogAPI.createCombo(dataToSubmit)
             }
 
-            if (imageFile && response.data.id) {
-                await CatalogAPI.uploadComboImage(response.data.id, imageFile)
+            const comboId = response?.data?.id ?? combo?.id ?? null
+            if (imageFile && comboId) {
+                await CatalogAPI.uploadComboImage(comboId, imageFile)
             }
 
             onSave()
@@ -200,7 +246,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
     }
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl transform animate-slideUp">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-6 relative overflow-hidden">

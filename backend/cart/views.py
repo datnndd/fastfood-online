@@ -135,7 +135,7 @@ class UpdateItemView(generics.RetrieveUpdateDestroyAPIView):
         return (
             CartItem.objects
             .filter(cart=cart)
-            .select_related("menu_item")
+            .select_related("menu_item", "menu_item__category")
             .prefetch_related("selected_options")
         )
 

@@ -3,6 +3,19 @@ from django.db import models
 from django.utils.text import slugify
 from decimal import Decimal
 
+
+def generate_unique_slug(instance, value, fallback):
+    base_slug = slugify(value) or fallback
+    slug_candidate = base_slug
+    counter = 2
+    qs = instance.__class__.objects.all()
+    if instance.pk:
+        qs = qs.exclude(pk=instance.pk)
+    while qs.filter(slug=slug_candidate).exists():
+        slug_candidate = f"{base_slug}-{counter}"
+        counter += 1
+    return slug_candidate
+
 class Category(models.Model):
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
@@ -12,7 +25,7 @@ class Category(models.Model):
         ordering = ["name", "id"]
 
     def save(self,*a,**kw):
-        if not self.slug: self.slug = slugify(self.name)
+        self.slug = generate_unique_slug(self, self.name, "category")
         return super().save(*a,**kw)
     def __str__(self): return self.name
 
@@ -34,8 +47,7 @@ class MenuItem(models.Model):
             self.is_available = False
 
     def save(self,*a,**kw):
-        if not self.slug:
-            self.slug = slugify(self.name)
+        self.slug = generate_unique_slug(self, self.name, "menu-item")
         self._sync_availability_with_stock()
         return super().save(*a,**kw)
 
@@ -86,8 +98,7 @@ class Combo(models.Model):
             self.is_available = False
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
+        self.slug = generate_unique_slug(self, self.name, "combo")
         self._sync_availability_with_stock()
         super().save(*args, **kwargs)
     

@@ -111,8 +111,7 @@ export function AuthProvider({ children }) {
       date_of_birth: formValues.date_of_birth || null,
       address_line: formValues.address_line?.trim() || '',
       province_id: formValues.province_id ? Number(formValues.province_id) : null,
-      ward_id: formValues.ward_id ? Number(formValues.ward_id) : null,
-      set_default_address: Boolean(formValues.set_default_address)
+      ward_id: formValues.ward_id ? Number(formValues.ward_id) : null
     }
 
     await AuthAPI.register(payload, { dryRun: true })
@@ -197,8 +196,14 @@ export function AuthProvider({ children }) {
       await AuthAPI.setPassword(password)
     } catch (djangoError) {
       console.error("Lỗi nghiêm trọng: Không thể đồng bộ mật khẩu với Django", djangoError)
-      // Xử lý lỗi: Mật khẩu đã đổi ở Supabase nhưng chưa đổi ở Django
-      throw new Error("Mật khẩu đã được cập nhật, nhưng không thể đồng bộ với máy chủ. Vui lòng đăng nhập lại và thử đổi mật khẩu trong trang cá nhân.")
+      const detail = djangoError?.response?.data?.detail
+      if (detail) {
+        const detailMessage = Array.isArray(detail) ? detail.join(' ') : detail
+        throw new Error(detailMessage)
+      }
+      throw new Error(
+        "Mật khẩu đã được cập nhật, nhưng không thể đồng bộ với máy chủ. Vui lòng đăng nhập lại và thử đổi mật khẩu trong trang cá nhân."
+      )
     }
     return data
   }, [])
