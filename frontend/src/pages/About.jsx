@@ -1,4 +1,5 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { ContentAPI } from "../lib/api";
 import heroAbout from "../assets/images/hero-about.png";
 import garan from "../assets/images/garan.png";
 import hamberger from "../assets/images/hamberger.jpg";
@@ -11,48 +12,56 @@ import a2 from "../assets/images/about/a2.png";
 import a3 from "../assets/images/about/a3.png";
 
 export default function About() {
-  const storyMoments = [
-    {
-      tag: "Midnight Lab",
-      title: "Burger Giờ Chạng Vạng ra đời",
-      description:
-        "Ba anh em sáng lập thử 12 phiên bản sốt trên chiếc bếp từ trong căn hộ Cầu Giấy, ghi chú bằng bút dạ và mời hàng xóm nếm thử đến 2h sáng.",
-      stat: "120 phần bán hết sau 02 giờ mở bán",
-      image: a1,
-    },
-    {
-      tag: "Pop-up Tour",
-      title: "Xe bếp đỏ rực chạy khắp 5 quận",
-      description:
-        "Thay vì chờ khách, McDono dựng quầy lưu động tại các sự kiện đêm. Khói BBQ, playlist hiphop và tiếng reo khi 200 đơn đầu tiên chốt trong 45 phút.",
-      stat: "5 quận • 1.400 phần ăn mỗi đêm",
-      image: a2,
-    },
-    {
-      tag: "Delivery Live",
-      title: "Tiệc 8 phút ở chung cư mới",
-      description:
-        "Đội giao nhận kết hợp livestream hành trình đơn hàng khiến khách thấy burger vẫn bốc khói ngay trước cửa, tạo nên hàng dài feedback 5 ⭐.",
-      stat: "8 phút/giao • 98% đánh giá 5⭐",
-      image: a3,
-    },
-  ];
+  const [storyMoments, setStoryMoments] = useState([]);
+
+  useEffect(() => {
+    const fetchAboutContent = async () => {
+      try {
+        const response = await ContentAPI.getContentItems('about');
+        const items = Array.isArray(response) ? response : response.results || [];
+
+        const stories = items.filter(item => item.type === 'story');
+
+        if (stories.length > 0) {
+          // Sort by order
+          stories.sort((a, b) => a.order - b.order);
+
+          setStoryMoments(stories.map(item => ({
+            tag: item.eyebrow,
+            title: item.title,
+            description: item.description,
+            stat: item.metadata?.stat,
+            image: item.image_url || a1 // Fallback to default image if none provided
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching about content:', error);
+      }
+    };
+
+    fetchAboutContent();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff1f0] via-[#ffe5e3] to-[#ffd1cf] text-gray-800 overflow-hidden">
+    <div className="min-h-screen vn-bg-rice-paper text-gray-800 overflow-hidden">
       {/* HERO */}
-      <section className="relative py-24 text-center text-white">
+      <section className="relative py-24 text-center text-white overflow-hidden vn-lotus-pattern">
         <img
           src={heroAbout}
           alt="McDono hero"
           className="absolute inset-0 w-full h-full object-cover brightness-50"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-700/80 via-red-700/60 to-black/70" />
+        <div className="absolute inset-0 vn-gradient-red-gold opacity-80" />
+        {/* Decorative lanterns */}
+        <div className="absolute top-10 left-10 text-5xl vn-animate-lantern-sway">🏮</div>
+        <div className="absolute top-10 right-10 text-5xl vn-animate-lantern-sway" style={{ animationDelay: '0.5s' }}>🏮</div>
+        <div className="absolute inset-0 vn-bamboo-lines opacity-5" />
+
         <div className="relative z-10 max-w-4xl mx-auto px-6">
-          <h1 className="text-6xl font-extrabold drop-shadow-xl mb-6">
-            Về McDono 🍔
+          <h1 className="text-6xl font-black drop-shadow-2xl mb-6 vn-animate-lotus-bloom">
+            <span className="text-5xl">🪷</span> Về McDono <span className="text-5xl">🍜</span>
           </h1>
-          <p className="text-lg font-medium text-white/90">
+          <p className="text-xl font-semibold text-white/95 max-w-2xl mx-auto">
             Những câu chuyện fast-food được kể bằng vị giòn tan, nhịp sống trẻ và
             nụ cười thật ở từng cửa hàng Hà Nội.
           </p>
@@ -60,20 +69,20 @@ export default function About() {
       </section>
 
       {/* STORY */}
-      <section className="max-w-6xl mx-auto py-20 px-6 grid md:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
-        <div>
-          <p className="text-xs uppercase tracking-[0.4em] text-rose-600 mb-3">
+      <section className="max-w-6xl mx-auto py-20 px-6 space-y-24">
+        <div className="max-w-3xl">
+          <p className="text-xs uppercase tracking-[0.4em] vn-text-red-primary mb-3 font-bold flex items-center gap-2">
             🏆 Câu chuyện McDono
           </p>
-          <h2 className="text-4xl font-bold text-rose-600 mb-6">
+          <h2 className="text-5xl font-black vn-heading-display mb-6">
             Hành trình từ căn bếp chung cư đến bản đồ fast-food Hà Nội
           </h2>
-          <p className="mb-4">
+          <p className="mb-4 text-lg leading-relaxed">
             McDono khởi nguồn năm 2019 với chiếc chảo gang duy nhất và lời hứa
-            “giòn - nóng - khác lạ”. Từng chiếc burger thử nghiệm được ghi chú
+            "giòn - nóng - khác lạ". Từng chiếc burger thử nghiệm được ghi chú
             bằng bút dạ, gửi miễn phí cho hàng xóm và đo phản ứng bằng… emoji.
           </p>
-          <p className="mb-6">
+          <p className="mb-6 text-lg leading-relaxed">
             Hôm nay, các cloud-kitchen và cửa hàng vệ tinh của McDono phục vụ hơn
             một nghìn đơn mỗi tối nhưng vẫn giữ kỷ luật thủ công: gà tươi nhận vào
             sáng sớm, ướp trong 4 giờ và chỉ vào chảo khi đơn hàng được xác nhận.
@@ -83,75 +92,111 @@ export default function About() {
               { value: "5+", label: "năm kể chuyện bằng vị giòn" },
               { value: "50", label: "điểm giao hoạt động mỗi đêm" },
               { value: "92%", label: "khách quay lại ngay tuần kế" },
-            ].map((item) => (
+            ].map((item, idx) => (
               <div
                 key={item.label}
-                className="bg-white/90 rounded-2xl border border-rose-200 p-4 shadow-sm"
+                className="vn-card-lotus vn-animate-lotus-bloom shadow-md hover:scale-105 transition-transform"
+                style={{ animationDelay: `${idx * 0.15}s` }}
               >
-                <p className="text-3xl font-black text-rose-600">
+                <p className="text-4xl font-black vn-text-red-primary">
                   {item.value}
                 </p>
-                <p className="text-sm uppercase tracking-wide text-gray-500">
+                <p className="text-xs uppercase tracking-[0.3em] vn-text-gold-primary font-bold mt-2">
                   {item.label}
                 </p>
               </div>
             ))}
           </div>
-          <div className="mt-8 p-5 bg-white/80 rounded-3xl border border-white/40 shadow-inner">
-            <p className="text-xs text-gray-500 uppercase tracking-[0.4em] mb-2">
-              mantra bếp mcdono
+          <div className="mt-8 p-6 vn-card border-2 vn-border-lotus bg-gradient-to-br from-white to-pink-50 shadow-lg">
+            <p className="text-xs vn-text-gold-primary uppercase tracking-[0.4em] mb-2 font-bold flex items-center gap-2">
+              🪷 mantra bếp mcdono
             </p>
-            <p className="text-lg font-semibold text-gray-700">
-              “Một chiếc burger ngon có thể đổi mood cả ngày của khách, nên từng
-              lớp phải thật chỉnh chu.”
+            <p className="text-xl font-bold text-gray-800 leading-relaxed">
+              "Một chiếc burger ngon có thể đổi mood cả ngày của khách, nên từng
+              lớp phải thật chỉnh chu."
             </p>
-            <p className="text-sm text-gray-500 mt-2">— Team Bếp McDono</p>
+            <p className="text-sm vn-text-red-primary mt-3 font-semibold">— Team Bếp McDono</p>
           </div>
         </div>
-        <div className="space-y-6">
-          {storyMoments.map((moment) => (
-            <article
-              key={moment.title}
-              className="bg-white rounded-3xl shadow-xl overflow-hidden border border-rose-100"
-            >
-              <img
-                src={moment.image}
-                alt={`Placeholder cho ${moment.title}`}
-                className="w-full h-44 object-cover"
-              />
-              <div className="p-6">
-                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-600">
-                  {moment.tag}
-                </span>
-                <h3 className="text-2xl font-bold mt-3 mb-2 text-gray-900">
-                  {moment.title}
-                </h3>
-                <p className="text-gray-600 mb-4">{moment.description}</p>
-                <span className="inline-flex items-center gap-2 bg-white/80 text-rose-600 font-semibold text-sm px-4 py-2 rounded-full">
-                  {moment.stat}
-                </span>
-              </div>
-            </article>
-          ))}
+      </section>
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <div className="flex items-center justify-between mb-10">
+          <h2 className="text-4xl font-black vn-heading-display flex items-center gap-3">
+            <span className="text-3xl">🏮</span> Tin tức & Sự kiện
+          </h2>
+          <a href="#" className="vn-btn-outline inline-block">
+            Xem tất cả →
+          </a>
         </div>
+        {storyMoments.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-lg">🪷 Chưa có tin tức</p>
+          </div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {storyMoments.map((item, index) => (
+              <article key={index} className="flex flex-col items-start justify-between vn-card hover:shadow-2xl vn-animate-lotus-bloom" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="relative w-full aspect-[16/9] overflow-hidden rounded-xl bg-gray-100 border-2 vn-border-lotus">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-500 hover:scale-110"
+                  />
+                  <div className="absolute top-2 right-2 text-2xl">🪷</div>
+                </div>
+                <div className="max-w-xl w-full">
+                  <div className="mt-4 flex items-center gap-x-4 text-xs">
+                    <span className="relative z-10 vn-conical-top vn-gradient-lotus px-3 py-1.5 font-bold vn-text-red-primary">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <div className="group relative">
+                    <h3 className="mt-3 text-xl font-black leading-6 text-gray-900 group-hover:vn-text-red-primary transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-600">
+                      {item.description}
+                    </p>
+                  </div>
+                  {item.stat && (
+                    <div className="mt-4 flex items-center gap-2 border-t-2 vn-border-gold pt-4 w-full">
+                      <span className="text-sm font-bold vn-text-gold-primary vn-gradient-lotus px-3 py-1.5 rounded-full">
+                        🔥 {item.stat}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* MISSION */}
-      <section className="bg-gradient-to-br from-rose-600 via-red-600 to-red-700 text-white py-20">
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <section className="vn-gradient-red-gold text-white py-20 relative overflow-hidden vn-lotus-pattern">
+        {/* Decorative elements */}
+        <div className="absolute top-10 right-10 text-6xl opacity-20 vn-animate-lantern-sway">🏮</div>
+        <div className="absolute bottom-10 left-10 text-6xl opacity-20">🪷</div>
+        <div className="absolute inset-0 vn-bamboo-lines opacity-5" />
+
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center relative z-10">
           <img
             src={hamberger}
             alt="Burger"
-            className="rounded-3xl shadow-lg hidden md:block"
+            className="rounded-3xl shadow-2xl hidden md:block border-4 border-white/20 vn-lantern-glow"
           />
           <div>
-            <h3 className="text-3xl font-bold mb-4">🎯 Sứ mệnh</h3>
-            <p className="text-lg mb-6">
+            <h3 className="text-4xl font-black mb-4 flex items-center gap-3">
+              <span className="text-3xl">🎯</span> Sứ mệnh
+            </h3>
+            <p className="text-lg mb-6 text-white/95 leading-relaxed">
               McDono cam kết mang đến trải nghiệm ẩm thực thú vị nhất – nơi món
               ăn ngon, dịch vụ nhanh chóng và nụ cười thân thiện luôn song hành.
             </p>
-            <h3 className="text-3xl font-bold mb-4">🌟 Tầm nhìn</h3>
-            <p className="text-lg">
+            <h3 className="text-4xl font-black mb-4 flex items-center gap-3">
+              <span className="text-3xl">🌟</span> Tầm nhìn
+            </h3>
+            <p className="text-lg text-white/95 leading-relaxed">
               Trở thành thương hiệu thức ăn nhanh hàng đầu Việt Nam, tiên phong
               trong sự sáng tạo, chất lượng và trải nghiệm khách hàng.
             </p>
@@ -230,6 +275,6 @@ export default function About() {
           Xem thực đơn ngay
         </a>
       </section>
-    </div>
+    </div >
   );
 }

@@ -3,8 +3,7 @@ import { CatalogAPI } from '../lib/api'
 
 export default function CategoryFormModal({ category, onClose, onSave }) {
     const [formData, setFormData] = useState({
-        name: '',
-        slug: ''
+        name: ''
     })
     const [imageFile, setImageFile] = useState(null)
     const [imagePreview, setImagePreview] = useState(null)
@@ -14,25 +13,13 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
     useEffect(() => {
         if (category) {
             setFormData({
-                name: category.name || '',
-                slug: category.slug || ''
+                name: category.name || ''
             })
             setImagePreview(category.image_url)
         }
     }, [category])
 
-    const generateSlug = (text) => {
-        return text
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/đ/g, 'd')
-            .replace(/Đ/g, 'd')
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim()
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-    }
+
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -40,16 +27,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
         if (name === 'name' && !category) {
             setFormData((prev) => ({
                 ...prev,
-                name: value,
-                slug: prev.slug || generateSlug(value)
-            }))
-            return
-        }
-
-        if (name === 'slug') {
-            setFormData((prev) => ({
-                ...prev,
-                slug: value.toLowerCase().replace(/[^a-z0-9-_]/g, '').replace(/^-+|-+$/g, '')
+                name: value
             }))
             return
         }
@@ -82,15 +60,8 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                 throw new Error('Tên danh mục không được để trống')
             }
 
-            const finalSlug = formData.slug.trim() || generateSlug(formData.name)
-
-            if (!/^[a-z0-9-_]+$/.test(finalSlug)) {
-                throw new Error('Slug chỉ được chứa chữ thường, số, dấu gạch ngang và gạch dưới')
-            }
-
             const dataToSubmit = {
-                name: formData.name.trim(),
-                slug: finalSlug
+                name: formData.name.trim()
             }
 
             let response
@@ -115,9 +86,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                 if (errors.name) {
                     errorMessages.push(`Tên: ${Array.isArray(errors.name) ? errors.name.join(', ') : errors.name}`)
                 }
-                if (errors.slug) {
-                    errorMessages.push(`Slug: ${Array.isArray(errors.slug) ? errors.slug.join(', ') : errors.slug}`)
-                }
+
                 if (errors.detail) {
                     errorMessages.push(errors.detail)
                 }
@@ -228,24 +197,7 @@ export default function CategoryFormModal({ category, onClose, onSave }) {
                         />
                     </div>
 
-                    {/* Slug Field */}
-                    <div>
-                        <label className="block text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <span className="text-2xl">🔗</span>
-                            Đường dẫn (Slug)
-                        </label>
-                        <input
-                            type="text"
-                            name="slug"
-                            value={formData.slug}
-                            onChange={handleChange}
-                            placeholder="burger, pizza, combo..."
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base font-mono focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all"
-                        />
-                        <p className="text-sm text-gray-500 mt-2">
-                            💡 Để trống để tự động tạo từ tên danh mục
-                        </p>
-                    </div>
+
 
                     {/* Footer Actions */}
                     <div className="flex flex-col sm:flex-row gap-4 pt-3">

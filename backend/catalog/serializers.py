@@ -227,7 +227,6 @@ class ComboCreateUpdateSerializer(serializers.ModelSerializer):
             "description",
             "discount_percentage",
             "is_available",
-            "stock",
             "image_url",
             "category_id",
             "items",

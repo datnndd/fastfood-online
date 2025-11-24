@@ -1,62 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../assets/images/logo.png";
 import hotline from "../assets/images/hotline.png";
 import locationImg from "../assets/images/location.jpg";
-import { FeedbackAPI } from "../lib/api";
-
-const storeLocations = [
-  {
-    city: "Hoàn Kiếm, Hà Nội",
-    address: "25 Bà Triệu, P.Hàng Bài",
-    hours: "07:00 - 23:00 mỗi ngày",
-    hotline: "1900 1234",
-    mapQuery: "25 Bà Triệu, Hàng Bài, Hoàn Kiếm, Hà Nội",
-  },
-  {
-    city: "Ba Đình, Hà Nội",
-    address: "210 Kim Mã, P.Kim Mã",
-    hours: "07:00 - 22:30 (T2 - CN)",
-    hotline: "1900 1234",
-    mapQuery: "210 Kim Mã, Ba Đình, Hà Nội",
-  },
-  {
-    city: "Hai Bà Trưng, Hà Nội",
-    address: "68 Trần Khát Chân, P.Thanh Nhàn",
-    hours: "08:00 - 22:00 (T2 - CN)",
-    hotline: "1900 1234",
-    mapQuery: "68 Trần Khát Chân, Hai Bà Trưng, Hà Nội",
-  },
-  {
-    city: "Cầu Giấy, Hà Nội",
-    address: "142 Cầu Giấy, P.Quan Hoa",
-    hours: "07:30 - 22:30 mỗi ngày",
-    hotline: "1900 1234",
-    mapQuery: "142 Cầu Giấy, Cầu Giấy, Hà Nội",
-  },
-  {
-    city: "Tây Hồ, Hà Nội",
-    address: "35 Xuân Diệu, P.Quảng An",
-    hours: "08:00 - 22:00 (T2 - CN)",
-    hotline: "1900 1234",
-    mapQuery: "35 Xuân Diệu, Tây Hồ, Hà Nội",
-  },
-  {
-    city: "Thanh Xuân, Hà Nội",
-    address: "19 Nguyễn Trãi, P.Thanh Xuân Trung",
-    hours: "07:30 - 22:00 mỗi ngày",
-    hotline: "1900 1234",
-    mapQuery: "19 Nguyễn Trãi, Thanh Xuân, Hà Nội",
-  },
-  {
-    city: "Long Biên, Hà Nội",
-    address: "12 Nguyễn Văn Cừ, P.Bồ Đề",
-    hours: "08:00 - 21:30 (T2 - CN)",
-    hotline: "1900 1234",
-    mapQuery: "12 Nguyễn Văn Cừ, Long Biên, Hà Nội",
-  },
-];
+import { FeedbackAPI, ContentAPI } from "../lib/api";
 
 export default function ContactPage() {
+  const [storeLocations, setStoreLocations] = useState([]);
+  const [loadingStores, setLoadingStores] = useState(true);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -69,6 +19,26 @@ export default function ContactPage() {
     success: "",
     error: "",
   });
+
+  // Fetch stores from API on mount
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await ContentAPI.getStores();
+        const stores = Array.isArray(response) ? response : response.results || [];
+
+        if (stores.length > 0) {
+          setStoreLocations(stores);
+        }
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      } finally {
+        setLoadingStores(false);
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -104,10 +74,15 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fff1f0] via-[#ffe5e3] to-[#ffe0e4] text-gray-900 pb-16">
+    <div className="min-h-screen vn-bg-rice-paper text-gray-900 pb-16">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-rose-700 via-rose-600 to-red-600 text-white">
+      <section className="relative overflow-hidden vn-gradient-red-gold text-white vn-lotus-pattern">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,_#ffffff_0%,_transparent_55%)]" />
+        {/* Decorative lanterns */}
+        <div className="absolute top-10 left-10 text-5xl vn-animate-lantern-sway">🏮</div>
+        <div className="absolute top-10 right-10 text-5xl vn-animate-lantern-sway" style={{ animationDelay: '0.5s' }}>🏮</div>
+        <div className="absolute inset-0 vn-bamboo-lines opacity-5" />
+
         <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20 relative z-10">
           <div className="grid gap-10 lg:grid-cols-2 items-center">
             <div>
@@ -169,25 +144,25 @@ export default function ContactPage() {
       {/* Kênh liên hệ */}
       <section className="max-w-6xl mx-auto px-6 -mt-12">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
-            <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Hotline</p>
+          <div className="vn-card-lotus shadow-2xl vn-animate-lotus-bloom">
+            <p className="text-xs font-bold uppercase vn-text-gold-primary tracking-widest">Hotline</p>
             <div className="flex items-center gap-4 mt-3">
               <img src={hotline} alt="Hotline" className="w-12 h-12 object-contain" />
               <div>
-                <p className="text-2xl font-black text-[#e21b1b]">1900 1234</p>
-                <p className="text-sm text-gray-500">Miễn phí cước gọi</p>
+                <p className="text-3xl font-black vn-text-red-primary">1900 1234</p>
+                <p className="text-sm text-gray-600">Miễn phí cước gọi</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
-            <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Email</p>
-            <p className="text-2xl font-semibold mt-3 break-words">support@mcdono.com</p>
-            <p className="text-sm text-gray-500 mt-2">Hỗ trợ đối tác & nhượng quyền</p>
+          <div className="vn-card-lotus shadow-2xl vn-animate-lotus-bloom" style={{ animationDelay: '0.1s' }}>
+            <p className="text-xs font-bold uppercase vn-text-gold-primary tracking-widest">Email</p>
+            <p className="text-2xl font-bold mt-3 break-words vn-text-red-primary">support@mcdono.com</p>
+            <p className="text-sm text-gray-600 mt-2">Hỗ trợ đối tác & nhượng quyền</p>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl p-6 border border-rose-100">
-            <p className="text-xs font-semibold uppercase text-gray-400 tracking-widest">Giao hàng</p>
-            <p className="text-2xl font-semibold mt-3 text-[#e21b1b]">Miễn phí nội thành</p>
-            <p className="text-sm text-gray-500 mt-2">
+          <div className="vn-card-lotus shadow-2xl vn-animate-lotus-bloom" style={{ animationDelay: '0.2s' }}>
+            <p className="text-xs font-bold uppercase vn-text-gold-primary tracking-widest">Giao hàng</p>
+            <p className="text-2xl font-bold mt-3 vn-text-red-primary">Miễn phí nội thành</p>
+            <p className="text-sm text-gray-600 mt-2">
               Áp dụng cho Hà Nội, bán kính giao nhanh 7km quanh mỗi chi nhánh.
             </p>
           </div>
@@ -216,48 +191,45 @@ export default function ContactPage() {
           </a>
         </div>
 
-        <div className="grid gap-8 mt-10 md:grid-cols-2">
-          {storeLocations.map((store) => (
-            <div
-              key={store.city}
-              className="bg-white rounded-3xl border border-rose-100 shadow-lg p-7 flex flex-col gap-4"
-            >
-              <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
-                {store.city}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{store.address}</p>
-              <p className="text-sm text-gray-500">Giờ mở cửa: {store.hours}</p>
-              <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
-                <iframe
-                  title={`Bản đồ ${store.city}`}
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(store.mapQuery || store.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                  width="100%"
-                  height="220"
-                  loading="lazy"
-                  className="w-full border-0"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+        {/* Danh sách cửa hàng */}
+        {storeLocations.length === 0 ? (
+          <div className="mt-12 text-center py-16">
+            <p className="text-gray-500 text-lg">🪷 Chưa có cửa hàng</p>
+          </div>
+        ) : (
+          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {storeLocations.map((store, idx) => (
+              <div
+                key={store.id || store.name}
+                className="vn-card border-2 vn-border-lotus hover:shadow-2xl vn-animate-lotus-bloom"
+                style={{ animationDelay: `${idx * 0.1}s` }}
+              >
+                <h3 className="text-xl font-black vn-text-red-primary flex items-center gap-2">
+                  🏮 {store.name}
+                </h3>
+                <div className="mt-4 space-y-2 text-sm text-gray-600">
+                  <p>{store.address}</p>
+                  <p>{store.hours}</p>
+                  <p className="font-semibold text-rose-600">☎ {store.hotline}</p>
+                </div>
+                <div className="mt-4">
+                  <iframe
+                    title={`Bản đồ ${store.name}`}
+                    className="h-48 w-full rounded-lg border border-gray-200"
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(store.map_query || store.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-dashed border-gray-200">
-                <span className="text-sm font-semibold text-[#e21b1b]">
-                  Hotline đặt bàn: {store.hotline}
-                </span>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.mapQuery || store.address)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm font-semibold text-gray-600 hover:text-[#e21b1b]"
-                >
-                  Chỉ đường
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Form phản hồi */}
-      <section className="max-w-6xl mx-auto px-6 mt-16">
+      < section className="max-w-6xl mx-auto px-6 mt-16" >
         <div className="bg-white rounded-3xl shadow-2xl border border-rose-100 p-8">
           <p className="text-xs uppercase tracking-[0.4em] text-gray-400 font-semibold">Phản hồi</p>
           <h3 className="text-3xl font-black text-[#e21b1b] mt-2">Chia sẻ trải nghiệm</h3>
@@ -345,7 +317,7 @@ export default function ContactPage() {
             </button>
           </form>
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   );
 }

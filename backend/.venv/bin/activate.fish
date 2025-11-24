@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV '/Users/helio/Desktop/untitled folder/fastfood-online/backend/.venv'
+set -gx VIRTUAL_ENV /home/datnd/Projects/fastfood-online/backend/.venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

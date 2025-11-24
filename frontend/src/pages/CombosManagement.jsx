@@ -15,8 +15,7 @@ export default function CombosManagement() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
     const [viewMode, setViewMode] = useState('grid')
-    const [bulkComboStockValue, setBulkComboStockValue] = useState('')
-    const [bulkUpdatingCombos, setBulkUpdatingCombos] = useState(false)
+
     const [successMessage, setSuccessMessage] = useState(null)
     const [isFetchingComboDetail, setIsFetchingComboDetail] = useState(false)
 
@@ -144,40 +143,7 @@ export default function CombosManagement() {
         return matchSearch && matchCategory
     })
 
-    const handleBulkComboStockUpdate = async () => {
-        if (bulkComboStockValue === '') {
-            alert('Vui lòng nhập số lượng tồn kho combo mong muốn.')
-            return
-        }
-        const targetStock = parseInt(bulkComboStockValue, 10)
-        if (Number.isNaN(targetStock) || targetStock < 0) {
-            alert('Số lượng tồn kho phải là số không âm.')
-            return
-        }
-        if (filteredCombos.length === 0) {
-            alert('Không có combo nào trong danh sách hiện tại để cập nhật.')
-            return
-        }
 
-        setBulkUpdatingCombos(true)
-        try {
-            await Promise.all(
-                filteredCombos.map((combo) =>
-                    CatalogAPI.patchCombo(combo.id, {
-                        stock: targetStock
-                    })
-                )
-            )
-            await loadCombos()
-            alert(`Đã cập nhật ${filteredCombos.length} combo về ${targetStock} suất.`)
-        } catch (err) {
-            console.error('Bulk combo stock update failed:', err)
-            const message = err.response?.data?.detail || err.message || 'Không thể cập nhật tồn kho combo hàng loạt.'
-            alert(message)
-        } finally {
-            setBulkUpdatingCombos(false)
-        }
-    }
 
     if (loading) {
         return (
@@ -276,8 +242,8 @@ export default function CombosManagement() {
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${viewMode === 'grid'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-purple-600 text-white shadow-lg'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 🎨 Lưới
@@ -285,38 +251,15 @@ export default function CombosManagement() {
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${viewMode === 'table'
-                                        ? 'bg-purple-600 text-white shadow-lg'
-                                        : 'text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-purple-600 text-white shadow-lg'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 📋 Bảng
                             </button>
                         </div>
                     </div>
-                    <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-t border-gray-100 pt-4">
-                        <div className="text-sm text-gray-600">
-                            Áp dụng nhanh số lượng tồn kho cho tất cả combo hiện đang hiển thị trong danh sách.
-                        </div>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={bulkComboStockValue}
-                                onChange={(e) => setBulkComboStockValue(e.target.value)}
-                                placeholder="VD: 50"
-                                className="w-full sm:w-40 px-4 py-2 border-2 border-gray-200 rounded-xl text-base font-semibold focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleBulkComboStockUpdate}
-                                disabled={bulkUpdatingCombos}
-                                className="px-5 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {bulkUpdatingCombos ? 'Đang cập nhật...' : 'Áp dụng tồn kho'}
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Grid View */}
@@ -399,8 +342,8 @@ export default function CombosManagement() {
                                         <button
                                             onClick={() => handleToggleAvailability(combo)}
                                             className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${combo.is_available
-                                                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                                    : 'bg-green-500 hover:bg-green-600 text-white'
+                                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                                                : 'bg-green-500 hover:bg-green-600 text-white'
                                                 }`}
                                         >
                                             {combo.is_available ? '🚫 Ẩn' : '✅ Hiện'}
@@ -482,8 +425,8 @@ export default function CombosManagement() {
                                             <td className="px-6 py-4">
                                                 <span
                                                     className={`px-4 py-2 rounded-full text-sm font-bold ${combo.is_available
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
                                                         }`}
                                                 >
                                                     {combo.is_available ? '✅ Còn hàng' : '🚫 Hết hàng'}
@@ -500,8 +443,8 @@ export default function CombosManagement() {
                                                     <button
                                                         onClick={() => handleToggleAvailability(combo)}
                                                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${combo.is_available
-                                                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                                                : 'bg-green-500 hover:bg-green-600 text-white'
+                                                            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                                                            : 'bg-green-500 hover:bg-green-600 text-white'
                                                             }`}
                                                     >
                                                         {combo.is_available ? '🚫' : '✅'}

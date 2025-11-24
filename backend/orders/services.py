@@ -73,52 +73,54 @@ def create_order_from_cart(
         if cart_item.menu_item_id:
             menu_item_quantities[cart_item.menu_item_id] += cart_item.quantity
 
+    # Collect all menu items needed, including those from combos
+    final_menu_item_quantities = Counter(menu_item_quantities)
+    
+    # Calculate required menu items from combos
+    # Calculate required menu items from combos
+    for cart_combo in combos_qs:
+        combo = cart_combo.combo
+        combo_qty = cart_combo.quantity
+        # Use prefetched items if available, otherwise query
+        # Note: prefetch_related on 'combo__items__menu_item' populates combo.items.all()
+        for c_item in combo.items.all():
+            final_menu_item_quantities[c_item.menu_item_id] += c_item.quantity * combo_qty
+
     menu_items_to_update = []
-    if menu_item_quantities:
+    if final_menu_item_quantities:
         locked_items = {
             item.id: item
-            for item in MenuItem.objects.select_for_update().filter(id__in=menu_item_quantities.keys())
+            for item in MenuItem.objects.select_for_update().filter(id__in=final_menu_item_quantities.keys())
         }
-        missing_items = set(menu_item_quantities.keys()) - set(locked_items.keys())
+        missing_items = set(final_menu_item_quantities.keys()) - set(locked_items.keys())
         if missing_items:
             raise ValueError("Một số món ăn không còn tồn tại. Vui lòng làm mới giỏ hàng.")
-        for menu_item_id, required_qty in menu_item_quantities.items():
+            
+        for menu_item_id, required_qty in final_menu_item_quantities.items():
             menu_item = locked_items[menu_item_id]
             available_stock = menu_item.stock or 0
+            
             if not menu_item.is_available or available_stock <= 0:
-                raise ValueError(f"{menu_item.name} đã hết hàng. Vui lòng bỏ món này khỏi giỏ.")
+                raise ValueError(f"{menu_item.name} đã hết hàng.")
+            
             if required_qty > available_stock:
-                raise ValueError(f"{menu_item.name} chỉ còn {available_stock} phần trong kho.")
+                raise ValueError(f"{menu_item.name} chỉ còn {available_stock} phần (bao gồm cả trong combo).")
+                
             menu_item.stock = max(available_stock - required_qty, 0)
             if menu_item.stock == 0:
                 menu_item.is_available = False
             menu_items_to_update.append(menu_item)
 
-    combo_quantities = Counter()
-    for cart_combo in combos_qs:
-        if cart_combo.combo_id:
-            combo_quantities[cart_combo.combo_id] += cart_combo.quantity
-
-    combos_to_update = []
-    if combo_quantities:
-        locked_combos = {
-            combo.id: combo
-            for combo in Combo.objects.select_for_update().filter(id__in=combo_quantities.keys())
-        }
-        missing_combos = set(combo_quantities.keys()) - set(locked_combos.keys())
-        if missing_combos:
-            raise ValueError("Một số combo không còn tồn tại. Vui lòng làm mới giỏ hàng.")
-        for combo_id, required_qty in combo_quantities.items():
-            combo = locked_combos[combo_id]
-            available_stock = combo.stock or 0
-            if not combo.is_available or available_stock <= 0:
-                raise ValueError(f"{combo.name} đã hết hàng. Vui lòng bỏ combo này khỏi giỏ.")
-            if required_qty > available_stock:
-                raise ValueError(f"{combo.name} chỉ còn {available_stock} suất trong kho.")
-            combo.stock = max(available_stock - required_qty, 0)
-            if combo.stock == 0:
-                combo.is_available = False
-            combos_to_update.append(combo)
+    # Combos don't have stock anymore, so we don't lock or update them for stock
+    # We just verify they exist and are available (based on their calculated stock which relies on menu items)
+    # But since we already checked menu item stock above, that implicitly checks combo availability.
+    # However, we should still check if the combo itself is marked as available (e.g. manually disabled)
+    if combos_qs:
+        # Just check existence and is_available flag, not stock
+        combo_ids = [c.combo_id for c in combos_qs]
+        checked_combos = Combo.objects.filter(id__in=combo_ids, is_available=False)
+        if checked_combos.exists():
+             raise ValueError(f"Combo {checked_combos.first().name} hiện đang tạm ngưng phục vụ.")
 
     for cart_item in items_qs:
         base_price = cart_item.menu_item.price
@@ -184,8 +186,7 @@ def create_order_from_cart(
     
     if menu_items_to_update:
         MenuItem.objects.bulk_update(menu_items_to_update, ["stock", "is_available"])
-    if combos_to_update:
-        Combo.objects.bulk_update(combos_to_update, ["stock", "is_available"])
+    # No combo updates needed for stock
 
     # Dọn giỏ hàng theo cấu hình
     if item_id_set:
@@ -221,15 +222,24 @@ def restock_order_inventory(order):
         elif order_item.combo_id:
             combo_quantities[order_item.combo_id] += order_item.quantity
 
+    # Calculate total menu items to return
+    final_menu_item_quantities = Counter(menu_item_quantities)
+    
+    # Add items from combos
+    for combo_id, combo_qty in combo_quantities.items():
+        combo_items = ComboItem.objects.filter(combo_id=combo_id).select_related('menu_item')
+        for c_item in combo_items:
+            final_menu_item_quantities[c_item.menu_item_id] += c_item.quantity * combo_qty
+
     menu_items_to_update = []
-    if menu_item_quantities:
+    if final_menu_item_quantities:
         locked_items = {
             item.id: item
             for item in MenuItem.objects.select_for_update().filter(
-                id__in=menu_item_quantities.keys()
+                id__in=final_menu_item_quantities.keys()
             )
         }
-        for menu_item_id, qty in menu_item_quantities.items():
+        for menu_item_id, qty in final_menu_item_quantities.items():
             menu_item = locked_items.get(menu_item_id)
             if not menu_item:
                 continue
@@ -240,25 +250,6 @@ def restock_order_inventory(order):
             menu_items_to_update.append(menu_item)
         if menu_items_to_update:
             MenuItem.objects.bulk_update(menu_items_to_update, ["stock", "is_available"])
-
-    combos_to_update = []
-    if combo_quantities:
-        locked_combos = {
-            combo.id: combo
-            for combo in Combo.objects.select_for_update().filter(
-                id__in=combo_quantities.keys()
-            )
-        }
-        for combo_id, qty in combo_quantities.items():
-            combo = locked_combos.get(combo_id)
-            if not combo:
-                continue
-            combo.stock = (combo.stock or 0) + qty
-            if combo.stock > 0:
-                combo.is_available = True
-            combos_to_update.append(combo)
-        if combos_to_update:
-            Combo.objects.bulk_update(combos_to_update, ["stock", "is_available"])
 
 
 def calculate_cart_total(cart):

@@ -30,6 +30,7 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx'
 import PaymentCancelPage from './pages/PaymentCancelPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
+import ContentManagement from './pages/ContentManagement.jsx'
 import './styles/tw.css'
 
 const router = createBrowserRouter([
@@ -157,6 +158,14 @@ const router = createBrowserRouter([
         element: (
           <Protected roles={['manager']}>
             <FeedbackManagement />
+          </Protected>
+        ),
+      },
+      {
+        path: 'manager/content',
+        element: (
+          <Protected roles={['manager']}>
+            <ContentManagement />
           </Protected>
         ),
       },

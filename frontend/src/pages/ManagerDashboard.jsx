@@ -55,6 +55,14 @@ const MANAGEMENT_LINKS = [
     textClass: 'text-rose-600'
   },
   {
+    title: 'Nội dung trang',
+    description: 'Quản lý nội dung động',
+    icon: '📝',
+    path: '/manager/content',
+    accent: 'from-purple-50 to-violet-50',
+    textClass: 'text-purple-600'
+  },
+  {
     title: 'Đơn hàng',
     description: 'Theo dõi & xử lý đơn',
     icon: '📦',
@@ -381,11 +389,10 @@ export default function ManagerDashboard() {
                   <button
                     key={tab.value}
                     onClick={() => handleTimeframeChange(tab.value)}
-                    className={`px-3 py-1 text-sm font-medium rounded-lg transition ${
-                      timeframe === tab.value
+                    className={`px-3 py-1 text-sm font-medium rounded-lg transition ${timeframe === tab.value
                         ? 'bg-white shadow text-gray-900'
                         : 'text-gray-500 hover:text-gray-800'
-                    }`}
+                      }`}
                   >
                     {tab.label}
                   </button>

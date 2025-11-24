@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import heroBanner from "../assets/images/herobanner2.jpg";
 import heroAbout from "../assets/images/hero-about.png";
@@ -24,35 +24,7 @@ const heroMetrics = [
   },
 ];
 
-const instoreBillboards = [
-  {
-    id: "grand-counter",
-    eyebrow: "Ưu đãi tại quầy",
-    title: "Grand Counter Celebration",
-    description:
-      "Thanh toán hóa đơn từ 400K tại quầy để nhận voucher 100K và bộ sticker McDono phiên bản 2025.",
-    image: heroAbout,
-    note: "Chỉ áp dụng khi thanh toán trực tiếp.",
-  },
-  {
-    id: "photo-booth",
-    eyebrow: "Check-in nhận quà",
-    title: "Photo Booth Day",
-    description:
-      "Chụp ảnh và quét mã QR tại khu booth để đổi ly giữ nhiệt cùng postcard sưu tập.",
-    image: locationImg,
-    note: "Áp dụng tại tất cả cửa hàng McDono Hà Nội.",
-  },
-  {
-    id: "night-light",
-    eyebrow: "Khung giờ 21h - 23h",
-    title: "Night Light Session",
-    description:
-      "Đến quầy sau 21h để được tặng phiếu đồ uống đêm và huy hiệu phát sáng giới hạn.",
-    image: onlineImg,
-    note: "Ưu đãi lớn chỉ khả dụng khi thanh toán tại quầy.",
-  },
-];
+// instoreBillboards will be fetched dynamically from the API
 
 const digitalBanners = [
   {
@@ -114,16 +86,77 @@ const bookingSteps = [
 export default function Promotions() {
   const navigate = useNavigate();
 
+  const [instoreBillboards, setInstoreBillboards] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch billboards from API
+    const fetchBillboards = async () => {
+      try {
+        const { ContentAPI } = await import('../lib/api');
+        const data = await ContentAPI.getContentItems('promotions');
+
+        // Handle paginated response
+        const items = Array.isArray(data) ? data : data.results || [];
+
+        // Filter for slides/banners and sort by created_at (newest first)
+        const billboards = items
+          .filter(item => (item.type === 'slide' || item.type === 'banner') && item.is_active)
+          .sort((a, b) => {
+            // Sort by created_at descending (newest first)
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB - dateA;
+          })
+          .map((item) => ({
+            id: item.id,
+            eyebrow: item.eyebrow || '',
+            title: item.title,
+            description: item.description,
+            image: item.image_url || getImageByKey(item.metadata?.imageKey || item.id),
+            note: item.metadata?.note || '',
+          }));
+
+        if (billboards.length > 0) {
+          setInstoreBillboards(billboards);
+        }
+      } catch (error) {
+        console.error("Failed to fetch billboards:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBillboards();
+  }, []);
+
+  // Helper function to map image keys to imports
+  const getImageByKey = (key) => {
+    const imageMap = {
+      "grand-counter": heroAbout,
+      "photo-booth": locationImg,
+      "night-light": onlineImg,
+      heroAbout,
+      locationImg,
+      onlineImg,
+    };
+    return imageMap[key] || heroAbout;
+  };
+
   const handleOrderNow = () => {
     window.scrollTo({ top: 0, behavior: "auto" });
     navigate("/menu");
   };
 
   return (
-    <div className="bg-[#fff5eb] min-h-screen text-gray-900">
+    <div className="vn-bg-rice-paper min-h-screen text-gray-900">
       {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#0f172a] via-[#111e34] to-[#1d2738]">
-        <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25)_0%,_transparent_55%)]" />
+      <section className="relative overflow-hidden vn-gradient-red-gold vn-lotus-pattern">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25)_0%,_transparent_55%)]" />
+        {/* Decorative lanterns */}
+        <div className="absolute top-10 left-10 text-6xl vn-animate-lantern-sway">🏮</div>
+        <div className="absolute top-10 right-10 text-6xl vn-animate-lantern-sway" style={{ animationDelay: '0.5s' }}>🏮</div>
+        <div className="absolute inset-0 vn-bamboo-lines opacity-5" />
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-16 lg:py-20">
           <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] items-center text-white">
             <div>
@@ -205,52 +238,57 @@ export default function Promotions() {
             Đặt hàng
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {instoreBillboards.map((banner) => (
-            <div
-              key={banner.id}
-              className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg"
-            >
-              <img
-          src={banner.image}
-          alt={banner.title}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        {/* lớp nền tối mạnh hơn */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent" />
-
-        <div className="relative z-10 h-full p-8 flex flex-col justify-end text-white">
-          {/* eyebrow có nền riêng, bo nhẹ */}
-          <span className="self-start bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-[0.25em] text-white/90 shadow-md">
-            {banner.eyebrow}
-          </span>
-
-          {/* tiêu đề sáng hơn, có viền bóng */}
-          <h3 className="text-2xl font-black mt-3 text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
-            {banner.title}
-          </h3>
-
-          {/* mô tả có nền bán trong suốt */}
-          <div className="mt-3 bg-black/60 backdrop-blur-[2px] rounded-2xl p-4 ring-1 ring-white/10">
-            <p className="text-white/95 text-sm leading-relaxed">
-              {banner.description}
-            </p>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.35em] text-yellow-300/95">
-              {banner.note}
-            </p>
+        {instoreBillboards.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-500 text-lg">Nothing to show</p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {instoreBillboards.map((banner) => (
+              <div
+                key={banner.id}
+                className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg"
+              >
+                <img
+                  src={banner.image}
+                  alt={banner.title}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                {/* lớp nền tối mạnh hơn */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent" />
 
-          <button
-            onClick={handleOrderNow}
-            className="mt-6 self-start bg-white/20 hover:bg-white/30 border border-white/40 px-6 py-2 rounded-full text-sm font-semibold transition-colors"
-          >
-            Đặt hàng
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
+                <div className="relative z-10 h-full p-8 flex flex-col justify-end text-white">
+                  {/* eyebrow có nền riêng, bo nhẹ */}
+                  <span className="self-start bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-[0.25em] text-white/90 shadow-md">
+                    {banner.eyebrow}
+                  </span>
 
+                  {/* tiêu đề sáng hơn, có viền bóng */}
+                  <h3 className="text-2xl font-black mt-3 text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
+                    {banner.title}
+                  </h3>
+
+                  {/* mô tả có nền bán trong suốt */}
+                  <div className="mt-3 bg-black/60 backdrop-blur-[2px] rounded-2xl p-4 ring-1 ring-white/10">
+                    <p className="text-white/95 text-sm leading-relaxed">
+                      {banner.description}
+                    </p>
+                    <p className="mt-3 text-[11px] uppercase tracking-[0.35em] text-yellow-300/95">
+                      {banner.note}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleOrderNow}
+                    className="mt-6 self-start bg-white/20 hover:bg-white/30 border border-white/40 px-6 py-2 rounded-full text-sm font-semibold transition-colors"
+                  >
+                    Đặt hàng
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* DIGITAL BANNERS */}
@@ -322,9 +360,8 @@ export default function Promotions() {
                       {notice.label}
                     </p>
                     <p
-                      className={`text-xl font-bold mt-1 ${
-                        notice.label === "Email" ? "break-all" : ""
-                      }`}
+                      className={`text-xl font-bold mt-1 ${notice.label === "Email" ? "break-all" : ""
+                        }`}
                       title={notice.value}
                     >
                       {notice.label === "Email" ? (

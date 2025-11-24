@@ -264,4 +264,10 @@ export const NotificationAPI = {
   markAllRead: () => api.patch('/orders/notifications/mark_all_read/')
 }
 
+// =============================================================================
+// CONTENT APIs
+//==============================================================================
+export { ContentAPI } from './contentApi'
+
 export default api
+

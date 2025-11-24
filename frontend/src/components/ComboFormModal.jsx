@@ -6,7 +6,6 @@ const buildEmptyFormState = () => ({
     description: '',
     category: '',
     discount_percentage: 0,
-    stock: '',
     is_available: true,
     items: []
 })
@@ -36,7 +35,6 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
             description: combo.description || '',
             category: combo.category_id || combo.category?.id || '',
             discount_percentage: combo.discount_percentage ?? 0,
-            stock: combo.stock ?? '',
             is_available: combo.is_available ?? true,
             items:
                 combo.items?.map((item) => ({
@@ -66,17 +64,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         const { name, value, type, checked } = e.target
         let newValue = type === 'checkbox' ? checked : value
 
-        if (name === 'stock') {
-            if (value === '') {
-                newValue = ''
-            } else {
-                const parsed = parseInt(value, 10)
-                if (Number.isNaN(parsed) || parsed < 0) {
-                    return
-                }
-                newValue = parsed
-            }
-        }
+
 
         setFormData(prev => ({
             ...prev,
@@ -194,18 +182,13 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                 }
             })
 
-            const stockValue =
-                formData.stock === '' ? 0 : parseInt(formData.stock, 10)
-            if (Number.isNaN(stockValue) || stockValue < 0) {
-                throw new Error('Tồn kho phải là số không âm')
-            }
+
 
             const dataToSubmit = {
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 category_id: categoryId,
                 discount_percentage: discount,
-                stock: stockValue,
                 is_available: formData.is_available,
                 items: normalizedItems
             }
@@ -399,25 +382,8 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    <span className="text-2xl">📦</span>
-                                    Tồn kho combo *
-                                </label>
-                                <input
-                                    type="number"
-                                    name="stock"
-                                    value={formData.stock}
-                                    onChange={handleChange}
-                                    required
-                                    min="0"
-                                    step="1"
-                                    placeholder="50"
-                                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
-                                />
-                                <p className="text-sm text-gray-500 mt-2">📊 Nhập số combo còn khả dụng.</p>
-                            </div>
                         </div>
+
 
                         {/* Items List with Option Groups */}
                         <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-200">
@@ -513,8 +479,8 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                                                                                         <label
                                                                                             key={option.id}
                                                                                             className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
-                                                                                                    ? 'border-purple-500 bg-purple-100'
-                                                                                                    : 'border-gray-200 hover:border-purple-300'
+                                                                                                ? 'border-purple-500 bg-purple-100'
+                                                                                                : 'border-gray-200 hover:border-purple-300'
                                                                                                 }`}
                                                                                         >
                                                                                             <input
@@ -613,7 +579,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         </button>
                     </div>
                 </form>
-            </div>
+            </div >
 
             <style>{`
                 @keyframes fadeIn {
@@ -631,6 +597,6 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                     animation: slideUp 0.4s ease-out;
                 }
             `}</style>
-        </div>
+        </div >
     )
 }

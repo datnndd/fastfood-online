@@ -1,0 +1,492 @@
+/* ============================================
+   VIETNAMESE FAST-FOOD DESIGN SYSTEM
+   Modern aesthetics with Vietnamese cultural elements
+   ============================================ */
+
+/* Import Vietnamese-optimized fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* ========== Vietnamese Color Palette ========== */
+  
+  /* Primary Colors - Lacquer Red & Imperial Gold */
+  --vn-red-primary: #C8102E;
+  --vn-red-dark: #A00D24;
+  --vn-red-light: #E63946;
+  --vn-red-lighter: #FF6B7A;
+  --vn-red-pale: #FFE5E8;
+  
+  --vn-gold-primary: #FFD700;
+  --vn-gold-dark: #DAA520;
+  --vn-gold-light: #FFE55C;
+  --vn-gold-pale: #FFF8DC;
+  
+  /* Accent Colors - Lotus & Bamboo */
+  --vn-lotus-pink: #FFB6C1;
+  --vn-lotus-deep: #FF69B4;
+  --vn-lotus-pale: #FFF0F5;
+  
+  --vn-bamboo-green: #6B8E23;
+  --vn-bamboo-dark: #556B2F;
+  --vn-bamboo-light: #9ACD32;
+  --vn-bamboo-pale: #F0F8E8;
+  
+  /* Neutrals - Rice Paper & Charcoal */
+  --vn-rice-paper: #FFF8DC;
+  --vn-rice-cream: #FFFAF0;
+  --vn-rice-beige: #F5F5DC;
+  
+  --vn-charcoal: #2C2C2C;
+  --vn-charcoal-light: #4A4A4A;
+  --vn-charcoal-lighter: #6B6B6B;
+  
+  /* Street Food Vibes */
+  --vn-street-orange: #FF6B35;
+  --vn-street-yellow: #FFC857;
+  --vn-lantern-red: #ED1C24;
+  
+  /* ========== Typography ========== */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  
+  /* ========== Spacing Scale ========== */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  
+  /* ========== Border Radius ========== */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-full: 9999px;
+  
+  /* Vietnamese-inspired rounded shapes */
+  --radius-lotus: 1.25rem;
+  --radius-lantern: 2.5rem;
+  
+  /* ========== Shadows ========== */
+  --shadow-sm: 0 1px 2px 0 rgba(200, 16, 46, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(200, 16, 46, 0.1), 0 2px 4px -1px rgba(200, 16, 46, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(200, 16, 46, 0.1), 0 4px 6px -2px rgba(200, 16, 46, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(200, 16, 46, 0.1), 0 10px 10px -5px rgba(200, 16, 46, 0.04);
+  --shadow-gold: 0 4px 14px 0 rgba(255, 215, 0, 0.3);
+  
+  /* ========== Transitions ========== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-lotus: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ========== Vietnamese Cultural Patterns ========== */
+
+/* Lotus Flower Pattern */
+.vn-lotus-pattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.vn-lotus-pattern::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: 
+    radial-gradient(circle at 20% 50%, var(--vn-lotus-pale) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, var(--vn-lotus-pale) 0%, transparent 50%);
+  opacity: 0.3;
+  pointer-events: none;
+  animation: lotus-float 20s ease-in-out infinite;
+}
+
+@keyframes lotus-float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-10px, -10px) rotate(5deg); }
+  66% { transform: translate(10px, 10px) rotate(-5deg); }
+}
+
+/* Bamboo Line Pattern */
+.vn-bamboo-lines {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--vn-bamboo-pale) 0px,
+    var(--vn-bamboo-pale) 1px,
+    transparent 1px,
+    transparent 40px
+  );
+}
+
+/* Nón Lá (Conical Hat) Shape */
+.vn-conical-top {
+  border-radius: 50% 50% var(--radius-md) var(--radius-md);
+}
+
+.vn-conical-card {
+  border-radius: var(--radius-lotus) var(--radius-lotus) var(--radius-md) var(--radius-md);
+  position: relative;
+}
+
+.vn-conical-card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--vn-gold-primary), transparent);
+  border-radius: var(--radius-full);
+}
+
+/* Vietnamese Tile Pattern */
+.vn-tile-pattern {
+  background-image: 
+    linear-gradient(45deg, var(--vn-red-pale) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--vn-red-pale) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--vn-red-pale) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--vn-red-pale) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* ========== Vietnamese Gradients ========== */
+
+.vn-gradient-red-gold {
+  background: linear-gradient(135deg, var(--vn-red-primary) 0%, var(--vn-gold-dark) 100%);
+}
+
+.vn-gradient-lantern {
+  background: linear-gradient(180deg, var(--vn-lantern-red) 0%, var(--vn-red-dark) 100%);
+}
+
+.vn-gradient-lotus {
+  background: linear-gradient(135deg, var(--vn-lotus-pale) 0%, var(--vn-lotus-pink) 100%);
+}
+
+.vn-gradient-bamboo {
+  background: linear-gradient(135deg, var(--vn-bamboo-pale) 0%, var(--vn-bamboo-light) 100%);
+}
+
+.vn-gradient-street {
+  background: linear-gradient(135deg, var(--vn-street-orange) 0%, var(--vn-street-yellow) 100%);
+}
+
+.vn-gradient-rice-paper {
+  background: linear-gradient(135deg, var(--vn-rice-cream) 0%, var(--vn-rice-beige) 100%);
+}
+
+/* ========== Decorative Elements ========== */
+
+/* Lotus Corner Decoration */
+.vn-lotus-corner {
+  position: relative;
+}
+
+.vn-lotus-corner::after {
+  content: '🪷';
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  font-size: 1.5rem;
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+
+/* Bamboo Border */
+.vn-bamboo-border {
+  border: 2px solid var(--vn-bamboo-green);
+  border-image: repeating-linear-gradient(
+    90deg,
+    var(--vn-bamboo-green),
+    var(--vn-bamboo-green) 10px,
+    var(--vn-bamboo-dark) 10px,
+    var(--vn-bamboo-dark) 12px
+  ) 2;
+}
+
+/* Gold Accent Border */
+.vn-gold-accent {
+  border-top: 3px solid var(--vn-gold-primary);
+  box-shadow: inset 0 3px 0 0 var(--vn-gold-light);
+}
+
+/* Lantern Glow Effect */
+.vn-lantern-glow {
+  box-shadow: 
+    0 0 20px rgba(237, 28, 36, 0.3),
+    0 0 40px rgba(255, 215, 0, 0.2);
+  animation: lantern-pulse 3s ease-in-out infinite;
+}
+
+@keyframes lantern-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(237, 28, 36, 0.3), 0 0 40px rgba(255, 215, 0, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(237, 28, 36, 0.5), 0 0 60px rgba(255, 215, 0, 0.3); }
+}
+
+/* ========== Vietnamese Typography Utilities ========== */
+
+.vn-heading-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--vn-red-primary);
+  letter-spacing: -0.02em;
+}
+
+.vn-heading-primary {
+  font-family: var(--font-primary);
+  font-weight: 800;
+  color: var(--vn-charcoal);
+}
+
+.vn-text-body {
+  font-family: var(--font-primary);
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--vn-charcoal-light);
+}
+
+.vn-text-gold {
+  color: var(--vn-gold-dark);
+  font-weight: 600;
+}
+
+.vn-text-red {
+  color: var(--vn-red-primary);
+  font-weight: 600;
+}
+
+/* ========== Vietnamese Button Styles ========== */
+
+.vn-btn-primary {
+  background: linear-gradient(135deg, var(--vn-red-primary) 0%, var(--vn-red-dark) 100%);
+  color: white;
+  font-family: var(--font-primary);
+  font-weight: 600;
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-full);
+  border: none;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.vn-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left var(--transition-slow);
+}
+
+.vn-btn-primary:hover::before {
+  left: 100%;
+}
+
+.vn-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.vn-btn-gold {
+  background: linear-gradient(135deg, var(--vn-gold-primary) 0%, var(--vn-gold-dark) 100%);
+  color: var(--vn-charcoal);
+  font-family: var(--font-primary);
+  font-weight: 700;
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--vn-gold-dark);
+  box-shadow: var(--shadow-gold);
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.vn-btn-gold:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px 0 rgba(255, 215, 0, 0.4);
+}
+
+.vn-btn-outline {
+  background: transparent;
+  color: var(--vn-red-primary);
+  font-family: var(--font-primary);
+  font-weight: 600;
+  padding: var(--space-md) var(--space-xl);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--vn-red-primary);
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.vn-btn-outline:hover {
+  background: var(--vn-red-primary);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* ========== Vietnamese Card Styles ========== */
+
+.vn-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  border: 1px solid var(--vn-red-pale);
+}
+
+.vn-card:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-4px);
+}
+
+.vn-card-lotus {
+  background: linear-gradient(135deg, white 0%, var(--vn-lotus-pale) 100%);
+  border-radius: var(--radius-lotus);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--vn-lotus-pink);
+  position: relative;
+  overflow: hidden;
+}
+
+.vn-card-lotus::before {
+  content: '🪷';
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  font-size: 4rem;
+  opacity: 0.1;
+  transform: rotate(-15deg);
+}
+
+.vn-card-bamboo {
+  background: var(--vn-bamboo-pale);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  border-left: 4px solid var(--vn-bamboo-green);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== Vietnamese Animations ========== */
+
+@keyframes lotus-bloom {
+  0% { transform: scale(0.8) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.05) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.vn-animate-lotus-bloom {
+  animation: lotus-bloom var(--transition-lotus) ease-out;
+}
+
+@keyframes lantern-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.vn-animate-lantern-sway {
+  animation: lantern-sway 3s ease-in-out infinite;
+}
+
+@keyframes bamboo-grow {
+  0% { transform: scaleY(0); transform-origin: bottom; }
+  100% { transform: scaleY(1); transform-origin: bottom; }
+}
+
+.vn-animate-bamboo-grow {
+  animation: bamboo-grow 0.6s ease-out;
+}
+
+@keyframes gold-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.vn-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--vn-gold-dark) 0%,
+    var(--vn-gold-primary) 25%,
+    var(--vn-gold-light) 50%,
+    var(--vn-gold-primary) 75%,
+    var(--vn-gold-dark) 100%
+  );
+  background-size: 200% auto;
+  animation: gold-shimmer 3s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========== Vietnamese Utility Classes ========== */
+
+.vn-bg-rice-paper {
+  background-color: var(--vn-rice-paper);
+}
+
+.vn-bg-red-pale {
+  background-color: var(--vn-red-pale);
+}
+
+.vn-bg-gold-pale {
+  background-color: var(--vn-gold-pale);
+}
+
+.vn-bg-lotus-pale {
+  background-color: var(--vn-lotus-pale);
+}
+
+.vn-bg-bamboo-pale {
+  background-color: var(--vn-bamboo-pale);
+}
+
+/* Text Colors */
+.vn-text-red-primary { color: var(--vn-red-primary); }
+.vn-text-gold-primary { color: var(--vn-gold-primary); }
+.vn-text-charcoal { color: var(--vn-charcoal); }
+
+/* Border Colors */
+.vn-border-red { border-color: var(--vn-red-primary); }
+.vn-border-gold { border-color: var(--vn-gold-primary); }
+.vn-border-lotus { border-color: var(--vn-lotus-pink); }
+.vn-border-bamboo { border-color: var(--vn-bamboo-green); }
+
+/* ========== Responsive Vietnamese Elements ========== */
+
+@media (max-width: 768px) {
+  :root {
+    --space-xl: 1.5rem;
+    --space-2xl: 2rem;
+    --space-3xl: 2.5rem;
+  }
+  
+  .vn-lotus-pattern::before {
+    animation-duration: 15s;
+  }
+  
+  .vn-card, .vn-card-lotus, .vn-card-bamboo {
+    padding: var(--space-lg);
+  }
+}
+
+/* ========== Print Styles ========== */
+
+@media print {
+  .vn-lotus-pattern::before,
+  .vn-lantern-glow,
+  .vn-animate-lantern-sway {
+    animation: none !important;
+  }
+}

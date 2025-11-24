@@ -1,0 +1,71 @@
+// frontend/src/lib/contentApi.js
+import api from './api'
+
+export const ContentAPI = {
+    // Pages
+    async getPages() {
+        const response = await api.get('/content/pages/')
+        return response.data
+    },
+
+    async getPageContent(slug) {
+        const response = await api.get(`/content/pages/${slug}/content/`)
+        return response.data
+    },
+
+    // Content Items
+    async getContentItems(pageSlug = null) {
+        const params = pageSlug ? { page_slug: pageSlug } : {}
+        const response = await api.get('/content/items/', { params })
+        return response.data
+    },
+
+    async createContentItem(data) {
+        const response = await api.post('/content/items/', data)
+        return response.data
+    },
+
+    async updateContentItem(id, data) {
+        const response = await api.put(`/content/items/${id}/`, data)
+        return response.data
+    },
+
+    async deleteContentItem(id) {
+        const response = await api.delete(`/content/items/${id}/`)
+        return response.data
+    },
+
+    // Stores
+    async getStores() {
+        const response = await api.get('/content/stores/')
+        return response.data
+    },
+
+    async createStore(data) {
+        const response = await api.post('/content/stores/', data)
+        return response.data
+    },
+
+    async updateStore(id, data) {
+        const response = await api.put(`/content/stores/${id}/`, data)
+        return response.data
+    },
+
+    async deleteStore(id) {
+        const response = await api.delete(`/content/stores/${id}/`)
+        return response.data
+    },
+
+    // Image Upload
+    async uploadImage(file) {
+        const formData = new FormData()
+        formData.append('image', file)
+
+        const response = await api.post('/content/upload-image/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        return response.data
+    }
+}

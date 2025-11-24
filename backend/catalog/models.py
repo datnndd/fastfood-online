@@ -80,7 +80,7 @@ class Combo(models.Model):
         help_text="Phần trăm giảm giá (0-100)"
     )
     is_available = models.BooleanField(default=True)
-    stock = models.PositiveIntegerField(default=0)
+    # stock field removed, calculated dynamically
     category = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
@@ -90,16 +90,39 @@ class Combo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    @property
+    def stock(self):
+        # Calculate stock based on the minimum stock of items in the combo
+        min_stock = float('inf')
+        combo_items = self.items.all()
+        if not combo_items:
+            return 0
+            
+        for item in combo_items:
+            if item.quantity > 0:
+                # Calculate how many sets of this item we can make
+                item_stock = item.menu_item.stock // item.quantity
+                if item_stock < min_stock:
+                    min_stock = item_stock
+            else:
+                # If quantity is 0 (shouldn't happen for valid combo), it doesn't limit stock
+                continue
+                
+        return min_stock if min_stock != float('inf') else 0
+
     def _sync_availability_with_stock(self):
-        if self.stock is None:
-            self.stock = 0
+        # Availability is now derived from calculated stock
         if self.stock <= 0:
-            self.stock = 0
             self.is_available = False
 
     def save(self, *args, **kwargs):
         self.slug = generate_unique_slug(self, self.name, "combo")
-        self._sync_availability_with_stock()
+        # We can't easily sync availability here because stock depends on related items
+        # which might not be saved yet or might change independently.
+        # However, we can still check if we should force it to unavailable if we know stock is 0.
+        # But since stock is dynamic, it's better to rely on the property access or explicit checks.
+        # For now, we'll keep the basic check but it might be redundant.
+        # self._sync_availability_with_stock() 
         super().save(*args, **kwargs)
     
     def calculate_original_price(self):
