@@ -10,6 +10,7 @@ class Page(models.Model):
         ('about', 'About'),
         ('promotions', 'Promotions'),
         ('contact', 'Contact'),
+        ('global', 'Global Settings'),
     ]
     
     name = models.CharField(max_length=100)
@@ -40,6 +41,7 @@ class ContentItem(models.Model):
         ('slide', 'Slide/Banner'),
         ('text_block', 'Text Block'),  # For editable static text
         ('story', 'Story Moment'),     # For About page timeline
+        ('logo', 'Logo'),              # For site logo
     ]
     
     page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name='content_items')

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import {
   ClockIcon,
   EnvelopeIcon,
@@ -6,6 +7,7 @@ import {
   PhoneIcon,
 } from '@heroicons/react/24/outline'
 import logo from '../assets/images/logo.png'
+import { ContentAPI } from '../lib/api'
 
 const navSections = [
   {
@@ -77,6 +79,22 @@ const contactChannels = [
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const [logoUrl, setLogoUrl] = useState(logo)
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const items = await ContentAPI.getContentItems('global')
+        const logoItem = items.find(i => i.type === 'logo')
+        if (logoItem && logoItem.image_url) {
+          setLogoUrl(logoItem.image_url)
+        }
+      } catch (error) {
+        console.error('Error fetching logo:', error)
+      }
+    }
+    fetchLogo()
+  }, [])
 
   const handleNewsletter = (event) => {
     event.preventDefault()
@@ -96,11 +114,11 @@ export default function Footer() {
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr_1fr]">
           <div>
             <Link to="/" className="flex items-center gap-4 group" onClick={scrollToTop}>
-              <div className="bg-white p-1.5 rounded-xl shadow-lg group-hover:scale-105 transition-transform">
+              <div className="bg-white p-1.5 rounded-xl shadow-lg group-hover:scale-105 transition-transform h-14 w-14 flex items-center justify-center">
                 <img
-                  src={logo}
+                  src={logoUrl}
                   alt="McDono"
-                  className="h-14 w-14 object-cover"
+                  className="max-h-full max-w-full object-contain"
                 />
               </div>
               <div>

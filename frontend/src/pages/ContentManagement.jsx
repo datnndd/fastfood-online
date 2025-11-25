@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react'
 import { ContentAPI } from '../lib/api'
 
@@ -5,7 +6,8 @@ const PAGE_CHOICES = [
     { value: 'home', label: 'Home Page', supports: 'content' },
     { value: 'about', label: 'About Page', supports: 'content' },
     { value: 'promotions', label: 'Promotions Page', supports: 'content' },
-    { value: 'contact', label: 'Contact Page', supports: 'stores' }
+    { value: 'contact', label: 'Contact Page', supports: 'stores' },
+    { value: 'global', label: 'Global Settings', supports: 'content' }
 ]
 
 const CONTENT_TYPE_CHOICES = [
@@ -87,6 +89,8 @@ export default function ContentManagement() {
                 defaultType = 'story';
             } else if (selectedPage === 'promotions') {
                 defaultType = 'slide';
+            } else if (selectedPage === 'global') {
+                defaultType = 'logo';
             }
 
             setEditingItem({
@@ -179,10 +183,10 @@ export default function ContentManagement() {
                         <button
                             key={page.value}
                             onClick={() => setSelectedPage(page.value)}
-                            className={`rounded-lg px-4 py-2 font-semibold transition ${selectedPage === page.value
-                                ? 'bg-rose-600 text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-100'
-                                }`}
+                            className={`rounded - lg px - 4 py - 2 font - semibold transition ${selectedPage === page.value
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                } `}
                         >
                             {page.label}
                         </button>
@@ -373,6 +377,51 @@ export default function ContentManagement() {
                                                 </div>
                                             </div>
                                         ))}
+                                </div>
+                            </section>
+                        )}
+                        {selectedPage === 'global' && (
+                            /* Global Settings Section */
+                            <section>
+                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Global Settings</h2>
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {items.filter(i => i.type === 'logo').map((item) => (
+                                        <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-blue-500">
+                                            <h3 className="text-lg font-semibold mb-2">Website Logo</h3>
+                                            {item.image_url ? (
+                                                <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center p-4">
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt="Logo Preview"
+                                                        className="max-h-full max-w-full object-contain"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                                                    No Logo
+                                                </div>
+                                            )}
+                                            <p className="text-sm text-gray-600 mb-4">
+                                                This logo will appear in the navigation bar and footer.
+                                                Auto-fit is applied.
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Change Logo</button>
+                                                <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {items.filter(i => i.type === 'logo').length === 0 && (
+                                        <div className="rounded-lg bg-gray-50 p-8 text-center border-2 border-dashed border-gray-300">
+                                            <p className="text-gray-500 mb-4">No logo has been set yet.</p>
+                                            <button
+                                                onClick={handleCreate}
+                                                className="rounded bg-rose-600 px-4 py-2 text-white hover:bg-rose-700"
+                                            >
+                                                Upload Logo
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         )}

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { ShoppingCartIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import logo from '../assets/images/logo.png'
 import { IMAGE_PLACEHOLDER } from '../lib/placeholders'
-import { CatalogAPI, CartAPI } from '../lib/api'
+import { CatalogAPI, CartAPI, ContentAPI } from '../lib/api'
 import { useAuth, useRole } from '../lib/authContext'
 import NotificationBell from './NotificationBell'
 
@@ -108,6 +108,23 @@ export default function NavBar() {
     { path: '/contact', label: 'Liên hệ' },
   ]
 
+  const [logoUrl, setLogoUrl] = useState(logo)
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const items = await ContentAPI.getContentItems('global')
+        const logoItem = items.find(i => i.type === 'logo')
+        if (logoItem && logoItem.image_url) {
+          setLogoUrl(logoItem.image_url)
+        }
+      } catch (error) {
+        console.error('Error fetching logo:', error)
+      }
+    }
+    fetchLogo()
+  }, [])
+
   return (
     <>
       <div className="bg-gradient-to-br from-[#C8102E] to-[#DAA520] vn-gradient-red-gold text-white shadow-lg sticky top-0 z-50 vn-bamboo-border border-b-0 border-t-0 border-l-0 border-r-0 border-b-4">
@@ -122,11 +139,11 @@ export default function NavBar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center group">
-            <div className="bg-white p-1.5 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300">
+            <div className="bg-white p-1.5 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300 h-[50px] w-[50px] flex items-center justify-center">
               <img
-                src={logo}
+                src={logoUrl}
                 alt="Mc Dono Logo"
-                className="h-[50px] w-auto"
+                className="max-h-full max-w-full object-contain"
               />
             </div>
           </Link>
