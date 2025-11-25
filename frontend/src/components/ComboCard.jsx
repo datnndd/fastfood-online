@@ -48,28 +48,28 @@ export default function ComboCard({ combo, onViewDetail, categoryName, onCategor
       aria-label={`Xem chi tiết combo ${combo.name}`}
       onClick={handleViewDetail}
       onKeyDown={handleCardKeyDown}
-      className="relative overflow-hidden rounded-2xl border-2 border-amber-100 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
+      className="group relative overflow-hidden rounded-2xl bg-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer border-2 vn-border-gold"
     >
       <div className="relative aspect-[3/2] overflow-hidden">
         <img
           src={combo.image_url || PLACEHOLDER_IMG}
           alt={combo.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         {isOutOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-semibold uppercase tracking-wide text-white">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-bold uppercase tracking-widest text-white backdrop-blur-sm">
             Hết hàng
           </div>
         )}
         {discountLabel && (
-          <div className="absolute top-0 right-0">
-            <div className="bg-[#ee4d2d] text-white text-xs font-bold px-2 py-1 rounded-bl-lg">
+          <div className="absolute top-2 right-2">
+            <div className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md border border-white/20 animate-pulse">
               {discountLabel}
             </div>
           </div>
         )}
       </div>
-      <div className="p-4 space-y-3">
+      <div className="p-5 space-y-3 bg-gradient-to-b from-white to-amber-50/30">
         <div className="flex items-start justify-between gap-3">
           <div>
             {categoryName && (
@@ -79,50 +79,52 @@ export default function ComboCard({ combo, onViewDetail, categoryName, onCategor
                   event.stopPropagation()
                   onCategoryClick && onCategoryClick()
                 }}
-                className="mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 hover:border-amber-300"
+                className="mb-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 hover:border-amber-300 hover:bg-amber-100 transition-colors"
               >
                 <span className="text-[9px] text-amber-500">Danh mục</span>
                 {categoryName}
               </button>
             )}
-            <h3 className="font-semibold text-gray-900">{combo.name}</h3>
+            <h3 className="font-bold text-gray-900 text-lg group-hover:text-amber-700 transition-colors">{combo.name}</h3>
           </div>
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
+          <span className="text-xs bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 px-3 py-1 rounded-full font-bold shadow-sm">
             Combo
           </span>
         </div>
 
         {combo.description && (
-          <p className="text-sm text-gray-600">{combo.description}</p>
+          <p className="text-sm text-gray-600 line-clamp-2">{combo.description}</p>
         )}
 
         {itemsPreview.length > 0 && (
-          <ul className="text-xs text-gray-500 space-y-1">
+          <ul className="text-xs text-gray-500 space-y-1 bg-white/50 p-2 rounded-lg border border-amber-100">
             {itemsPreview.map((item) => (
-              <li key={item.id}>
-                • {item.menu_item?.name} × {item.quantity}
+              <li key={item.id} className="flex items-center gap-1">
+                <span className="text-amber-500">•</span> {item.menu_item?.name} × {item.quantity}
               </li>
             ))}
             {remainingCount > 0 && (
-              <li>+ {remainingCount} món khác</li>
+              <li className="font-semibold text-amber-600 pl-2">+ {remainingCount} món khác</li>
             )}
           </ul>
         )}
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between pt-2">
           <div>
-            <div className="text-lg font-bold text-[#ee4d2d]">
-              {formatCurrency(combo.final_price)}₫
+            <div className="flex items-baseline gap-2">
+              <span className="text-xl font-black text-red-600">
+                {formatCurrency(combo.final_price)}₫
+              </span>
+              <span className="text-xs text-gray-400 line-through decoration-red-300">
+                {formatCurrency(combo.original_price)}₫
+              </span>
             </div>
-            <div className="text-xs text-gray-400 line-through">
-              {formatCurrency(combo.original_price)}₫
-            </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 mt-1 font-medium">
               {isOutOfStock
                 ? 'Combo tạm hết'
                 : hasStockInfo
-                  ? `Còn lại: ${rawStock} suất`
-                  : 'Còn hàng'}
+                  ? `Còn: ${rawStock} suất`
+                  : 'Sẵn sàng phục vụ'}
             </div>
           </div>
           <div className="text-right">
@@ -134,13 +136,12 @@ export default function ComboCard({ combo, onViewDetail, categoryName, onCategor
               }}
               disabled={status === 'pending'}
               aria-disabled={isOutOfStock}
-              className={`mt-2 inline-flex items-center justify-center rounded-xl px-3 py-1.5 text-sm font-semibold text-white shadow transition ${
-                isOutOfStock
-                  ? 'bg-gray-400 hover:bg-gray-400'
+              className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-bold shadow-sm transition-all transform active:scale-95 ${isOutOfStock
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : status === 'pending'
-                    ? 'bg-amber-400 cursor-wait'
-                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
-              }`}
+                    ? 'bg-amber-100 text-amber-600 cursor-wait'
+                    : 'vn-btn-gold text-amber-900 hover:shadow-md'
+                }`}
             >
               {actionLabel}
             </button>

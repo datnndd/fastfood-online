@@ -99,7 +99,7 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
       quantity: quantity,
       option_ids: selectedOptions
     }
-    
+
     onAddToCart(cartItem)
     onClose?.()
   }
@@ -108,44 +108,44 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white/95 px-6 py-4">
+      <div className="vn-card border-2 vn-border-gold shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative bg-white">
+        <div className="sticky top-0 flex items-center justify-between border-b-2 border-red-100 bg-white/95 px-6 py-4 z-10 backdrop-blur">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-red-500">Chi tiết món</p>
-            <h2 className="text-2xl font-bold text-gray-900">{item.name}</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] vn-text-red-primary">Chi tiết món</p>
+            <h2 className="text-2xl font-black vn-heading-display text-gray-900">{item.name}</h2>
           </div>
           <button
             onClick={onClose}
             type="button"
             aria-label="Đóng"
-            className="text-gray-400 transition hover:text-gray-600"
+            className="text-gray-400 transition hover:text-red-600"
           >
-            <span className="text-3xl leading-none">×</span>
+            <span className="text-4xl leading-none">×</span>
           </button>
         </div>
-        
+
         <div className="grid gap-6 p-6 md:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <div className="overflow-hidden rounded-xl border border-gray-100">
+            <div className="overflow-hidden rounded-2xl border-2 vn-border-gold shadow-lg">
               <img
                 src={item.image_url || IMAGE_PLACEHOLDER}
                 alt={item.name}
                 className="h-60 w-full object-cover"
               />
             </div>
-            {item.description && <p className="mt-4 text-sm text-gray-600">{item.description}</p>}
+            {item.description && <p className="mt-4 text-sm font-medium text-gray-600 leading-relaxed">{item.description}</p>}
             {hasStockInfo && (
-              <p className={`mt-3 text-sm font-medium ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}>
+              <p className={`mt-3 text-sm font-bold ${isOutOfStock ? 'text-red-600' : 'text-green-600'}`}>
                 {isOutOfStock ? 'Món này đã hết hàng.' : `Còn lại: ${rawStock} phần trong kho.`}
               </p>
             )}
           </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-5">
-            <p className="text-sm font-semibold text-gray-700">Tùy chọn & số lượng</p>
+          <div className="rounded-2xl border-2 border-red-100 bg-red-50/30 p-5">
+            <p className="text-sm font-bold text-gray-800 uppercase tracking-wide">Tùy chọn & số lượng</p>
             <div className="mt-4 space-y-4">
               {hasOptionGroups ? (
                 optionGroups.map((group, index) => (
@@ -157,23 +157,23 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
                   />
                 ))
               ) : (
-                <div className="rounded-xl bg-white px-4 py-3 text-sm text-gray-600">
+                <div className="rounded-xl bg-white border border-red-100 px-4 py-3 text-sm font-medium text-gray-600">
                   Món này không có tùy chọn thêm. Bạn chỉ cần chọn số lượng bên dưới.
                 </div>
               )}
 
-              <div className="rounded-xl bg-white px-4 py-3">
+              <div className="rounded-xl bg-white border border-red-100 px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">Số lượng:</span>
+                  <span className="font-bold text-gray-900">Số lượng:</span>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                       disabled={quantity <= 1}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 text-lg leading-none text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 font-bold transition-all"
                     >
                       −
                     </button>
-                    <span className="min-w-[32px] text-center text-lg font-semibold">{quantity}</span>
+                    <span className="min-w-[32px] text-center text-lg font-black vn-text-red-primary">{quantity}</span>
                     <button
                       onClick={() => {
                         setQuantity((prev) => {
@@ -183,7 +183,7 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
                         })
                       }}
                       disabled={isOutOfStock || (hasStockInfo && quantity >= Math.max(rawStock, 1))}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 text-lg leading-none text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 font-bold transition-all"
                     >
                       +
                     </button>
@@ -191,26 +191,22 @@ export default function ItemDetailPopup({ item, isOpen, onClose, onAddToCart }) 
                 </div>
               </div>
 
-              <div className="rounded-xl bg-white px-4 py-4">
+              <div className="rounded-xl bg-white border border-red-100 px-4 py-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Tổng cộng</span>
-                  <span className="text-2xl font-bold text-red-600">{calculateTotalPrice().toLocaleString()}₫</span>
+                  <span className="text-sm font-bold text-gray-600">Tổng cộng</span>
+                  <span className="text-2xl font-black vn-text-red-primary">{calculateTotalPrice().toLocaleString()}₫</span>
                 </div>
                 <button
                   onClick={handleAddToCart}
                   disabled={!selectionIsValid || isOutOfStock}
-                  className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${
-                    selectionIsValid && !isOutOfStock
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  className={`mt-4 w-full vn-btn-primary py-3 text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isOutOfStock ? 'Đã hết hàng' : 'Thêm vào giỏ'}
                 </button>
               </div>
             </div>
           </div>
-        
+
         </div>
       </div>
     </div>

@@ -32,21 +32,21 @@ const digitalBanners = [
     eyebrow: "Banner trực tuyến",
     title: "Đặt trước – giao nhanh 30 phút",
     body: 'Các nút "Đặt Hàng" sẽ đưa bạn tới đầu trang Thực đơn để chọn món trước khi đến quầy thanh toán.',
-    accent: "from-[#f97316] to-[#facc15]",
+    accent: "vn-gradient-red-gold",
   },
   {
     id: "member-sync",
     eyebrow: "McDono Rewards",
     title: "Tích điểm online, nhận quà tại quầy",
     body: "Quét mã thành viên ngay quầy thanh toán để nhân đôi điểm và đổi merchandise theo banner từng tuần.",
-    accent: "from-[#ec4899] to-[#8b5cf6]",
+    accent: "vn-gradient-lotus",
   },
   {
     id: "friday-drop",
     eyebrow: "Lịch phát hành banner",
     title: "Mỗi thứ Sáu lúc 09:00",
     body: "Các banner quảng cáo mới được công bố trên trang này và màn hình LED tại quầy lễ tân.",
-    accent: "from-[#22d3ee] to-[#0ea5e9]",
+    accent: "bg-gradient-to-br from-cyan-500 to-blue-500",
   },
 ];
 
@@ -87,7 +87,6 @@ export default function Promotions() {
   const navigate = useNavigate();
 
   const [instoreBillboards, setInstoreBillboards] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch billboards from API
@@ -123,7 +122,7 @@ export default function Promotions() {
       } catch (error) {
         console.error("Failed to fetch billboards:", error);
       } finally {
-        setLoading(false);
+        // loading state removed
       }
     };
 
@@ -160,26 +159,27 @@ export default function Promotions() {
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-16 lg:py-20">
           <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] items-center text-white">
             <div>
-              <p className="uppercase tracking-[0.4em] text-xs text-white/70 mb-4">
-                Banner quảng cáo chính thức
-              </p>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight drop-shadow-lg">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] border border-white/20 backdrop-blur-sm mb-6">
+                <span className="text-lg">🏮</span>
+                <span className="vn-text-gold-primary">Banner quảng cáo chính thức</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight drop-shadow-lg vn-heading-display-white">
                 Săn ưu đãi McDono mỗi ngày
               </h1>
-              <p className="mt-4 text-lg md:text-xl text-white/90 max-w-3xl">
+              <p className="mt-4 text-lg md:text-xl text-white/90 max-w-3xl font-medium">
                 Cập nhật banner khuyến mãi mới nhất, đặt lịch ghé quầy và xem thực đơn trực tuyến để
                 chuẩn bị trước khi tận hưởng ưu đãi đặc biệt tại cửa hàng.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <button
                   onClick={handleOrderNow}
-                  className="bg-[#ff3030] hover:bg-[#d91919] text-white font-semibold py-3 px-8 rounded-full shadow-lg shadow-red-500/30 transition-transform hover:-translate-y-0.5"
+                  className="vn-btn-gold px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
                 >
                   Đặt hàng
                 </button>
                 <button
                   onClick={handleOrderNow}
-                  className="border border-white/70 text-white font-semibold py-3 px-8 rounded-full hover:bg-white/15 transition-colors"
+                  className="vn-btn-outline border-white text-white hover:bg-white hover:text-red-700 px-8 py-3"
                 >
                   Xem thực đơn
                 </button>
@@ -188,13 +188,13 @@ export default function Promotions() {
                 {heroMetrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="backdrop-blur bg-white/10 border border-white/20 rounded-2xl p-4"
+                    className="backdrop-blur bg-white/10 border border-white/20 rounded-2xl p-4 hover:bg-white/20 transition-colors"
                   >
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/70">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold">
                       {metric.label}
                     </p>
-                    <p className="text-xl font-bold">{metric.value}</p>
-                    <p className="text-sm text-white/80">{metric.detail}</p>
+                    <p className="text-xl font-bold mt-1 vn-text-gold-primary">{metric.value}</p>
+                    <p className="text-sm text-white/80 mt-1">{metric.detail}</p>
                   </div>
                 ))}
               </div>
@@ -202,12 +202,13 @@ export default function Promotions() {
 
             <div className="relative w-full h-[320px] sm:h-[380px] lg:h-[420px]">
               <div className="absolute inset-0 blur-3xl opacity-70 bg-gradient-to-tr from-[#ff6b6b] via-[#ffd166] to-[#80ed99]" />
-              <div className="relative h-full w-full rounded-[36px] bg-white/5 border border-white/10 p-4">
-                <div className="h-full w-full rounded-[28px] overflow-hidden bg-black/10 flex items-center justify-center">
+              <div className="relative h-full w-full rounded-[36px] bg-white/5 border border-white/10 p-4 vn-lantern-glow">
+                <div className="h-full w-full rounded-[28px] overflow-hidden bg-black/10 flex items-center justify-center relative">
+                  <div className="absolute inset-0 vn-lotus-pattern opacity-20"></div>
                   <img
                     src={heroBanner}
                     alt="McDono promotions hero"
-                    className="max-h-full w-full object-contain"
+                    className="max-h-full w-full object-contain relative z-10"
                     draggable="false"
                   />
                 </div>
@@ -221,66 +222,66 @@ export default function Promotions() {
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
           <div>
-            <p className="text-[#ff3030] font-semibold uppercase tracking-[0.3em] text-xs mb-2">
-              Banner tại quầy
+            <p className="vn-text-red-primary font-bold uppercase tracking-[0.3em] text-xs mb-2 flex items-center gap-2">
+              <span className="text-lg">🪷</span> Banner tại quầy
             </p>
-            <h2 className="text-3xl md:text-4xl font-black">
+            <h2 className="text-3xl md:text-4xl font-black vn-heading-display">
               Ưu đãi lớn chỉ kích hoạt khi bạn thanh toán trực tiếp
             </h2>
-            <p className="mt-3 text-gray-600">
+            <p className="mt-3 text-gray-600 font-medium">
               Xem trước các banner được treo tại cửa hàng để chuẩn bị lịch ghé quầy.
             </p>
           </div>
           <button
             onClick={handleOrderNow}
-            className="px-6 py-3 rounded-full border border-[#ff3030] text-[#ff3030] font-semibold hover:bg-[#ff3030] hover:text-white transition-colors"
+            className="vn-btn-primary px-6 py-3 shadow-md hover:shadow-lg"
           >
             Đặt hàng
           </button>
         </div>
         {instoreBillboards.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">Nothing to show</p>
+          <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-3xl">
+            <p className="text-gray-500 text-lg font-medium">🪷 Chưa có banner nào</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {instoreBillboards.map((banner) => (
               <div
                 key={banner.id}
-                className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg"
+                className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg group vn-card border-0"
               >
                 <img
                   src={banner.image}
                   alt={banner.title}
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 {/* lớp nền tối mạnh hơn */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
 
                 <div className="relative z-10 h-full p-8 flex flex-col justify-end text-white">
                   {/* eyebrow có nền riêng, bo nhẹ */}
-                  <span className="self-start bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-[0.25em] text-white/90 shadow-md">
+                  <span className="self-start bg-red-600/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.25em] text-white shadow-md border border-white/20">
                     {banner.eyebrow}
                   </span>
 
                   {/* tiêu đề sáng hơn, có viền bóng */}
-                  <h3 className="text-2xl font-black mt-3 text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
+                  <h3 className="text-2xl font-black mt-3 text-white drop-shadow-lg vn-heading-display-white">
                     {banner.title}
                   </h3>
 
                   {/* mô tả có nền bán trong suốt */}
-                  <div className="mt-3 bg-black/60 backdrop-blur-[2px] rounded-2xl p-4 ring-1 ring-white/10">
-                    <p className="text-white/95 text-sm leading-relaxed">
+                  <div className="mt-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                    <p className="text-white/95 text-sm leading-relaxed font-medium">
                       {banner.description}
                     </p>
-                    <p className="mt-3 text-[11px] uppercase tracking-[0.35em] text-yellow-300/95">
+                    <p className="mt-3 text-[11px] uppercase tracking-[0.35em] vn-text-gold-primary font-bold">
                       {banner.note}
                     </p>
                   </div>
 
                   <button
                     onClick={handleOrderNow}
-                    className="mt-6 self-start bg-white/20 hover:bg-white/30 border border-white/40 px-6 py-2 rounded-full text-sm font-semibold transition-colors"
+                    className="mt-6 self-start vn-btn-gold px-6 py-2 text-sm shadow-lg"
                   >
                     Đặt hàng
                   </button>
@@ -292,19 +293,20 @@ export default function Promotions() {
       </section>
 
       {/* DIGITAL BANNERS */}
-      <section className="bg-gradient-to-r from-[#0f172a] to-[#1f2937] text-white py-16">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="vn-bg-rice-paper py-16 relative">
+        <div className="absolute inset-0 vn-bamboo-lines opacity-5 pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-white/60">Banner online</p>
-              <h3 className="text-3xl font-black mt-2">Theo dõi lịch phát hành khuyến mãi</h3>
-              <p className="text-white/80 mt-3">
+              <p className="text-xs uppercase tracking-[0.4em] text-gray-500 font-bold">Banner online</p>
+              <h3 className="text-3xl font-black mt-2 vn-heading-display vn-text-red-primary">Theo dõi lịch phát hành khuyến mãi</h3>
+              <p className="text-gray-600 mt-3 font-medium">
                 Các banner này giúp bạn chủ động đặt hàng trước nhưng ưu đãi lớn vẫn nhận tại quầy.
               </p>
             </div>
             <button
               onClick={handleOrderNow}
-              className="px-6 py-3 rounded-full border border-white/50 font-semibold hover:bg-white/10 transition-colors"
+              className="vn-btn-outline px-6 py-3"
             >
               Đặt hàng
             </button>
@@ -313,18 +315,18 @@ export default function Promotions() {
             {digitalBanners.map((banner) => (
               <div
                 key={banner.id}
-                className={`rounded-3xl p-6 shadow-xl shadow-black/30 bg-gradient-to-br ${banner.accent}`}
+                className={`rounded-3xl p-6 shadow-xl border-0 text-white ${banner.accent.includes('gradient') ? banner.accent : 'bg-gray-800'}`}
               >
-                <p className="text-xs uppercase tracking-[0.4em] text-white/70">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/80 font-bold">
                   {banner.eyebrow}
                 </p>
-                <h4 className="text-2xl font-black mt-2 drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]">
+                <h4 className="text-2xl font-black mt-2 drop-shadow-md vn-heading-display-white">
                   {banner.title}
                 </h4>
-                <p className="mt-3 text-sm text-white/90">{banner.body}</p>
+                <p className="mt-3 text-sm text-white/90 font-medium">{banner.body}</p>
                 <button
                   onClick={handleOrderNow}
-                  className="mt-6 inline-flex items-center gap-2 text-sm font-semibold"
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-bold hover:underline underline-offset-4"
                 >
                   Đặt hàng →
                 </button>
@@ -336,38 +338,39 @@ export default function Promotions() {
 
       {/* CONTACT NOTICE */}
       <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="rounded-[40px] bg-white shadow-2xl overflow-hidden">
+        <div className="rounded-[40px] bg-white shadow-2xl overflow-hidden border-2 vn-border-gold">
           <div className="grid lg:grid-cols-[1.25fr_0.9fr]">
-            <div className="p-8 md:p-12 lg:p-16">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#ffe0de] px-4 py-2 text-[#c31625] text-xs font-semibold tracking-[0.3em] uppercase">
+            <div className="p-8 md:p-12 lg:p-16 relative overflow-hidden">
+              <div className="absolute top-0 right-0 opacity-5 text-9xl pointer-events-none rotate-12">🪷</div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-red-600 text-xs font-bold tracking-[0.3em] uppercase border border-red-100 relative z-10">
                 Đặt lịch ghé quầy
               </div>
-              <h4 className="text-3xl md:text-4xl font-black mt-4 leading-snug">
+              <h4 className="text-3xl md:text-4xl font-black mt-4 leading-snug vn-heading-display relative z-10">
                 Giữ suất ưu đãi trước khi bạn di chuyển tới McDono
               </h4>
-              <p className="text-gray-600 mt-3 max-w-3xl">
+              <p className="text-gray-600 mt-3 max-w-3xl font-medium relative z-10">
                 Đội ngũ CSKH dùng chung dữ liệu với trang Liên hệ: giao nhanh 30 phút và miễn phí ship toàn Hà Nội.
                 Gọi trước giúp kiểm tra banner còn hiệu lực và chuẩn bị quà tặng đúng khung giờ.
               </p>
 
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
                 {contactNotices.map((notice) => (
                   <div
                     key={notice.label}
-                    className="rounded-2xl border border-gray-100 p-5 bg-gray-50/80"
+                    className="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-400">
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-400 font-bold">
                       {notice.label}
                     </p>
                     <p
-                      className={`text-xl font-bold mt-1 ${notice.label === "Email" ? "break-all" : ""
+                      className={`text-xl font-black mt-1 vn-text-red-primary ${notice.label === "Email" ? "break-all" : ""
                         }`}
                       title={notice.value}
                     >
                       {notice.label === "Email" ? (
                         <a
                           href={`mailto:${notice.value}`}
-                          className="text-[#c31625] underline-offset-4 hover:underline"
+                          className="hover:underline underline-offset-4"
                         >
                           {notice.value}
                         </a>
@@ -375,70 +378,70 @@ export default function Promotions() {
                         notice.value
                       )}
                     </p>
-                    <p className="text-sm text-gray-500">{notice.detail}</p>
+                    <p className="text-sm text-gray-500 font-medium">{notice.detail}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-10 space-y-4">
+              <div className="mt-10 space-y-4 relative z-10">
                 {bookingSteps.map((step, index) => (
                   <div key={step.title} className="flex gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-[#ffefec] text-[#c31625] font-bold flex items-center justify-center shadow-inner">
+                    <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 font-black flex items-center justify-center shadow-sm border border-red-100 text-xl">
                       {index + 1}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{step.title}</p>
-                      <p className="text-sm text-gray-600">{step.detail}</p>
+                      <p className="font-bold text-gray-900 text-lg">{step.title}</p>
+                      <p className="text-sm text-gray-600 font-medium">{step.detail}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row relative z-10">
                 <button
                   onClick={handleOrderNow}
-                  className="bg-[#ff3030] hover:bg-[#d91919] text-white font-semibold py-3 px-8 rounded-full shadow-lg shadow-red-200"
+                  className="vn-btn-primary px-8 py-3 shadow-lg hover:shadow-xl"
                 >
                   Giữ ưu đãi qua hotline
                 </button>
                 <button
                   onClick={handleOrderNow}
-                  className="border border-gray-900 text-gray-900 font-semibold py-3 px-8 rounded-full hover:bg-gray-900 hover:text-white transition-colors"
+                  className="vn-btn-outline px-8 py-3"
                 >
                   Xem thực đơn ưu đãi
                 </button>
               </div>
             </div>
 
-            <div className="relative bg-[#0f172a] text-white p-7 md:p-10">
-              <div className="relative rounded-[32px] overflow-hidden shadow-xl">
+            <div className="relative bg-[#1a0505] text-white p-7 md:p-10 vn-lotus-pattern">
+              <div className="relative rounded-[32px] overflow-hidden shadow-xl border border-white/10">
                 <img
                   src={hotlineImg}
                   alt="Hotline McDono"
-                  className="w-full h-[260px] object-contain bg-black/40 p-4"
+                  className="w-full h-[260px] object-contain bg-white/5 p-4 backdrop-blur-sm"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6 text-white">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/70">Support</p>
-                  <p className="text-2xl font-black mt-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">
+                  <p className="text-xs uppercase tracking-[0.4em] vn-text-gold-primary font-bold">Support</p>
+                  <p className="text-2xl font-black mt-1 drop-shadow-lg vn-heading-display-white">
                     Luôn sẵn sàng 24/7
                   </p>
-                  <p className="text-sm text-white/90 mt-2 drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+                  <p className="text-sm text-white/90 mt-2 font-medium">
                     Gọi hotline để khóa ưu đãi tại quầy trước khi di chuyển.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-8 rounded-3xl bg-white/5 border border-white/10 p-6 space-y-4">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-white/70">
+              <div className="mt-8 rounded-3xl bg-white/5 border border-white/10 p-6 space-y-4 backdrop-blur-md">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-white/70 font-bold">
                   <span>Giờ hoạt động</span>
                   <span>07:00 - 23:00</span>
                 </div>
                 <div className="h-px bg-white/15" />
-                <p className="text-lg font-semibold">
+                <p className="text-lg font-bold vn-text-gold-primary">
                   Miễn phí giao hàng nội thành Hà Nội cho mọi đơn đặt trước hotline.
                 </p>
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-white/70 font-medium">
                   Gợi ý: gọi trước 30 phút để chắc chắn còn suất banner hot trong ngày.
                 </p>
               </div>

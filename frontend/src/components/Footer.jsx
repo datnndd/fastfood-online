@@ -87,36 +87,42 @@ export default function Footer() {
   }
 
   return (
-    <footer className="mt-16 bg-[#0f172a] text-white">
-      <div className="mx-auto max-w-6xl space-y-12 px-6 py-14">
+    <footer className="mt-16 bg-[#1a0505] text-white relative overflow-hidden vn-lotus-pattern border-t-4 vn-border-gold">
+      {/* Decorative Lanterns */}
+      <div className="absolute top-0 left-10 text-6xl opacity-10 vn-animate-lantern-sway pointer-events-none">🏮</div>
+      <div className="absolute top-0 right-10 text-6xl opacity-10 vn-animate-lantern-sway pointer-events-none" style={{ animationDelay: '1.5s' }}>🏮</div>
+
+      <div className="mx-auto max-w-7xl space-y-12 px-6 py-14 relative z-10">
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr_1fr]">
           <div>
-            <Link to="/" className="flex items-center gap-3" onClick={scrollToTop}>
-              <img
-                src={logo}
-                alt="McDono"
-                className="h-14 w-14 rounded-xl border border-white/20 object-cover"
-              />
+            <Link to="/" className="flex items-center gap-4 group" onClick={scrollToTop}>
+              <div className="bg-white p-1.5 rounded-xl shadow-lg group-hover:scale-105 transition-transform">
+                <img
+                  src={logo}
+                  alt="McDono"
+                  className="h-14 w-14 object-cover"
+                />
+              </div>
               <div>
-                <p className="text-2xl font-black tracking-wide">McDono</p>
-                <p className="text-sm text-white/70">
+                <p className="text-3xl font-black tracking-wide vn-heading-display text-white">McDono</p>
+                <p className="text-sm text-white/70 font-medium">
                   Đồ ăn nhanh tươi ngon, giao hàng siêu tốc
                 </p>
               </div>
             </Link>
-            <p className="mt-6 leading-relaxed text-white/80">
+            <p className="mt-6 leading-relaxed text-white/80 max-w-md">
               Từ burger, gà rán đến mì Ý, mọi món ăn đều được McDono chuẩn bị với
               nguyên liệu sạch và quy trình kiểm soát nghiêm ngặt để phục vụ khách hàng
               tại Hà Nội trong vòng 30 phút.
             </p>
-            <div className="mt-6 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap gap-4">
               {promiseStats.map(({ value, label }) => (
                 <div
                   key={label}
-                  className="min-w-[130px] rounded-2xl border border-white/10 px-4 py-3 backdrop-blur-sm"
+                  className="min-w-[130px] rounded-2xl border border-white/10 px-4 py-3 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <p className="text-2xl font-black text-yellow-300">{value}</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                  <p className="text-2xl font-black vn-text-gold-primary">{value}</p>
+                  <p className="text-xs uppercase tracking-[0.1em] text-white/60 font-semibold">
                     {label}
                   </p>
                 </div>
@@ -127,24 +133,24 @@ export default function Footer() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
             {navSections.map((section) => (
               <div key={section.title}>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] vn-text-gold-primary mb-6">
                   {section.title}
                 </p>
-                <ul className="mt-4 space-y-3 text-sm">
+                <ul className="space-y-3 text-sm">
                   {section.links.map((link) => {
                     const key = link.to ?? link.href ?? link.label
                     const sharedClasses =
-                      'flex items-center gap-2 text-white/80 transition-colors hover:text-yellow-300'
+                      'flex items-center gap-3 text-white/80 transition-all hover:text-white hover:translate-x-1 group'
                     return (
                       <li key={key}>
                         {link.to ? (
                           <Link to={link.to} className={sharedClasses} onClick={scrollToTop}>
-                            <span className="inline-block h-1 w-1 rounded-full bg-yellow-400" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-600 group-hover:bg-yellow-400 transition-colors" />
                             {link.label}
                           </Link>
                         ) : (
                           <a href={link.href} className={sharedClasses} onClick={scrollToTop}>
-                            <span className="inline-block h-1 w-1 rounded-full bg-yellow-400" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-600 group-hover:bg-yellow-400 transition-colors" />
                             {link.label}
                           </a>
                         )}
@@ -157,30 +163,32 @@ export default function Footer() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] vn-text-gold-primary mb-6">
               Ghé thăm
             </p>
-            <ul className="mt-4 space-y-4 text-sm text-white/80">
+            <ul className="space-y-4 text-sm text-white/80">
               {featuredStores.map((store) => (
                 <li
                   key={store.district}
-                  className="rounded-2xl border border-white/10 p-4 backdrop-blur-sm"
+                  className="rounded-2xl border border-white/10 p-4 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-colors group"
                 >
-                  <p className="text-base font-semibold text-white">
+                  <p className="text-base font-bold text-white group-hover:text-yellow-400 transition-colors">
                     {store.district}
                   </p>
-                  <p className="mt-1 flex items-start gap-2 text-sm text-white/70">
-                    <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p className="mt-2 flex items-start gap-2 text-sm text-white/70">
+                    <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                     {store.address}
                   </p>
-                  <p className="mt-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-yellow-300">
-                    <ClockIcon className="h-4 w-4" />
-                    {store.hours}
-                  </p>
-                  <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-white">
-                    <PhoneIcon className="h-4 w-4" />
-                    {store.hotline}
-                  </p>
+                  <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-4">
+                    <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-yellow-500 font-semibold">
+                      <ClockIcon className="h-3.5 w-3.5" />
+                      {store.hours}
+                    </p>
+                    <p className="flex items-center gap-1.5 text-xs font-bold text-white">
+                      <PhoneIcon className="h-3.5 w-3.5 text-red-500" />
+                      {store.hotline}
+                    </p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -193,71 +201,78 @@ export default function Footer() {
             return (
               <div
                 key={channel.title}
-                className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20"
+                className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg hover:-translate-y-1 transition-transform duration-300"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e21b1b]/20 text-[#ffb703]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-red-800 text-white shadow-inner border border-white/10">
                   <IconComponent className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50 font-bold mb-1">
                     {channel.title}
                   </p>
-                  <p className="text-lg font-semibold text-white">{channel.value}</p>
-                  <p className="text-sm text-white/70">{channel.description}</p>
+                  <p className="text-lg font-bold text-white mb-1">{channel.value}</p>
+                  <p className="text-xs text-white/60 leading-relaxed">{channel.description}</p>
                 </div>
               </div>
             )
           })}
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#e21b1b] to-[#b91c1c] px-6 py-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
-              Nhận ưu đãi mới
-            </p>
-            <h3 className="text-2xl font-black text-white">
-              Gửi email để nhận thực đơn & khuyến mãi hàng tuần
-            </h3>
-            <p className="mt-2 text-sm text-white/80">
-              Chúng tôi chỉ gửi tối đa 2 email/tháng và bạn có thể hủy bất cứ lúc nào.
-            </p>
-          </div>
-          <form
-            onSubmit={handleNewsletter}
-            className="mt-6 w-full max-w-md space-y-3 sm:mt-0"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                type="email"
-                placeholder="Email của bạn"
-                required
-                className="flex-1 rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-white placeholder:text-white/60 focus:border-white focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="rounded-2xl bg-white px-5 py-3 font-semibold text-[#b91c1c] transition-colors hover:bg-yellow-100"
-              >
-                Đăng ký
-              </button>
+        <div className="rounded-3xl border-2 vn-border-gold bg-gradient-to-r from-[#990a0a] to-[#660000] px-8 py-10 relative overflow-hidden shadow-2xl">
+          <div className="absolute inset-0 vn-lotus-pattern opacity-30"></div>
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+            <div className="lg:max-w-xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-yellow-400 border border-white/10 mb-4">
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                Nhận ưu đãi mới
+              </div>
+              <h3 className="text-3xl font-black text-white vn-heading-display mb-3">
+                Đăng ký nhận tin & khuyến mãi
+              </h3>
+              <p className="text-white/80 text-lg">
+                Nhận ngay voucher giảm 20% cho đơn hàng đầu tiên khi đăng ký.
+              </p>
             </div>
-            <p className="text-xs text-white/70">
-              Nhấn nút là bạn đồng ý với chính sách bảo mật của McDono.
-            </p>
-          </form>
+            <form
+              onSubmit={handleNewsletter}
+              className="w-full lg:max-w-md"
+            >
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  placeholder="Email của bạn..."
+                  required
+                  className="flex-1 rounded-xl border-2 border-white/20 bg-black/20 px-5 py-3 text-white placeholder:text-white/40 focus:border-yellow-400 focus:bg-black/40 focus:outline-none transition-all"
+                />
+                <button
+                  type="submit"
+                  className="rounded-xl vn-btn-gold px-8 py-3 font-bold shadow-lg whitespace-nowrap"
+                >
+                  Đăng ký ngay
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-white/50 flex items-center gap-1">
+                <span className="text-green-400">✓</span> Không spam. Hủy đăng ký bất cứ lúc nào.
+              </p>
+            </form>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-white/10 pt-6 text-sm text-white/70 md:flex-row md:items-center md:justify-between">
-          <p>© {currentYear} McDono. Tự hào phục vụ Hà Nội với 50+ cửa hàng.</p>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/contact" className="transition-colors hover:text-white" onClick={scrollToTop}>
+        <div className="flex flex-col gap-6 border-t border-white/10 pt-8 text-sm text-white/60 md:flex-row md:items-center md:justify-between">
+          <p>© {currentYear} McDono Vietnam. All rights reserved.</p>
+          <div className="flex flex-wrap gap-6 font-medium">
+            <Link to="/contact" className="transition-colors hover:text-white hover:underline" onClick={scrollToTop}>
               Hỗ trợ khách hàng
             </Link>
-            <Link to="/about" className="transition-colors hover:text-white" onClick={scrollToTop}>
+            <Link to="/about" className="transition-colors hover:text-white hover:underline" onClick={scrollToTop}>
               Về thương hiệu
             </Link>
-            <a href="tel:19001234" className="transition-colors hover:text-white" onClick={scrollToTop}>
-              Hotline 1900 1234
-            </a>
+            <Link to="/privacy" className="transition-colors hover:text-white hover:underline" onClick={scrollToTop}>
+              Chính sách bảo mật
+            </Link>
+            <Link to="/terms" className="transition-colors hover:text-white hover:underline" onClick={scrollToTop}>
+              Điều khoản sử dụng
+            </Link>
           </div>
         </div>
       </div>

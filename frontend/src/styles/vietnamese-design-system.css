@@ -4,51 +4,51 @@
    ============================================ */
 
 /* Import Vietnamese-optimized fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+/* Font import moved to index.css */
 
 :root {
   /* ========== Vietnamese Color Palette ========== */
-  
+
   /* Primary Colors - Lacquer Red & Imperial Gold */
   --vn-red-primary: #C8102E;
   --vn-red-dark: #A00D24;
   --vn-red-light: #E63946;
   --vn-red-lighter: #FF6B7A;
   --vn-red-pale: #FFE5E8;
-  
+
   --vn-gold-primary: #FFD700;
   --vn-gold-dark: #DAA520;
   --vn-gold-light: #FFE55C;
   --vn-gold-pale: #FFF8DC;
-  
+
   /* Accent Colors - Lotus & Bamboo */
   --vn-lotus-pink: #FFB6C1;
   --vn-lotus-deep: #FF69B4;
   --vn-lotus-pale: #FFF0F5;
-  
+
   --vn-bamboo-green: #6B8E23;
   --vn-bamboo-dark: #556B2F;
   --vn-bamboo-light: #9ACD32;
   --vn-bamboo-pale: #F0F8E8;
-  
+
   /* Neutrals - Rice Paper & Charcoal */
   --vn-rice-paper: #FFF8DC;
   --vn-rice-cream: #FFFAF0;
   --vn-rice-beige: #F5F5DC;
-  
+
   --vn-charcoal: #2C2C2C;
   --vn-charcoal-light: #4A4A4A;
   --vn-charcoal-lighter: #6B6B6B;
-  
+
   /* Street Food Vibes */
   --vn-street-orange: #FF6B35;
   --vn-street-yellow: #FFC857;
   --vn-lantern-red: #ED1C24;
-  
+
   /* ========== Typography ========== */
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
-  
+
   /* ========== Spacing Scale ========== */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -57,25 +57,25 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
   --space-3xl: 4rem;
-  
+
   /* ========== Border Radius ========== */
   --radius-sm: 0.5rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
   --radius-xl: 2rem;
   --radius-full: 9999px;
-  
+
   /* Vietnamese-inspired rounded shapes */
   --radius-lotus: 1.25rem;
   --radius-lantern: 2.5rem;
-  
+
   /* ========== Shadows ========== */
   --shadow-sm: 0 1px 2px 0 rgba(200, 16, 46, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(200, 16, 46, 0.1), 0 2px 4px -1px rgba(200, 16, 46, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(200, 16, 46, 0.1), 0 4px 6px -2px rgba(200, 16, 46, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(200, 16, 46, 0.1), 0 10px 10px -5px rgba(200, 16, 46, 0.04);
   --shadow-gold: 0 4px 14px 0 rgba(255, 215, 0, 0.3);
-  
+
   /* ========== Transitions ========== */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -98,7 +98,7 @@
   right: -50%;
   width: 200%;
   height: 200%;
-  background-image: 
+  background-image:
     radial-gradient(circle at 20% 50%, var(--vn-lotus-pale) 0%, transparent 50%),
     radial-gradient(circle at 80% 50%, var(--vn-lotus-pale) 0%, transparent 50%);
   opacity: 0.3;
@@ -107,20 +107,28 @@
 }
 
 @keyframes lotus-float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  33% { transform: translate(-10px, -10px) rotate(5deg); }
-  66% { transform: translate(10px, 10px) rotate(-5deg); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(-10px, -10px) rotate(5deg);
+  }
+
+  66% {
+    transform: translate(10px, 10px) rotate(-5deg);
+  }
 }
 
 /* Bamboo Line Pattern */
 .vn-bamboo-lines {
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--vn-bamboo-pale) 0px,
-    var(--vn-bamboo-pale) 1px,
-    transparent 1px,
-    transparent 40px
-  );
+  background-image: repeating-linear-gradient(90deg,
+      var(--vn-bamboo-pale) 0px,
+      var(--vn-bamboo-pale) 1px,
+      transparent 1px,
+      transparent 40px);
 }
 
 /* Nón Lá (Conical Hat) Shape */
@@ -147,7 +155,7 @@
 
 /* Vietnamese Tile Pattern */
 .vn-tile-pattern {
-  background-image: 
+  background-image:
     linear-gradient(45deg, var(--vn-red-pale) 25%, transparent 25%),
     linear-gradient(-45deg, var(--vn-red-pale) 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, var(--vn-red-pale) 75%),
@@ -202,13 +210,11 @@
 /* Bamboo Border */
 .vn-bamboo-border {
   border: 2px solid var(--vn-bamboo-green);
-  border-image: repeating-linear-gradient(
-    90deg,
-    var(--vn-bamboo-green),
-    var(--vn-bamboo-green) 10px,
-    var(--vn-bamboo-dark) 10px,
-    var(--vn-bamboo-dark) 12px
-  ) 2;
+  border-image: repeating-linear-gradient(90deg,
+      var(--vn-bamboo-green),
+      var(--vn-bamboo-green) 10px,
+      var(--vn-bamboo-dark) 10px,
+      var(--vn-bamboo-dark) 12px) 2;
 }
 
 /* Gold Accent Border */
@@ -219,15 +225,22 @@
 
 /* Lantern Glow Effect */
 .vn-lantern-glow {
-  box-shadow: 
+  box-shadow:
     0 0 20px rgba(237, 28, 36, 0.3),
     0 0 40px rgba(255, 215, 0, 0.2);
   animation: lantern-pulse 3s ease-in-out infinite;
 }
 
 @keyframes lantern-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(237, 28, 36, 0.3), 0 0 40px rgba(255, 215, 0, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(237, 28, 36, 0.5), 0 0 60px rgba(255, 215, 0, 0.3); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(237, 28, 36, 0.3), 0 0 40px rgba(255, 215, 0, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(237, 28, 36, 0.5), 0 0 60px rgba(255, 215, 0, 0.3);
+  }
 }
 
 /* ========== Vietnamese Typography Utilities ========== */
@@ -236,6 +249,13 @@
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--vn-red-primary);
+  letter-spacing: -0.02em;
+}
+
+.vn-heading-display-white {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: white;
   letter-spacing: -0.02em;
 }
 
@@ -382,9 +402,19 @@
 /* ========== Vietnamese Animations ========== */
 
 @keyframes lotus-bloom {
-  0% { transform: scale(0.8) rotate(-10deg); opacity: 0; }
-  50% { transform: scale(1.05) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0.8) rotate(-10deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.05) rotate(5deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 .vn-animate-lotus-bloom {
@@ -392,8 +422,15 @@
 }
 
 @keyframes lantern-sway {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
 }
 
 .vn-animate-lantern-sway {
@@ -401,8 +438,15 @@
 }
 
 @keyframes bamboo-grow {
-  0% { transform: scaleY(0); transform-origin: bottom; }
-  100% { transform: scaleY(1); transform-origin: bottom; }
+  0% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+
+  100% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
 }
 
 .vn-animate-bamboo-grow {
@@ -410,19 +454,22 @@
 }
 
 @keyframes gold-shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 .vn-gold-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--vn-gold-dark) 0%,
-    var(--vn-gold-primary) 25%,
-    var(--vn-gold-light) 50%,
-    var(--vn-gold-primary) 75%,
-    var(--vn-gold-dark) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--vn-gold-dark) 0%,
+      var(--vn-gold-primary) 25%,
+      var(--vn-gold-light) 50%,
+      var(--vn-gold-primary) 75%,
+      var(--vn-gold-dark) 100%);
   background-size: 200% auto;
   animation: gold-shimmer 3s linear infinite;
   -webkit-background-clip: text;
@@ -453,15 +500,34 @@
 }
 
 /* Text Colors */
-.vn-text-red-primary { color: var(--vn-red-primary); }
-.vn-text-gold-primary { color: var(--vn-gold-primary); }
-.vn-text-charcoal { color: var(--vn-charcoal); }
+.vn-text-red-primary {
+  color: var(--vn-red-primary);
+}
+
+.vn-text-gold-primary {
+  color: var(--vn-gold-primary);
+}
+
+.vn-text-charcoal {
+  color: var(--vn-charcoal);
+}
 
 /* Border Colors */
-.vn-border-red { border-color: var(--vn-red-primary); }
-.vn-border-gold { border-color: var(--vn-gold-primary); }
-.vn-border-lotus { border-color: var(--vn-lotus-pink); }
-.vn-border-bamboo { border-color: var(--vn-bamboo-green); }
+.vn-border-red {
+  border-color: var(--vn-red-primary);
+}
+
+.vn-border-gold {
+  border-color: var(--vn-gold-primary);
+}
+
+.vn-border-lotus {
+  border-color: var(--vn-lotus-pink);
+}
+
+.vn-border-bamboo {
+  border-color: var(--vn-bamboo-green);
+}
 
 /* ========== Responsive Vietnamese Elements ========== */
 
@@ -471,12 +537,14 @@
     --space-2xl: 2rem;
     --space-3xl: 2.5rem;
   }
-  
+
   .vn-lotus-pattern::before {
     animation-duration: 15s;
   }
-  
-  .vn-card, .vn-card-lotus, .vn-card-bamboo {
+
+  .vn-card,
+  .vn-card-lotus,
+  .vn-card-bamboo {
     padding: var(--space-lg);
   }
 }
@@ -484,9 +552,39 @@
 /* ========== Print Styles ========== */
 
 @media print {
+
   .vn-lotus-pattern::before,
   .vn-lantern-glow,
   .vn-animate-lantern-sway {
     animation: none !important;
   }
+}
+
+/* ========== Additional Utilities ========== */
+
+.vn-text-gradient-gold {
+  background: linear-gradient(135deg, var(--vn-gold-dark) 0%, var(--vn-gold-primary) 50%, var(--vn-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vn-text-gradient-red {
+  background: linear-gradient(135deg, var(--vn-red-dark) 0%, var(--vn-red-primary) 50%, var(--vn-red-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vn-shadow-glow-red {
+  box-shadow: 0 0 15px rgba(200, 16, 46, 0.3);
+}
+
+.vn-shadow-glow-gold {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.vn-bg-pattern-parchment {
+  background-color: var(--vn-rice-paper);
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23d4a520' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
 }

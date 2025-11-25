@@ -121,7 +121,7 @@ function PaginationControls({ page, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
-        className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 disabled:border-gray-200 disabled:text-gray-400"
+        className="rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:border-gray-200 disabled:text-gray-400 hover:bg-red-50 transition-colors"
       >
         Trước
       </button>
@@ -129,9 +129,8 @@ function PaginationControls({ page, totalPages, onPageChange }) {
         <button
           key={index}
           onClick={() => onPageChange(index)}
-          className={`min-w-[40px] rounded-full px-3 py-1.5 text-sm font-semibold ${
-            page === index ? 'bg-red-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
-          }`}
+          className={`min-w-[40px] rounded-full px-3 py-1.5 text-sm font-bold transition-all ${page === index ? 'bg-red-600 text-white shadow-md transform scale-110' : 'bg-white text-gray-600 border border-gray-200 hover:border-red-300 hover:text-red-600'
+            }`}
         >
           {index}
         </button>
@@ -139,7 +138,7 @@ function PaginationControls({ page, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page === totalPages}
-        className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 disabled:border-gray-200 disabled:text-gray-400"
+        className="rounded-full border border-red-200 px-4 py-2 text-sm font-bold text-red-600 disabled:border-gray-200 disabled:text-gray-400 hover:bg-red-50 transition-colors"
       >
         Sau
       </button>
@@ -480,49 +479,53 @@ export default function MenuPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center vn-bg-rice-paper">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-red-600"></div>
-          <p className="mt-4 text-gray-600">Đang tải thực đơn...</p>
+          <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-red-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 font-bold">Đang tải thực đơn...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
-        <header className="space-y-3 text-center lg:text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-red-500">McDono Menu</p>
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {selectedCategorySlug ? `Danh mục: ${selectedCategoryName}` : 'Chọn món yêu thích'}
-            </h1>
-            <p className="text-sm text-gray-500">
+    <div className="min-h-screen vn-bg-rice-paper font-sans text-gray-900">
+      <div className="mx-auto max-w-7xl space-y-10 px-4 py-12">
+        <header className="space-y-4 text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.3em] text-red-600 border border-red-100">
+            <span>🏮</span> McDono Menu
+          </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black vn-heading-display text-gray-900">
+                {selectedCategorySlug ? `Danh mục: ${selectedCategoryName}` : 'Thực đơn trọn vị'}
+              </h1>
+              <p className="mt-2 text-lg text-gray-600">Phối hợp combo tiết kiệm hoặc chọn món lẻ theo khẩu vị riêng của bạn.</p>
+            </div>
+            <p className="text-sm font-bold text-gray-500 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100">
               {filteredCombos.length} combo • {filteredItems.length} món lẻ
             </p>
           </div>
-          <p className="text-gray-600">Phối hợp combo tiết kiệm hoặc chọn món lẻ theo khẩu vị riêng của bạn.</p>
         </header>
 
-        <div className="rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50 via-orange-50 to-amber-50 p-5 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex w-full flex-wrap gap-2 rounded-2xl bg-white/80 p-1 lg:w-auto">
+        <div className="rounded-3xl border-2 vn-border-gold bg-gradient-to-r from-red-50 via-orange-50 to-yellow-50 p-6 shadow-md relative overflow-hidden">
+          <div className="absolute top-0 right-0 opacity-10 text-9xl pointer-events-none">🪷</div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center relative z-10">
+            <div className="flex w-full flex-wrap gap-2 rounded-2xl bg-white/60 p-1.5 lg:w-auto backdrop-blur-sm border border-white/50">
               {VIEW_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => handleViewModeChange(tab.id)}
-                  className={`flex-1 rounded-2xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition ${
-                    viewMode === tab.id ? 'bg-red-600 text-white shadow-lg' : 'text-red-500 hover:text-red-700'
-                  }`}
+                  className={`flex-1 rounded-xl px-5 py-2.5 text-sm font-bold whitespace-nowrap transition-all ${viewMode === tab.id ? 'bg-red-600 text-white shadow-md transform scale-105' : 'text-gray-600 hover:text-red-600 hover:bg-white'
+                    }`}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
 
-            <div className="relative flex-1">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-red-400">
+            <div className="relative flex-1 group">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-red-500 transition-colors">
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
@@ -536,15 +539,15 @@ export default function MenuPage() {
                 placeholder="Tìm món: burger, gà cay..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-2xl border border-white/70 bg-white/90 py-3 pl-12 pr-4 text-sm shadow focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                className="w-full rounded-2xl border-2 border-transparent bg-white py-3 pl-12 pr-4 text-sm font-medium shadow-sm focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all"
               />
             </div>
 
-            <div className="relative w-full lg:w-auto lg:min-w-[180px]">
+            <div className="relative w-full lg:w-auto lg:min-w-[200px] group">
               <select
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="w-full appearance-none rounded-2xl border border-white/70 bg-white/90 py-3 pl-4 pr-10 text-sm font-semibold text-gray-700 shadow focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                className="w-full appearance-none rounded-2xl border-2 border-transparent bg-white py-3 pl-5 pr-10 text-sm font-bold text-gray-700 shadow-sm focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all cursor-pointer hover:bg-gray-50"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -552,8 +555,8 @@ export default function MenuPage() {
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-red-400">
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-red-500 transition-colors">
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" />
                 </svg>
               </span>
@@ -562,15 +565,14 @@ export default function MenuPage() {
         </div>
 
         {categoryOptions.length > 0 && (
-          <div className="overflow-x-auto pb-2">
-            <div className="flex gap-2">
+          <div className="overflow-x-auto pb-4 scrollbar-hide">
+            <div className="flex gap-3">
               <button
                 onClick={() => handleCategorySelect(null)}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${
-                  !normalizedSelectedCategory ? 'bg-red-600 text-white shadow' : 'bg-white text-gray-600 border border-gray-200'
-                }`}
+                className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold transition-all ${!normalizedSelectedCategory ? 'bg-gray-900 text-white shadow-lg transform scale-105' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
+                  }`}
               >
-                Danh mục: Tất cả
+                Tất cả
               </button>
               {categoryOptions.map((category) => {
                 const { slug, name } = category
@@ -579,11 +581,10 @@ export default function MenuPage() {
                   <button
                     key={slug}
                     onClick={() => handleCategorySelect(slug)}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium border ${
-                      isActive
-                        ? 'border-red-100 bg-red-50 text-red-600'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-red-200'
-                    }`}
+                    className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold border transition-all ${isActive
+                        ? 'border-red-500 bg-red-50 text-red-600 shadow-md transform scale-105'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:text-red-500'
+                      }`}
                   >
                     {name}
                   </button>
@@ -594,45 +595,40 @@ export default function MenuPage() {
         )}
 
         {shouldShowCombos ? (
-          <section className="space-y-4" id="combo-section">
-            <div className="rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 via-rose-100 to-pink-50 p-6 shadow-sm">
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <section className="space-y-6" id="combo-section">
+            <div className="rounded-3xl border-2 vn-border-gold bg-gradient-to-br from-[#fffbeb] to-[#fff1f2] p-8 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+              <div className="absolute top-0 -left-4 w-72 h-72 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
                 <div className="flex-1">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-600">
-                    <span className="h-2 w-2 rounded-full bg-rose-500"></span>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-amber-600 border border-amber-200 backdrop-blur-sm shadow-sm">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
                     Combo ưu đãi
                   </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-rose-900">Combo đậm vị • tiết kiệm hết ý</h2>
-                  <p className="mt-2 text-sm text-rose-900/90">
+                  <h2 className="mt-4 text-3xl font-black vn-heading-display text-gray-900">Combo đậm vị • Tiết kiệm hết ý</h2>
+                  <p className="mt-3 text-base text-gray-700 max-w-xl leading-relaxed">
                     Ghép đôi món chính, món phụ và nước uống đã được cân chỉnh khẩu vị giúp bạn thưởng thức trọn vẹn mà vẫn tiết kiệm.
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col gap-4 text-sm text-rose-800/80">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-white/90 px-4 py-3 shadow-sm">
-                      <div className="text-4xl font-bold text-rose-900">{filteredCombos.length}</div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500">Combo mở bán</p>
-                    </div>
-                    <div className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/80 px-4 py-3 text-rose-700">
-                      <span className="text-2xl" role="img" aria-label="hot deal">
-                        🔥
-                      </span>
-                      <p className="text-sm font-semibold">Đặt combo hot trong tuần</p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex items-center gap-4 rounded-2xl border border-white/60 bg-white/60 px-6 py-4 shadow-sm backdrop-blur-md">
+                    <div className="text-5xl font-black vn-text-gold-primary">{filteredCombos.length}</div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Combo</p>
+                      <p className="text-sm font-bold text-gray-900">Đang mở bán</p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-rose-200 bg-white/80 p-4 text-center text-rose-800 sm:flex sm:items-center sm:justify-between sm:text-left">
+                  <div className="flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50/80 px-6 py-4 text-red-800 backdrop-blur-md">
+                    <span className="text-3xl animate-bounce">🔥</span>
                     <div>
-                      <p className="text-xs uppercase tracking-widest text-rose-500">Gợi ý</p>
-                      <p className="text-base font-semibold">Phù hợp nhóm 2-4 người</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-red-500">Hot Deal</p>
+                      <p className="text-sm font-bold">Đặt nhiều giảm sâu</p>
                     </div>
-                    <p className="mt-2 text-sm text-rose-700 sm:mt-0 sm:max-w-xs">
-                      Chọn combo kèm món phụ & thức uống đồng bộ khẩu vị, tiết kiệm hơn so với gọi lẻ từng món.
-                    </p>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {paginatedCombos.map((combo) => {
                 const { slug, name } = getCategoryMetaFromEntity(combo)
                 return (
@@ -655,8 +651,8 @@ export default function MenuPage() {
           </section>
         ) : (
           viewMode === 'combo' && (
-            <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
-              <p className="text-lg font-semibold text-gray-700">Hiện chưa có combo phù hợp với bộ lọc này.</p>
+            <div className="rounded-3xl border-2 border-dashed border-gray-300 bg-white/50 py-20 text-center">
+              <p className="text-xl font-bold text-gray-400">🪷 Hiện chưa có combo phù hợp</p>
               <p className="mt-2 text-gray-500">Hãy thử tìm kiếm với từ khóa khác hoặc chuyển sang xem món lẻ.</p>
             </div>
           )
@@ -664,37 +660,33 @@ export default function MenuPage() {
 
         {shouldShowSingles && (
           filteredItems.length > 0 ? (
-            <section className="space-y-6" id="single-section">
-            <div className="rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 via-rose-100 to-pink-50 p-6 shadow-sm">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex-1">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-600">
-                      <span className="h-2 w-2 rounded-full bg-rose-500"></span>
+            <section className="space-y-8" id="single-section">
+              <div className="rounded-3xl border-2 vn-border-red bg-gradient-to-r from-red-50 via-white to-red-50 p-8 shadow-sm relative overflow-hidden">
+                <div className="absolute -bottom-10 -left-10 text-9xl opacity-5 rotate-12 pointer-events-none">🍜</div>
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
+                  <div className="flex-1">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-red-600 border border-red-200 backdrop-blur-sm shadow-sm">
+                      <span className="h-2 w-2 rounded-full bg-red-500"></span>
                       Món lẻ
                     </div>
-                    <h2 className="mt-3 text-2xl font-semibold text-rose-900">
-                      {selectedCategorySlug ? `${selectedCategoryName} • chọn món theo gu` : 'Tự tay mix & match món lẻ'}
+                    <h2 className="mt-4 text-3xl font-black vn-heading-display text-gray-900">
+                      {selectedCategorySlug ? `${selectedCategoryName} • Chọn món theo gu` : 'Tự tay mix & match món lẻ'}
                     </h2>
-                    <p className="mt-2 text-sm text-rose-700/90">
+                    <p className="mt-3 text-base text-gray-700 max-w-xl leading-relaxed">
                       {selectedCategorySlug
                         ? `Có ${filteredItems.length} lựa chọn đang chờ bạn trong danh mục này.`
                         : 'Chọn từng món yêu thích để cá nhân hóa khẩu phần, thêm topping hoặc mix cùng combo có sẵn.'}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-center text-sm text-rose-700">
-                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-widest text-rose-500">Tổng món</p>
-                      <p className="text-3xl font-bold text-rose-900">{filteredItems.length}</p>
-                    </div>
-                    <div className="rounded-2xl border border-rose-100 bg-rose-50/90 p-4">
-                      <p className="text-xs uppercase tracking-widest text-rose-500">Tùy chọn</p>
-                      <p className="text-sm font-semibold">Topping, combo mini</p>
-                      <p className="text-xs text-rose-500/80">Chọn nhanh trong pop-up</p>
+                  <div className="flex gap-4 text-center">
+                    <div className="rounded-2xl border border-gray-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm min-w-[120px]">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Tổng món</p>
+                      <p className="text-4xl font-black text-gray-900">{filteredItems.length}</p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {paginatedItems.map((item) => {
                   const { slug, name } = getCategoryMetaFromEntity(item)
                   return (
@@ -717,8 +709,8 @@ export default function MenuPage() {
             </section>
           ) : (
             viewMode !== 'combo' && (
-              <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
-                <p className="text-lg font-semibold text-gray-700">Không tìm thấy món ăn phù hợp.</p>
+              <div className="rounded-3xl border-2 border-dashed border-gray-300 bg-white/50 py-20 text-center">
+                <p className="text-xl font-bold text-gray-400">🪷 Không tìm thấy món ăn phù hợp</p>
                 <p className="mt-2 text-gray-500">Hãy thử đổi danh mục, xóa bộ lọc hoặc tìm kiếm với từ khóa khác.</p>
               </div>
             )

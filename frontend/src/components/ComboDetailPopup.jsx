@@ -52,44 +52,44 @@ export default function ComboDetailPopup({ combo, isOpen, onClose, onAddToCart }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white/95 px-6 py-4">
+      <div className="vn-card border-2 vn-border-lotus shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative bg-white">
+        <div className="sticky top-0 flex items-center justify-between border-b-2 border-red-100 bg-white/95 px-6 py-4 z-10 backdrop-blur">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-amber-500">Chi tiết combo</p>
-            <h2 className="text-2xl font-bold text-gray-900">{combo.name}</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.3em] vn-text-gold-primary">Chi tiết combo</p>
+            <h2 className="text-2xl font-black vn-heading-display text-gray-900">{combo.name}</h2>
           </div>
           <button
             type="button"
             aria-label="Đóng"
             onClick={onClose}
-            className="text-gray-400 transition hover:text-gray-600"
+            className="text-gray-400 transition hover:text-red-600"
           >
-            <span className="text-3xl leading-none">×</span>
+            <span className="text-4xl leading-none">×</span>
           </button>
         </div>
 
         <div className="grid gap-6 p-6 md:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-4">
-            <div className="overflow-hidden rounded-xl border border-amber-100">
+            <div className="overflow-hidden rounded-2xl border-2 vn-border-lotus shadow-lg">
               <img
                 src={combo.image_url || PLACEHOLDER_IMG}
                 alt={combo.name}
                 className="h-64 w-full object-cover"
               />
             </div>
-            {combo.description && <p className="text-sm text-gray-600">{combo.description}</p>}
+            {combo.description && <p className="text-sm font-medium text-gray-600 leading-relaxed">{combo.description}</p>}
 
             {includedItems.length > 0 && (
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-                <p className="text-sm font-semibold text-amber-800">Combo bao gồm</p>
-                <ul className="mt-2 space-y-2 text-sm text-amber-900">
+              <div className="rounded-2xl border-2 border-red-100 bg-red-50/30 p-4">
+                <p className="text-sm font-bold vn-text-red-primary uppercase tracking-wide">Combo bao gồm</p>
+                <ul className="mt-2 space-y-2 text-sm text-gray-800 font-medium">
                   {includedItems.map((item) => (
                     <li key={item.id} className="flex items-center justify-between">
                       <span>{item.name}</span>
-                      <span className="font-semibold">× {item.quantity}</span>
+                      <span className="font-bold text-red-600">× {item.quantity}</span>
                     </li>
                   ))}
                 </ul>
@@ -97,33 +97,33 @@ export default function ComboDetailPopup({ combo, isOpen, onClose, onAddToCart }
             )}
 
             {hasStockInfo && (
-              <p className={`text-sm font-medium ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}>
+              <p className={`text-sm font-bold ${isOutOfStock ? 'text-red-600' : 'text-green-600'}`}>
                 {isOutOfStock ? 'Combo này đã hết hàng.' : `Còn lại: ${rawStock} suất trong kho.`}
               </p>
             )}
           </div>
 
-          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
-            <div className="rounded-xl bg-white p-4 shadow-sm">
-              <div className="text-sm text-gray-500">Giá ưu đãi</div>
-              <div className="mt-1 text-3xl font-bold text-[#ee4d2d]">{basePrice.toLocaleString()}₫</div>
+          <div className="rounded-2xl border-2 border-red-100 bg-red-50/30 p-5">
+            <div className="rounded-xl bg-white border border-red-100 p-4 shadow-sm">
+              <div className="text-sm font-bold text-gray-500 uppercase tracking-wide">Giá ưu đãi</div>
+              <div className="mt-1 text-3xl font-black vn-text-red-primary">{basePrice.toLocaleString()}₫</div>
               {hasDiscount && (
-                <div className="text-sm text-gray-400 line-through">{originalPrice.toLocaleString()}₫</div>
+                <div className="text-sm font-medium text-gray-400 line-through">{originalPrice.toLocaleString()}₫</div>
               )}
             </div>
 
-            <div className="mt-4 rounded-xl bg-white px-4 py-3">
+            <div className="mt-4 rounded-xl bg-white border border-red-100 px-4 py-3">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">Số lượng</span>
+                <span className="font-bold text-gray-900">Số lượng</span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                     disabled={quantity <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 text-lg leading-none text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 font-bold transition-all"
                   >
                     −
                   </button>
-                  <span className="min-w-[32px] text-center text-lg font-semibold">{quantity}</span>
+                  <span className="min-w-[32px] text-center text-lg font-black vn-text-red-primary">{quantity}</span>
                   <button
                     onClick={() => {
                       setQuantity((prev) => {
@@ -133,7 +133,7 @@ export default function ComboDetailPopup({ combo, isOpen, onClose, onAddToCart }
                       })
                     }}
                     disabled={isOutOfStock || (hasStockInfo && quantity >= Math.max(rawStock, 1))}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-gray-200 text-lg leading-none text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-40 font-bold transition-all"
                   >
                     +
                   </button>
@@ -141,18 +141,16 @@ export default function ComboDetailPopup({ combo, isOpen, onClose, onAddToCart }
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl bg-white px-4 py-4 shadow-sm">
+            <div className="mt-4 rounded-xl bg-white border border-red-100 px-4 py-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600">Tổng cộng</span>
-                <span className="text-2xl font-bold text-red-600">{totalPrice.toLocaleString()}₫</span>
+                <span className="text-sm font-bold text-gray-600">Tổng cộng</span>
+                <span className="text-2xl font-black vn-text-red-primary">{totalPrice.toLocaleString()}₫</span>
               </div>
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold uppercase tracking-wide transition-colors ${
-                  !isOutOfStock ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                className={`mt-4 w-full vn-btn-primary py-3 text-sm shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isOutOfStock ? 'Đã hết hàng' : 'Thêm combo'}
               </button>

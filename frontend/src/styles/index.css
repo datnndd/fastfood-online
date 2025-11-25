@@ -1,9 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+@import "./vietnamese-design-system.css";
 
 /* Optional app theme tweaks */
 :root {
   --brand: #ff3b30;
 }
+
 /* Hiệu ứng dropdown mượt cho menu */
 .dropdown-enter {
   opacity: 0;

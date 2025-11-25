@@ -941,7 +941,8 @@ class NotificationViewSet(
     pagination_class = OrdersPagination
 
     def get_queryset(self):
-        queryset = Notification.objects.filter(user=self.request.user)
+        # Use select_related to prevent N+1 queries when accessing order_id in serializer
+        queryset = Notification.objects.filter(user=self.request.user).select_related('order')
 
         # Lọc theo is_read nếu có
         is_read_param = self.request.query_params.get('is_read')
@@ -949,7 +950,7 @@ class NotificationViewSet(
             is_read = is_read_param.lower() == 'true'
             queryset = queryset.filter(is_read=is_read)
 
-        return queryset
+        return queryset.order_by('-created_at')
 
     @action(detail=False, methods=['get'])
     def unread_count(self, request):

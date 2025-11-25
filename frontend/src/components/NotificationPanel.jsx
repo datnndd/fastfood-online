@@ -1,7 +1,5 @@
-import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useNotifications } from '../hooks/useNotifications'
-import { useAuth } from '../lib/authContext'
 
 const getNotificationIcon = (type) => {
   switch (type) {
@@ -92,10 +90,10 @@ const formatTime = (dateString) => {
 // Component cho banner lớn (giống Shopee)
 const OrderBanner = ({ notification, onClick }) => {
   const { type, title, message, order_id } = notification
-  
+
   if (type === 'ORDER_PLACED') {
     return (
-      <div 
+      <div
         onClick={onClick}
         className="mx-4 my-3 bg-gradient-to-r from-red-500 via-red-600 to-orange-500 rounded-xl shadow-lg overflow-hidden cursor-pointer transform hover:scale-[1.02] transition-transform"
       >
@@ -106,7 +104,7 @@ const OrderBanner = ({ notification, onClick }) => {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center mb-2">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2">
@@ -114,10 +112,10 @@ const OrderBanner = ({ notification, onClick }) => {
               </div>
               <span className="text-white/90 text-sm font-medium">McDono</span>
             </div>
-            
+
             <h3 className="text-xl font-bold mb-1 drop-shadow-md">{title}</h3>
             <p className="text-white/90 text-sm leading-relaxed">{message}</p>
-            
+
             {order_id && (
               <div className="mt-3 flex items-center space-x-2">
                 <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">
@@ -131,20 +129,19 @@ const OrderBanner = ({ notification, onClick }) => {
       </div>
     )
   }
-  
+
   return null
 }
 
 // Component cho notification thông thường
 const NotificationItem = ({ notification, onClick }) => {
   const { type, title, message, is_read, created_at, order_id } = notification
-  
+
   return (
     <div
       onClick={onClick}
-      className={`px-4 py-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 ${
-        !is_read ? 'bg-blue-50/30' : 'bg-white'
-      }`}
+      className={`px-4 py-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 ${!is_read ? 'bg-blue-50/30' : 'bg-white'
+        }`}
     >
       <div className="flex items-start space-x-3">
         {/* Icon */}
@@ -189,22 +186,22 @@ const NotificationItem = ({ notification, onClick }) => {
 
 export default function NotificationPanel({ onClose }) {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { notifications, loading, markAsRead, markAllAsRead, fetchNotifications } = useNotifications()
+  const { notifications, loading, markAsRead, markAllAsRead } = useNotifications()
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications({ limit: 20 })
-    }
-  }, [user, fetchNotifications])
+  // No need to fetch on mount - context already maintains the notification list
 
-  const handleNotificationClick = async (notification) => {
-    if (!notification.is_read) {
-      await markAsRead(notification)
-    }
+  const handleNotificationClick = (notification) => {
+    // Navigate immediately for better responsiveness
     if (notification.order_id) {
       onClose()
       navigate(`/orders/${notification.order_id}`)
+    }
+
+    // Defer markAsRead to avoid blocking navigation with state update
+    if (!notification.is_read) {
+      setTimeout(() => {
+        markAsRead(notification)
+      }, 0)
     }
   }
 

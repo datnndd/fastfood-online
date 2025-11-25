@@ -57,7 +57,7 @@ export default function CartPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [orderData, setOrderData] = useState({ payment_method: 'cash', note: '' })
   const navigate = useNavigate()
-  const { fetchNotifications, fetchUnreadCount, pushLocalNotification } = useNotifications()
+  const { pushLocalNotification } = useNotifications()
 
   const [addresses, setAddresses] = useState([])
   const [addressesLoading, setAddressesLoading] = useState(true)
@@ -267,7 +267,7 @@ export default function CartPage() {
     if (!fieldError) return null
     const list = Array.isArray(fieldError) ? fieldError : [fieldError]
     return (
-      <ul className="mt-1 space-y-1 text-xs text-red-600">
+      <ul className="mt-1 space-y-1 text-xs text-red-600 font-bold">
         {list.map((message, index) => (
           <li key={index}>{message}</li>
         ))}
@@ -383,7 +383,7 @@ export default function CartPage() {
 
       // Thanh toán tiền mặt hoặc chuyển khoản
       await loadCart(true)
-      
+
       // Local instant notification (fallback in case backend notification delays)
       const order = response?.data
       if (order?.id) {
@@ -394,18 +394,11 @@ export default function CartPage() {
           order_id: order.id
         })
       }
-      
-      // Refresh notifications sau khi đặt hàng thành công
-      try {
-        await fetchNotifications({ limit: 20 })
-        await fetchUnreadCount()
-      } catch (notifError) {
-        console.error('Failed to refresh notifications:', notifError)
-      }
-      
-      // Trigger event để các component khác có thể refresh
+
+      // Trigger event để NotificationContext tự động làm mới
+      // Không cần gọi fetchNotifications/fetchUnreadCount trực tiếp nữa
       window.dispatchEvent(new CustomEvent('orderPlaced'))
-      
+
       const newOrderId = response?.data?.id
       if (paymentMethod === 'cash') {
         alert('Đặt hàng thành công! Đang chuyển đến mục Đơn hàng của tôi...')
@@ -439,474 +432,469 @@ export default function CartPage() {
 
   return (
     <Protected>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Giỏ hàng của bạn</h1>
+      <div className="min-h-screen vn-bg-rice-paper relative overflow-hidden">
+        <div className="absolute inset-0 vn-lotus-pattern opacity-10 pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
+          <h1 className="text-3xl font-black vn-text-red-primary mb-6 vn-heading-display">Giỏ hàng của bạn</h1>
 
-        {cartLoading ? (
-          <div className="text-center py-12">
-            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-red-600" />
-            <p className="mt-3 text-gray-600">Đang tải giỏ hàng...</p>
-          </div>
-        ) : !hasEntries ? (
-          <div className="text-center py-16 bg-white border rounded-lg">
-            <p className="text-gray-500 mb-4">Giỏ hàng của bạn đang trống.</p>
-            <button
-              onClick={() => navigate('/menu')}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Xem thực đơn
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] xl:gap-8">
-            <div className="space-y-4 lg:pr-2 xl:pr-4">
-              {(cart?.items ?? []).map((item) => {
-                const itemOutOfStock = !isMenuItemInStock(item.menu_item)
-                const stockCount = getNumericStock(item.menu_item?.stock)
-                const canIncreaseItem =
-                  !itemOutOfStock && (stockCount === null || item.quantity < stockCount)
-                return (
-                  <div key={`item-${item.id}`} className="bg-white border rounded-lg p-4">
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedItemIds.has(item.id) && !itemOutOfStock}
-                      disabled={itemOutOfStock}
-                      onChange={(e) => {
-                        if (itemOutOfStock) return
-                        setSelectedItemIds((prev) => {
-                          const next = new Set(prev)
-                          if (e.target.checked) next.add(item.id)
-                          else next.delete(item.id)
-                          return next
-                        })
-                      }}
-                      className="h-4 w-4 mt-1 disabled:opacity-40"
-                    />
-                    <img
-                      src={item.menu_item?.image_url || PLACEHOLDER_IMG}
-                      alt={item.menu_item?.name}
-                      className="h-24 w-24 rounded object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{item.menu_item?.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Đơn giá: {formatCurrency(item.menu_item?.price)}₫
-                      </p>
-                      {item.selected_options?.length > 0 && (
-                        <p className="text-sm text-gray-500 mt-2">
-                          Tùy chọn: {item.selected_options.map((opt) => opt.name).join(', ')}
-                        </p>
-                      )}
-                      {item.note && (
-                        <p className="text-xs text-gray-500 mt-2">Ghi chú: {item.note}</p>
-                      )}
-                      {itemOutOfStock ? (
-                        <p className="text-sm font-medium text-red-600 mt-2">
-                          Món này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
-                        </p>
-                      ) : stockCount !== null ? (
-                        <p className="text-xs text-gray-500 mt-2">Còn lại: {stockCount} phần</p>
-                      ) : null}
-                      <div className="flex items-center gap-2 mt-4">
-                        <button
-                          type="button"
-                          onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                        >
-                          -
-                        </button>
-                        <span className="px-3 text-sm font-medium">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!canIncreaseItem) return
-                            updateItemQuantity(item.id, item.quantity + 1)
-                          }}
-                          disabled={!canIncreaseItem}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                        >
-                          +
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="ml-auto text-sm text-red-600 hover:text-red-700"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-semibold text-gray-900">
-                        {formatCurrency(item.item_total ?? toNumber(item.menu_item?.price) * (item.quantity ?? 0))}₫
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                )
-              })}
-
-              {(cart?.combos ?? []).map((comboItem) => {
-                const comboOutOfStock = !isComboInStock(comboItem.combo)
-                const comboStock = getNumericStock(comboItem.combo?.stock)
-                const canIncreaseCombo =
-                  !comboOutOfStock && (comboStock === null || comboItem.quantity < comboStock)
-                return (
-                  <div key={`combo-${comboItem.id}`} className="bg-white border rounded-lg p-4">
-                  <div className="flex flex-col md:flex-row md:items-start gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedComboIds.has(comboItem.id) && !comboOutOfStock}
-                      disabled={comboOutOfStock}
-                      onChange={(e) => {
-                        if (comboOutOfStock) return
-                        setSelectedComboIds((prev) => {
-                          const next = new Set(prev)
-                          if (e.target.checked) next.add(comboItem.id)
-                          else next.delete(comboItem.id)
-                          return next
-                        })
-                      }}
-                      className="h-4 w-4 mt-1 disabled:opacity-40"
-                    />
-                    <img
-                      src={comboItem.combo?.image_url || PLACEHOLDER_IMG}
-                      alt={comboItem.combo?.name}
-                      className="h-24 w-24 rounded object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900">{comboItem.combo?.name}</h3>
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                          Combo
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Giá ưu đãi: {formatCurrency(comboItem.combo?.final_price)}₫ / combo
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Tiết kiệm {comboItem.combo?.discount_percentage}% so với giá lẻ.
-                      </p>
-                      {comboOutOfStock ? (
-                        <p className="text-sm font-medium text-red-600 mt-2">
-                          Combo này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
-                        </p>
-                      ) : comboStock !== null ? (
-                        <p className="text-xs text-gray-500 mt-2">Còn lại: {comboStock} suất</p>
-                      ) : null}
-
-                      {comboItem.combo?.items?.length > 0 && (
-                        <ul className="mt-3 space-y-1 text-sm text-gray-600">
-                          {comboItem.combo.items.map((comboLine) => (
-                            <li key={comboLine.id} className="list-disc list-inside">
-                              {comboLine.menu_item?.name} × {comboLine.quantity}
-                              {comboLine.selected_options?.length > 0 && (
-                                <> ({comboLine.selected_options.map((opt) => opt.name).join(', ')})</>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {comboItem.note && (
-                        <p className="text-xs text-gray-500 mt-2">Ghi chú: {comboItem.note}</p>
-                      )}
-
-                      <div className="flex items-center gap-2 mt-4">
-                        <button
-                          type="button"
-                          onClick={() => updateComboQuantity(comboItem.id, comboItem.quantity - 1)}
-                          disabled={comboItem.quantity <= 1}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                        >
-                          -
-                        </button>
-                        <span className="px-3 text-sm font-medium">{comboItem.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!canIncreaseCombo) return
-                            updateComboQuantity(comboItem.id, comboItem.quantity + 1)
-                          }}
-                          disabled={!canIncreaseCombo}
-                          className="h-8 w-8 border rounded flex items-center justify-center hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                        >
-                          +
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeCombo(comboItem.id)}
-                          className="ml-auto text-sm text-red-600 hover:text-red-700"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-semibold text-gray-900">
-                        {formatCurrency(comboItem.combo_total)}₫
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                )
-              })}
+          {cartLoading ? (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-red-200 border-t-red-600" />
+              <p className="mt-3 text-gray-600 font-bold">Đang tải giỏ hàng...</p>
             </div>
-
-            <div className="bg-white border rounded-lg p-6 space-y-6 h-fit lg:sticky lg:top-6">
-              <section className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-red-50 to-amber-50 p-5 shadow-inner space-y-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Bước 1</p>
-                    <h3 className="mt-1 text-xl font-semibold text-rose-900">Địa chỉ giao hàng</h3>
-                    <p className="text-sm text-rose-700/80">
-                      Hãy chọn địa điểm nhận hàng chính xác để tài xế liên hệ nhanh chóng.
-                    </p>
-                  </div>
-                  {!addressFormOpen && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAddressErrors({})
-                        setAddressForm({
-                          ...EMPTY_ADDRESS_FORM,
-                          is_default: addresses.length === 0
-                        })
-                        setLocations((prev) => ({ ...prev, wards: [] }))
-                        setAddressFormOpen(true)
-                      }}
-                      className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-white/80 px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm hover:border-rose-400 hover:text-rose-700"
-                    >
-                      <span className="text-lg leading-none">＋</span>
-                    </button>
-                  )}
-                </div>
-
-                {addressesLoading ? (
-                  <div className="py-8 text-center text-sm text-rose-700 flex flex-col items-center gap-2">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-rose-200 border-t-rose-500" />
-                    Đang tải danh sách địa chỉ...
-                  </div>
-                ) : addresses.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-rose-200 bg-white/70 p-4 text-sm text-rose-800">
-                    Bạn chưa có địa chỉ giao hàng. Thêm địa chỉ mới để hoàn tất đơn hàng.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {addresses.map((address) => {
-                      const isActive = selectedAddressId === address.id
-                      return (
-                        <label
-                          key={address.id}
-                          className={`group relative flex cursor-pointer flex-col gap-2 rounded-2xl border-2 bg-white/90 p-4 transition-all ${
-                            isActive ? 'border-rose-500 shadow-lg shadow-rose-100' : 'border-transparent hover:border-rose-200'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <input
-                              type="radio"
-                              name="delivery_address"
-                              checked={isActive}
-                              onChange={() => setSelectedAddressId(address.id)}
-                              className="mt-1 h-5 w-5 text-rose-600 focus:ring-rose-400"
-                            />
-                            <div className="flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-base font-semibold text-gray-900">{address.label || 'Địa chỉ'}</p>
-                                {address.is_default && (
-                                  <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-                                    Mặc định
-                                  </span>
-                                )}
-                                {isActive && (
-                                  <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-rose-600">
-                                    Đang sử dụng
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-700">
-                                {address.contact_name} • {address.contact_phone}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {address.street_address}
-                                {address.additional_info ? `, ${address.additional_info}` : ''}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {[address.ward_name, address.province_name].filter(Boolean).join(', ')}
-                              </p>
-                            </div>
-                          </div>
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-
-              </section>
-
-              <section className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Phương thức thanh toán</label>
-                  <select
-                    value={orderData.payment_method}
-                    onChange={(e) => {
-                      const newMethod = e.target.value
-                      setOrderData((prev) => ({
-                        ...prev,
-                        payment_method: newMethod
-                      }))
-                    }}
-                    className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  >
-                    <option value="cash">Tiền mặt</option>
-                    <option value="card">Thẻ</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Ghi chú cho đơn hàng</label>
-                  <textarea
-                    value={orderData.note}
-                    onChange={(e) => setOrderData((prev) => ({ ...prev, note: e.target.value }))}
-                    className="mt-1 w-full rounded border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    rows={3}
-                    placeholder="Ví dụ: Giao lúc giờ nghỉ trưa, thêm tương ớt..."
-                  />
-                </div>
-              </section>
-
-              <section className="space-y-2 border-t pt-4 text-sm text-gray-700">
-                <div className="flex justify-between">
-                  <span>Tạm tính món lẻ (đã chọn)</span>
-                  <span>{formatCurrency(totals.items)}₫</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tạm tính combo (đã chọn)</span>
-                  <span>{formatCurrency(totals.combos)}₫</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg text-gray-900">
-                  <span>Tổng cộng</span>
-                  <span>{formatCurrency(totals.total)}₫</span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Chỉ các món được tick sẽ được đặt. Món không chọn vẫn ở lại giỏ hàng.
-                </p>
-              </section>
-
+          ) : !hasEntries ? (
+            <div className="text-center py-16 vn-card border-2 vn-border-gold">
+              <p className="text-gray-500 mb-4 text-lg font-medium">🪷 Giỏ hàng của bạn đang trống.</p>
               <button
-                type="button"
-                onClick={handleCheckout}
-                disabled={checkoutLoading || !selectedAddressId || !hasSelection}
-                className="w-full rounded-lg bg-red-600 py-3 text-white font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={() => navigate('/menu')}
+                className="px-8 py-3 vn-btn-primary shadow-lg hover:shadow-xl transition-all"
               >
-                {checkoutLoading ? 'Đang xử lý...' : 'Đặt hàng ngay (chỉ món đã chọn)'}
+                Xem thực đơn
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] xl:gap-8">
+              <div className="space-y-4 lg:pr-2 xl:pr-4">
+                {(cart?.items ?? []).map((item) => {
+                  const itemOutOfStock = !isMenuItemInStock(item.menu_item)
+                  const stockCount = getNumericStock(item.menu_item?.stock)
+                  const canIncreaseItem =
+                    !itemOutOfStock && (stockCount === null || item.quantity < stockCount)
+                  return (
+                    <div key={`item-${item.id}`} className="vn-card border-2 vn-border-gold p-4 hover:shadow-md transition-shadow">
+                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedItemIds.has(item.id) && !itemOutOfStock}
+                          disabled={itemOutOfStock}
+                          onChange={(e) => {
+                            if (itemOutOfStock) return
+                            setSelectedItemIds((prev) => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(item.id)
+                              else next.delete(item.id)
+                              return next
+                            })
+                          }}
+                          className="h-5 w-5 mt-1 disabled:opacity-40 text-red-600 focus:ring-red-500 rounded border-gray-300"
+                        />
+                        <div className="h-24 w-24 rounded-xl overflow-hidden border border-gray-200">
+                          <img
+                            src={item.menu_item?.image_url || PLACEHOLDER_IMG}
+                            alt={item.menu_item?.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-gray-900">{item.menu_item?.name}</h3>
+                          <p className="text-sm font-bold vn-text-red-primary mt-1">
+                            Đơn giá: {formatCurrency(item.menu_item?.price)}₫
+                          </p>
+                          {item.selected_options?.length > 0 && (
+                            <p className="text-sm text-gray-500 mt-2 font-medium">
+                              Tùy chọn: {item.selected_options.map((opt) => opt.name).join(', ')}
+                            </p>
+                          )}
+                          {item.note && (
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Ghi chú: {item.note}</p>
+                          )}
+                          {itemOutOfStock ? (
+                            <p className="text-sm font-bold text-red-600 mt-2">
+                              Món này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
+                            </p>
+                          ) : stockCount !== null ? (
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Còn lại: {stockCount} phần</p>
+                          ) : null}
+                          <div className="flex items-center gap-2 mt-4">
+                            <button
+                              type="button"
+                              onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                              className="h-8 w-8 border-2 border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="px-3 text-sm font-bold">{item.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!canIncreaseItem) return
+                                updateItemQuantity(item.id, item.quantity + 1)
+                              }}
+                              disabled={!canIncreaseItem}
+                              className="h-8 w-8 border-2 border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 font-bold"
+                            >
+                              +
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              className="ml-auto text-sm font-bold text-red-600 hover:text-red-700 hover:underline"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black vn-text-red-primary">
+                            {formatCurrency(item.item_total ?? toNumber(item.menu_item?.price) * (item.quantity ?? 0))}₫
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
 
-        )}
-      </div>
+                {(cart?.combos ?? []).map((comboItem) => {
+                  const comboOutOfStock = !isComboInStock(comboItem.combo)
+                  const comboStock = getNumericStock(comboItem.combo?.stock)
+                  const canIncreaseCombo =
+                    !comboOutOfStock && (comboStock === null || comboItem.quantity < comboStock)
+                  return (
+                    <div key={`combo-${comboItem.id}`} className="vn-card border-2 vn-border-lotus p-4 hover:shadow-md transition-shadow bg-red-50/30">
+                      <div className="flex flex-col md:flex-row md:items-start gap-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedComboIds.has(comboItem.id) && !comboOutOfStock}
+                          disabled={comboOutOfStock}
+                          onChange={(e) => {
+                            if (comboOutOfStock) return
+                            setSelectedComboIds((prev) => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(comboItem.id)
+                              else next.delete(comboItem.id)
+                              return next
+                            })
+                          }}
+                          className="h-5 w-5 mt-1 disabled:opacity-40 text-red-600 focus:ring-red-500 rounded border-gray-300"
+                        />
+                        <div className="h-24 w-24 rounded-xl overflow-hidden border border-red-100">
+                          <img
+                            src={comboItem.combo?.image_url || PLACEHOLDER_IMG}
+                            alt={comboItem.combo?.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-lg text-gray-900">{comboItem.combo?.name}</h3>
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold border border-red-200">
+                              Combo
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold vn-text-red-primary mt-1">
+                            Giá ưu đãi: {formatCurrency(comboItem.combo?.final_price)}₫ / combo
+                          </p>
+                          <p className="text-xs text-green-600 font-bold mt-1">
+                            Tiết kiệm {comboItem.combo?.discount_percentage}% so với giá lẻ.
+                          </p>
+                          {comboOutOfStock ? (
+                            <p className="text-sm font-bold text-red-600 mt-2">
+                              Combo này đã hết hàng. Vui lòng xóa khỏi giỏ để tiếp tục đặt.
+                            </p>
+                          ) : comboStock !== null ? (
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Còn lại: {comboStock} suất</p>
+                          ) : null}
 
-      {addressFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeAddressModal}></div>
-          <div className="relative z-10 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-            <form
-              onSubmit={handleCreateAddress}
-              className="max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl"
-            >
-              <div className="flex items-center justify-between border-b px-6 py-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-500">Thêm địa chỉ</p>
-                  <h3 className="text-lg font-semibold text-gray-900">Thông tin giao hàng</h3>
-                </div>
+                          {comboItem.combo?.items?.length > 0 && (
+                            <ul className="mt-3 space-y-1 text-sm text-gray-600 font-medium">
+                              {comboItem.combo.items.map((comboLine) => (
+                                <li key={comboLine.id} className="list-disc list-inside">
+                                  {comboLine.menu_item?.name} × {comboLine.quantity}
+                                  {comboLine.selected_options?.length > 0 && (
+                                    <> ({comboLine.selected_options.map((opt) => opt.name).join(', ')})</>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {comboItem.note && (
+                            <p className="text-xs text-gray-500 mt-2 font-medium">Ghi chú: {comboItem.note}</p>
+                          )}
+
+                          <div className="flex items-center gap-2 mt-4">
+                            <button
+                              type="button"
+                              onClick={() => updateComboQuantity(comboItem.id, comboItem.quantity - 1)}
+                              disabled={comboItem.quantity <= 1}
+                              className="h-8 w-8 border-2 border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 font-bold"
+                            >
+                              -
+                            </button>
+                            <span className="px-3 text-sm font-bold">{comboItem.quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!canIncreaseCombo) return
+                                updateComboQuantity(comboItem.id, comboItem.quantity + 1)
+                              }}
+                              disabled={!canIncreaseCombo}
+                              className="h-8 w-8 border-2 border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400 font-bold"
+                            >
+                              +
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeCombo(comboItem.id)}
+                              className="ml-auto text-sm font-bold text-red-600 hover:text-red-700 hover:underline"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black vn-text-red-primary">
+                            {formatCurrency(comboItem.combo_total)}₫
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="vn-card border-2 vn-border-gold p-6 space-y-6 h-fit lg:sticky lg:top-6">
+                <section className="rounded-2xl border border-red-100 bg-red-50/50 p-5 space-y-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.3em] vn-text-red-primary">Bước 1</p>
+                      <h3 className="mt-1 text-xl font-black vn-heading-display text-gray-900">Địa chỉ giao hàng</h3>
+                      <p className="text-sm text-gray-600 font-medium">
+                        Hãy chọn địa điểm nhận hàng chính xác để tài xế liên hệ nhanh chóng.
+                      </p>
+                    </div>
+                    {!addressFormOpen && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressErrors({})
+                          setAddressForm({
+                            ...EMPTY_ADDRESS_FORM,
+                            is_default: addresses.length === 0
+                          })
+                          setLocations((prev) => ({ ...prev, wards: [] }))
+                          setAddressFormOpen(true)
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border-2 border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm hover:border-red-300 hover:text-red-700 hover:bg-red-50 transition-all"
+                      >
+                        <span className="text-lg leading-none">＋</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {addressesLoading ? (
+                    <div className="py-8 text-center text-sm text-red-700 flex flex-col items-center gap-2 font-medium">
+                      <div className="h-10 w-10 animate-spin rounded-full border-4 border-red-200 border-t-red-600" />
+                      Đang tải danh sách địa chỉ...
+                    </div>
+                  ) : addresses.length === 0 ? (
+                    <div className="rounded-xl border-2 border-dashed border-red-200 bg-white/70 p-4 text-sm text-red-800 font-medium text-center">
+                      Bạn chưa có địa chỉ giao hàng. Thêm địa chỉ mới để hoàn tất đơn hàng.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {addresses.map((address) => {
+                        const isActive = selectedAddressId === address.id
+                        return (
+                          <label
+                            key={address.id}
+                            className={`group relative flex cursor-pointer flex-col gap-2 rounded-2xl border-2 bg-white p-4 transition-all ${isActive ? 'border-red-500 shadow-lg shadow-red-100' : 'border-gray-200 hover:border-red-200'
+                              }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <input
+                                type="radio"
+                                name="delivery_address"
+                                checked={isActive}
+                                onChange={() => setSelectedAddressId(address.id)}
+                                className="mt-1 h-5 w-5 text-red-600 focus:ring-red-400 border-gray-300"
+                              />
+                              <div className="flex-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-base font-bold text-gray-900">{address.label || 'Địa chỉ'}</p>
+                                  {address.is_default && (
+                                    <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+                                      Mặc định
+                                    </span>
+                                  )}
+                                  {isActive && (
+                                    <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-bold uppercase text-red-600">
+                                      Đang sử dụng
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700 font-medium">
+                                  {address.contact_name} • {address.contact_phone}
+                                </p>
+                                <p className="text-sm text-gray-600 font-medium">
+                                  {address.street_address}
+                                  {address.additional_info ? `, ${address.additional_info}` : ''}
+                                </p>
+                                <p className="text-xs text-gray-500 font-medium">
+                                  {[address.ward_name, address.province_name].filter(Boolean).join(', ')}
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                </section>
+
+                <section className="space-y-4">
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Phương thức thanh toán</label>
+                    <select
+                      value={orderData.payment_method}
+                      onChange={(e) => {
+                        const newMethod = e.target.value
+                        setOrderData((prev) => ({
+                          ...prev,
+                          payment_method: newMethod
+                        }))
+                      }}
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
+                    >
+                      <option value="cash">Tiền mặt</option>
+                      <option value="card">Thẻ</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-gray-700">Ghi chú cho đơn hàng</label>
+                    <textarea
+                      value={orderData.note}
+                      onChange={(e) => setOrderData((prev) => ({ ...prev, note: e.target.value }))}
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
+                      rows={3}
+                      placeholder="Ví dụ: Giao lúc giờ nghỉ trưa, thêm tương ớt..."
+                    />
+                  </div>
+                </section>
+
+                <section className="space-y-2 border-t-2 border-gray-100 pt-4 text-sm text-gray-700 font-medium">
+                  <div className="flex justify-between">
+                    <span>Tạm tính món lẻ (đã chọn)</span>
+                    <span className="font-bold">{formatCurrency(totals.items)}₫</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tạm tính combo (đã chọn)</span>
+                    <span className="font-bold">{formatCurrency(totals.combos)}₫</span>
+                  </div>
+                  <div className="flex justify-between font-black text-xl vn-text-red-primary pt-2 border-t border-gray-100">
+                    <span>Tổng cộng</span>
+                    <span>{formatCurrency(totals.total)}₫</span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium italic">
+                    Chỉ các món được tick sẽ được đặt. Món không chọn vẫn ở lại giỏ hàng.
+                  </p>
+                </section>
+
                 <button
                   type="button"
-                  onClick={closeAddressModal}
-                  className="rounded-full bg-gray-100 p-2 text-gray-500 hover:text-gray-700"
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading || !hasSelection}
+                  className="w-full vn-btn-primary py-4 text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ✕
+                  {checkoutLoading ? 'Đang xử lý...' : 'Đặt hàng ngay'}
                 </button>
               </div>
-              <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-5">
+            </div>
+          )}
+        </div>
+
+        {/* Modal thêm địa chỉ */}
+        {addressFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto vn-card border-2 vn-border-gold p-6 shadow-2xl animate-fadeIn">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-black vn-text-red-primary vn-heading-display">Thêm địa chỉ mới</h3>
+                <button
+                  onClick={closeAddressModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateAddress} className="space-y-6">
                 {addressErrors.general && (
-                  <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-                    {addressErrors.general}
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 font-bold flex items-center gap-2">
+                    <span>⚠️</span> {addressErrors.general}
                   </div>
                 )}
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Tên gợi nhớ *</label>
+                    <label className="block text-sm font-bold text-gray-700">Tên gợi nhớ</label>
                     <input
                       type="text"
                       value={addressForm.label}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, label: e.target.value }))}
-                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                      placeholder="Ví dụ: Nhà, Văn phòng..."
-                      required
+                      onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
+                      placeholder="Nhà riêng, Công ty..."
                     />
                     {renderFieldErrors('label')}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Số điện thoại liên hệ *</label>
+                    <label className="block text-sm font-bold text-gray-700">Họ tên người nhận *</label>
                     <input
-                      type="tel"
-                      value={addressForm.contact_phone}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_phone: e.target.value }))}
-                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                      placeholder="09xx xxx xxx"
+                      type="text"
                       required
+                      value={addressForm.contact_name}
+                      onChange={(e) => setAddressForm({ ...addressForm, contact_name: e.target.value })}
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
                     />
-                    {renderFieldErrors('contact_phone')}
+                    {renderFieldErrors('contact_name')}
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Người nhận hàng *</label>
+                  <label className="block text-sm font-bold text-gray-700">Số điện thoại *</label>
                   <input
-                    type="text"
-                    value={addressForm.contact_name}
-                    onChange={(e) => setAddressForm((prev) => ({ ...prev, contact_name: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                    type="tel"
                     required
+                    value={addressForm.contact_phone}
+                    onChange={(e) => setAddressForm({ ...addressForm, contact_phone: e.target.value })}
+                    className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
-                  {renderFieldErrors('contact_name')}
+                  {renderFieldErrors('contact_phone')}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Tỉnh / Thành phố *</label>
+                    <label className="block text-sm font-bold text-gray-700">Tỉnh / Thành phố *</label>
                     <select
                       value={addressForm.province_id}
                       onChange={(e) => onProvinceChange(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                      required
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
                     >
-                      <option value="">Chọn tỉnh/thành</option>
-                      {locations.provinces.map((province) => (
-                        <option key={province.id} value={province.id}>
-                          {province.name}
+                      <option value="">-- Chọn Tỉnh/Thành --</option>
+                      {locations.provinces.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
                         </option>
                       ))}
                     </select>
                     {renderFieldErrors('province_id')}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Phường / Xã *</label>
+                    <label className="block text-sm font-bold text-gray-700">Phường / Xã *</label>
                     <select
                       value={addressForm.ward_id}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, ward_id: e.target.value }))}
-                      className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                      onChange={(e) => setAddressForm({ ...addressForm, ward_id: e.target.value })}
                       disabled={!addressForm.province_id || isFetchingWards}
-                      required
+                      className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium disabled:bg-gray-100"
                     >
-                      <option value="">{isFetchingWards ? 'Đang tải...' : 'Chọn phường/xã'}</option>
-                      {locations.wards.map((ward, index) => (
-                        <option key={`ward-${ward.id ?? ward.code ?? index}`} value={ward.id}>
-                          {ward.name}
+                      <option value="">-- Chọn Phường/Xã --</option>
+                      {locations.wards.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
                         </option>
                       ))}
                     </select>
@@ -915,61 +903,63 @@ export default function CartPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Địa chỉ chi tiết *</label>
+                  <label className="block text-sm font-bold text-gray-700">Địa chỉ chi tiết *</label>
                   <input
                     type="text"
-                    value={addressForm.street_address}
-                    onChange={(e) => setAddressForm((prev) => ({ ...prev, street_address: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                    placeholder="Ví dụ: Số 1, Đường Phạm Hùng"
                     required
+                    value={addressForm.street_address}
+                    onChange={(e) => setAddressForm({ ...addressForm, street_address: e.target.value })}
+                    className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
+                    placeholder="Số nhà, tên đường..."
                   />
                   {renderFieldErrors('street_address')}
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Ghi chú thêm</label>
-                  <textarea
+                  <label className="block text-sm font-bold text-gray-700">Thông tin thêm</label>
+                  <input
+                    type="text"
                     value={addressForm.additional_info}
-                    onChange={(e) => setAddressForm((prev) => ({ ...prev, additional_info: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
-                    rows={3}
-                    placeholder="Hướng dẫn giao hàng, mã cổng, số tầng..."
+                    onChange={(e) => setAddressForm({ ...addressForm, additional_info: e.target.value })}
+                    className="mt-1 w-full rounded-xl border-2 border-gray-200 px-3 py-2 focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all font-medium"
+                    placeholder="Gần tòa nhà, đối diện..."
                   />
-                  {renderFieldErrors('additional_info')}
                 </div>
 
-                <label className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+                <div className="flex items-center gap-2 p-4 bg-red-50 rounded-xl border border-red-100">
                   <input
                     type="checkbox"
+                    id="new-addr-default"
                     checked={addressForm.is_default}
-                    onChange={(e) => setAddressForm((prev) => ({ ...prev, is_default: e.target.checked }))}
-                    className="h-4 w-4 text-rose-600 focus:ring-rose-400"
+                    onChange={(e) => setAddressForm({ ...addressForm, is_default: e.target.checked })}
+                    className="h-5 w-5 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                   />
-                  Đặt làm địa chỉ mặc định
-                </label>
-              </div>
-              <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeAddressModal}
-                  className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
-                  disabled={savingAddress}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingAddress}
-                  className="rounded-xl bg-gradient-to-r from-rose-500 to-red-500 px-6 py-2 text-sm font-semibold text-white shadow hover:from-rose-600 hover:to-red-600 disabled:opacity-60"
-                >
-                  {savingAddress ? 'Đang lưu...' : 'Lưu địa chỉ'}
-                </button>
-              </div>
-            </form>
+                  <label htmlFor="new-addr-default" className="text-sm font-bold text-gray-700 cursor-pointer">
+                    Đặt làm địa chỉ mặc định
+                  </label>
+                </div>
+
+                <div className="flex gap-4 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={closeAddressModal}
+                    className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingAddress}
+                    className="flex-1 vn-btn-primary py-3 shadow-lg hover:shadow-xl disabled:opacity-70"
+                  >
+                    {savingAddress ? 'Đang lưu...' : 'Lưu địa chỉ'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </Protected>
   )
 }

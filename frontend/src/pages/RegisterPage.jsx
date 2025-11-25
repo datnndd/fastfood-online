@@ -107,7 +107,7 @@ export default function RegisterPage() {
     if (!fieldError) return null
     const list = Array.isArray(fieldError) ? fieldError : [fieldError]
     return (
-      <ul className="text-red-500 text-sm mt-1 space-y-1">
+      <ul className="text-red-500 text-sm mt-1 space-y-1 font-bold">
         {list.map((msg, index) => (
           <li key={`${field}-${index}`}>{msg}</li>
         ))}
@@ -147,7 +147,7 @@ export default function RegisterPage() {
         ward_id: formData.ward_id ? Number(formData.ward_id) : null,
         date_of_birth: formData.date_of_birth || null,
       }
-      const { confirm_password, ...payloadToSend } = payload
+      const { confirm_password: _confirm_password, ...payloadToSend } = payload
       const result = await register(payloadToSend)
       if (result?.profileSynced === false) {
         alert('Đăng ký thành công nhưng không thể đồng bộ hồ sơ. Bạn có thể cập nhật lại trong trang hồ sơ sau khi đăng nhập.')
@@ -169,51 +169,58 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-yellow-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen vn-bg-rice-paper py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute inset-0 vn-lotus-pattern opacity-10 pointer-events-none" />
+      <div className="absolute top-10 left-10 text-6xl opacity-20 vn-animate-lantern-sway">🏮</div>
+      <div className="absolute bottom-10 right-10 text-6xl opacity-20 vn-animate-lantern-sway" style={{ animationDelay: '1s' }}>🏮</div>
+
+      <div className="mx-auto max-w-6xl relative z-10">
         <div className="mb-8 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wide text-red-500">McDono</p>
-          <h1 className="mt-2 text-4xl font-bold text-gray-900 sm:text-5xl">Bắt đầu hành trình giao hàng nhanh chóng</h1>
-          <p className="mt-3 text-lg text-gray-600">
+          <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-bold uppercase tracking-[0.2em] border border-red-100 mb-4">
+            <span className="text-lg">🏮</span>
+            <span className="vn-text-red-primary">McDono</span>
+          </div>
+          <h1 className="text-4xl font-black text-gray-900 sm:text-5xl vn-heading-display">Bắt đầu hành trình giao hàng nhanh chóng</h1>
+          <p className="mt-3 text-lg text-gray-600 font-medium">
             Tạo tài khoản để lưu địa chỉ yêu thích, xem lịch sử đơn hàng và hưởng ưu đãi dành riêng cho thành viên.
           </p>
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[1.2fr,0.9fr]">
-          <section className="rounded-3xl border border-white bg-white p-8 shadow-2xl shadow-red-100/70">
+          <section className="vn-card border-2 vn-border-gold p-8 shadow-2xl">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {errors.general && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                  {errors.general}
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 font-bold flex items-center gap-2">
+                  <span>⚠️</span> {errors.general}
                 </div>
               )}
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Tài khoản
                   </label>
                   <div className="mt-2 rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                    <label className="text-xs font-medium text-gray-700">Tên đăng nhập *</label>
+                    <label className="text-xs font-bold text-gray-700">Tên đăng nhập *</label>
                     <input
                       type="text"
                       required
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-transparent px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                      className="mt-1 w-full rounded-lg border border-transparent px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 font-medium"
                     />
                     {renderFieldErrors('username')}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Email
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
                   {renderFieldErrors('email')}
                 </div>
@@ -221,7 +228,7 @@ export default function RegisterPage() {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Mật khẩu *
                   </label>
                   <input
@@ -229,12 +236,12 @@ export default function RegisterPage() {
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
                   {renderFieldErrors('password')}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Xác nhận mật khẩu *
                   </label>
                   <input
@@ -242,27 +249,27 @@ export default function RegisterPage() {
                     required
                     value={formData.confirm_password}
                     onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
                 </div>
               </div>
 
-              <fieldset className="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2">
-                <legend className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <fieldset className="grid gap-4 rounded-2xl border-2 border-gray-200 bg-gray-50/50 p-4 sm:grid-cols-2">
+                <legend className="text-xs font-bold uppercase tracking-wide text-gray-500 px-2">
                   Thông tin cá nhân
                 </legend>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Tên đầy đủ</label>
+                  <label className="text-xs font-bold text-gray-700">Tên đầy đủ</label>
                   <input
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
                   {renderFieldErrors('full_name')}
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Số điện thoại</label>
+                  <label className="text-xs font-bold text-gray-700">Số điện thoại</label>
                   <input
                     type="tel"
                     required
@@ -271,10 +278,10 @@ export default function RegisterPage() {
                     inputMode="numeric"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="mt-1 block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   />
                   {formData.phone && formData.phone.length > 0 && formData.phone.length < 10 && (
-                    <p className="mt-1 text-xs text-red-500">Số điện thoại phải gồm 10 chữ số.</p>
+                    <p className="mt-1 text-xs text-red-500 font-bold">Số điện thoại phải gồm 10 chữ số.</p>
                   )}
                   {renderFieldErrors('phone')}
                 </div>
@@ -282,13 +289,13 @@ export default function RegisterPage() {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Giới tính
                   </label>
                   <select
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   >
                     {GENDER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -299,14 +306,14 @@ export default function RegisterPage() {
                   {renderFieldErrors('gender')}
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Ngày sinh
                   </label>
                   <input
                     type="date"
                     value={formData.date_of_birth}
                     onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                     max={new Date().toISOString().split('T')[0]}
                   />
                   {renderFieldErrors('date_of_birth')}
@@ -314,14 +321,14 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                   Địa chỉ chi tiết
                 </label>
                 <textarea
                   rows={3}
                   value={formData.address_line}
                   onChange={(e) => setFormData({ ...formData, address_line: e.target.value })}
-                  className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   placeholder="Số nhà, đường, khu vực..."
                 />
                 {renderFieldErrors('address_line')}
@@ -329,13 +336,13 @@ export default function RegisterPage() {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Tỉnh/Thành phố
                   </label>
                   <select
                     value={formData.province_id}
                     onChange={(e) => handleProvinceChange(e.target.value)}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium"
                   >
                     <option value="">
                       {provinceLoading ? 'Đang tải...' : 'Chọn tỉnh/thành phố'}
@@ -349,14 +356,14 @@ export default function RegisterPage() {
                   {renderFieldErrors('province_id')}
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
                     Phường/Xã
                   </label>
                   <select
                     value={formData.ward_id}
                     onChange={(e) => setFormData({ ...formData, ward_id: e.target.value })}
                     disabled={!formData.province_id}
-                    className="mt-1 block w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:bg-white/50"
+                    className="mt-1 block w-full rounded-2xl border-2 border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-100 transition-all font-medium disabled:bg-gray-100"
                   >
                     <option value="">
                       {!formData.province_id ? 'Chọn tỉnh trước' : wardLoading ? 'Đang tải...' : 'Chọn phường/xã'}
@@ -374,39 +381,39 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/40 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full vn-btn-primary py-4 text-lg shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Đang đăng ký...' : 'Hoàn tất đăng ký'}
               </button>
 
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 font-medium">
                 Đã có tài khoản?{' '}
-                <Link to="/login" className="font-semibold text-red-600 hover:text-red-500">
+                <Link to="/login" className="font-bold text-red-600 hover:text-red-700 hover:underline">
                   Đăng nhập
                 </Link>
               </div>
             </form>
           </section>
 
-          <aside className="rounded-3xl border border-red-100 bg-white/90 p-8 shadow-xl shadow-red-100/60 backdrop-blur">
+          <aside className="vn-card border-2 vn-border-lotus p-8 shadow-xl backdrop-blur h-fit">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Bảng xác nhận</h2>
-              <span className="text-xs font-semibold uppercase tracking-wide text-red-500">Tóm tắt</span>
+              <h2 className="text-lg font-bold text-gray-900">Bảng xác nhận</h2>
+              <span className="text-xs font-bold uppercase tracking-wide text-red-500 bg-red-50 px-2 py-1 rounded-lg">Tóm tắt</span>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 font-medium">
               Thông tin bên cạnh cập nhật theo thời gian thực để bạn kiểm tra trước khi gửi.
             </p>
             <div className="mt-6 space-y-3 text-sm text-gray-700">
               {detailRows.map((row) => (
-                <div key={row.label} className="flex justify-between rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
-                  <dt className="font-medium text-gray-500">{row.label}</dt>
-                  <dd className="text-gray-900">{row.value}</dd>
+                <div key={row.label} className="flex justify-between rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-3 py-2">
+                  <dt className="font-bold text-gray-500">{row.label}</dt>
+                  <dd className="text-gray-900 font-medium">{row.value}</dd>
                 </div>
               ))}
             </div>
-            <div className="mt-6 rounded-2xl border border-dashed border-gray-200 bg-white/80 p-4 text-sm text-gray-700">
-              <p className="font-semibold text-gray-800">Lưu ý</p>
-              <p className="mt-2 text-xs text-gray-500">
+            <div className="mt-6 rounded-2xl border border-dashed border-red-200 bg-red-50/50 p-4 text-sm text-gray-700">
+              <p className="font-bold text-red-800">Lưu ý</p>
+              <p className="mt-2 text-xs text-red-600 font-medium">
                 Bạn có thể điều chỉnh lại thông tin này bất cứ lúc nào trong trang hồ sơ sau khi đăng nhập.
               </p>
             </div>

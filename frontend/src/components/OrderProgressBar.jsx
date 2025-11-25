@@ -70,15 +70,15 @@ export default function OrderProgressBar({ order }) {
       const diffInSeconds = (currentTime - orderTime) / 1000
       if (diffInSeconds > 60) {
         // Đã xác nhận - hiển thị bước CONFIRMED là current
-        return { 
-          currentStepIndex: 1, 
-          completedSteps: ['PLACED', 'CONFIRMED'] 
+        return {
+          currentStepIndex: 1,
+          completedSteps: ['PLACED', 'CONFIRMED']
         }
       } else {
         // Chỉ mới đặt - hiển thị bước PLACED là current
-        return { 
-          currentStepIndex: 0, 
-          completedSteps: ['PLACED'] 
+        return {
+          currentStepIndex: 0,
+          completedSteps: ['PLACED']
         }
       }
     }
@@ -86,7 +86,7 @@ export default function OrderProgressBar({ order }) {
     // Với các trạng thái khác, map trực tiếp
     const currentStepKey = statusToStep[order.status]
     const currentIndex = ORDER_STEPS.findIndex(step => step.key === currentStepKey)
-    
+
     // Tính toán các bước đã hoàn thành - bao gồm tất cả các bước từ đầu đến bước hiện tại
     const completed = []
     for (let i = 0; i <= currentIndex; i++) {
@@ -117,11 +117,11 @@ export default function OrderProgressBar({ order }) {
   // Tính toán thời gian cho mỗi bước - chỉ hiển thị thời gian thực tế
   const getStepTime = (stepKey) => {
     if (!order) return ''
-    
+
     const stepOrder = ['PLACED', 'CONFIRMED', 'READY', 'DELIVERING', 'COMPLETED']
     const stepIndex = stepOrder.indexOf(stepKey)
     const currentStepIndexFromOrder = stepOrder.indexOf(statusToStep[order.status] || 'PLACED')
-    
+
     // Chỉ hiển thị thời gian cho các bước đã hoàn thành
     if (stepIndex <= currentStepIndexFromOrder) {
       if (stepKey === 'PLACED') {
@@ -137,47 +137,46 @@ export default function OrderProgressBar({ order }) {
         confirmedTime.setMinutes(confirmedTime.getMinutes() + 5)
         return formatDate(confirmedTime.toISOString())
       }
-      
+
       if (stepKey === 'READY' && ['READY', 'DELIVERING', 'COMPLETED'].includes(order.status)) {
         // Ước tính thời gian READY (dùng thời gian thực tế nếu có)
         return formatDate(order.created_at) // Tạm thời, sau này có thể thêm ready_at từ backend
       }
-      
+
       if (stepKey === 'DELIVERING' && ['DELIVERING', 'COMPLETED'].includes(order.status)) {
         return formatDate(order.created_at) // Tạm thời
       }
-      
+
       if (stepKey === 'COMPLETED' && order.status === 'COMPLETED') {
         return formatDate(order.created_at) // Tạm thời, sau này có thể thêm completed_at từ backend
       }
     }
-    
+
     // Không hiển thị thời gian cho các bước chưa hoàn thành
     return ''
   }
 
 
   return (
-    <div className="bg-white border rounded-lg p-6 mb-4 shadow-sm">
+    <div className="vn-card border-2 vn-border-gold p-6 mb-4 shadow-sm">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <div>
-              <span className="text-xs text-gray-500 uppercase tracking-wide">MÃ ĐƠN HÀNG</span>
-              <div className="text-xl font-bold text-gray-900 mt-1">#{order.id}</div>
+              <span className="text-xs font-bold vn-text-red-primary uppercase tracking-wide">MÃ ĐƠN HÀNG</span>
+              <div className="text-xl font-black text-gray-900 mt-1 vn-heading-display">#{order.id}</div>
             </div>
           </div>
           <div className="text-right">
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${
-              order.status === 'COMPLETED' 
+            <div className={`px-4 py-2 rounded-full text-sm font-bold border-2 uppercase tracking-wide ${order.status === 'COMPLETED'
                 ? 'text-green-700 bg-green-50 border-green-300'
                 : order.status === 'DELIVERING'
-                ? 'text-purple-700 bg-purple-50 border-purple-300'
-                : order.status === 'READY'
-                ? 'text-blue-700 bg-blue-50 border-blue-300'
-                : 'text-yellow-700 bg-yellow-50 border-yellow-300'
-            }`}>
+                  ? 'text-purple-700 bg-purple-50 border-purple-300'
+                  : order.status === 'READY'
+                    ? 'text-blue-700 bg-blue-50 border-blue-300'
+                    : 'text-yellow-700 bg-yellow-50 border-yellow-300'
+              }`}>
               {order.status === 'COMPLETED' && 'ĐƠN HÀNG ĐÃ HOÀN THÀNH'}
               {order.status === 'DELIVERING' && 'ĐANG GIAO HÀNG'}
               {order.status === 'READY' && 'SẴN SÀNG GIAO HÀNG'}
@@ -185,10 +184,10 @@ export default function OrderProgressBar({ order }) {
             </div>
           </div>
         </div>
-        
+
         {order.status === 'COMPLETED' && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-            <p className="text-sm text-green-800 font-medium flex items-center">
+          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-3 mt-3">
+            <p className="text-sm text-green-800 font-bold flex items-center">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -203,10 +202,10 @@ export default function OrderProgressBar({ order }) {
         {/* Progress Line Background */}
         <div className="absolute top-6 left-0 right-0 h-2 bg-gray-200 rounded-full">
           {/* Progress Line Fill */}
-          <div 
-            className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-700 shadow-sm"
-            style={{ 
-              width: `${Math.max(0, Math.min(100, (currentStepIndex / (ORDER_STEPS.length - 1)) * 100))}%` 
+          <div
+            className="h-full vn-gradient-red-gold rounded-full transition-all duration-700 shadow-sm"
+            style={{
+              width: `${Math.max(0, Math.min(100, (currentStepIndex / (ORDER_STEPS.length - 1)) * 100))}%`
             }}
           />
         </div>
@@ -222,13 +221,12 @@ export default function OrderProgressBar({ order }) {
               <div key={step.key} className="flex flex-col items-center flex-1 relative z-10">
                 {/* Step Circle */}
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center border-3 transition-all duration-300 shadow-md ${
-                    isCompleted || isPast
-                      ? 'bg-green-600 border-green-700 text-white scale-110'
+                  className={`w-12 h-12 rounded-full flex items-center justify-center border-3 transition-all duration-300 shadow-md ${isCompleted || isPast
+                      ? 'bg-red-600 border-red-700 text-white scale-110'
                       : isCurrent
-                      ? 'bg-white border-green-600 text-green-600 ring-4 ring-green-100 scale-110 animate-pulse'
-                      : 'bg-white border-gray-300 text-gray-400'
-                  }`}
+                        ? 'bg-white border-red-600 text-red-600 ring-4 ring-red-100 scale-110 animate-pulse'
+                        : 'bg-white border-gray-300 text-gray-400'
+                    }`}
                   style={{ borderWidth: '3px' }}
                 >
                   {isCompleted || isPast ? (
@@ -243,22 +241,20 @@ export default function OrderProgressBar({ order }) {
                 {/* Step Label */}
                 <div className="mt-4 text-center max-w-[130px]">
                   <div
-                    className={`text-xs font-semibold mb-1 ${
-                      isCompleted || isPast
-                        ? 'text-green-700'
+                    className={`text-xs font-bold mb-1 uppercase tracking-wide ${isCompleted || isPast
+                        ? 'vn-text-red-primary'
                         : isCurrent
-                        ? 'text-green-600'
-                        : 'text-gray-400'
-                    }`}
+                          ? 'text-red-600'
+                          : 'text-gray-400'
+                      }`}
                   >
                     {step.label}
                   </div>
                   {getStepTime(step.key) && (
-                    <div className={`text-xs mt-1 ${
-                      isCompleted || isPast || isCurrent
+                    <div className={`text-xs mt-1 ${isCompleted || isPast || isCurrent
                         ? 'text-gray-700 font-medium'
                         : 'text-gray-400'
-                    }`}>
+                      }`}>
                       {getStepTime(step.key)}
                     </div>
                   )}

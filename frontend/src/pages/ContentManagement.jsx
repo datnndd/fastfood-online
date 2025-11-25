@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ContentAPI } from '../lib/api'
 
 const PAGE_CHOICES = [
@@ -44,9 +44,9 @@ export default function ContentManagement() {
 
     useEffect(() => {
         loadData()
-    }, [selectedPage])
+    }, [loadData])
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true)
         try {
             if (isStoreMode) {
@@ -64,7 +64,7 @@ export default function ContentManagement() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [isStoreMode, selectedPage])
 
     const handleCreate = () => {
         if (isStoreMode) {

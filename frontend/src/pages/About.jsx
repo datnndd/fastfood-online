@@ -8,8 +8,6 @@ import herobanner2 from "../assets/images/herobanner2.jpg";
 import online from "../assets/images/online.jpg";
 
 import a1 from "../assets/images/about/a1.png";
-import a2 from "../assets/images/about/a2.png";
-import a3 from "../assets/images/about/a3.png";
 
 export default function About() {
   const [storyMoments, setStoryMoments] = useState([]);
@@ -206,40 +204,44 @@ export default function About() {
 
       {/* CORE VALUES */}
       <section className="max-w-6xl mx-auto py-20 px-6 text-center space-y-10">
-        <h2 className="text-4xl font-bold text-rose-600">💡 Giá trị cốt lõi</h2>
+        <h2 className="text-4xl font-black vn-heading-display vn-text-red-primary">
+          <span className="text-3xl">💡</span> Giá trị cốt lõi
+        </h2>
         <div className="grid md:grid-cols-3 gap-10">
           {[
             {
               title: "Chất lượng hàng đầu",
               desc: "Mỗi miếng gà, mỗi chiếc burger đều được chế biến cẩn thận với nguyên liệu tươi ngon.",
               img: garan,
-              color: "border-rose-300",
+              color: "vn-border-gold",
             },
             {
               title: "Trải nghiệm vui vẻ",
               desc: "Không chỉ là bữa ăn, McDono mang đến niềm vui, tiếng cười và sự ấm cúng trong từng khoảnh khắc.",
               img: herobanner2,
-              color: "border-rose-500",
+              color: "vn-border-red",
             },
             {
               title: "Đổi mới liên tục",
               desc: "Không ngừng sáng tạo và cải tiến menu để mang đến những hương vị mới mẻ cho khách hàng.",
               img: online,
-              color: "border-pink-400",
+              color: "vn-border-lotus",
             },
           ].map((item, i) => (
             <div
               key={i}
-              className={`bg-white rounded-2xl shadow-xl overflow-hidden border-t-8 ${item.color}`}
+              className={`vn-card overflow-hidden border-t-8 ${item.color} group hover:-translate-y-2 transition-transform duration-300`}
             >
-              <img
-                src={item.img}
-                alt={item.title}
-                className="w-full h-48 object-cover"
-              />
+              <div className="overflow-hidden h-48">
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+              </div>
               <div className="p-6">
-                <h4 className="text-xl font-semibold mb-3">{item.title}</h4>
-                <p>{item.desc}</p>
+                <h4 className="text-xl font-bold mb-3 vn-text-red-primary">{item.title}</h4>
+                <p className="text-gray-600 leading-relaxed">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -247,33 +249,42 @@ export default function About() {
       </section>
 
       {/* GALLERY */}
-      <section className="py-20 bg-white">
-        <h2 className="text-4xl font-bold text-rose-600 text-center mb-10">
-          📸 Khoảnh khắc McDono
+      <section className="py-20 vn-bg-rice-paper relative">
+        <div className="absolute inset-0 vn-lotus-pattern opacity-30 pointer-events-none" />
+        <h2 className="text-4xl font-black vn-heading-display vn-text-red-primary text-center mb-10 relative z-10">
+          <span className="text-3xl">📸</span> Khoảnh khắc McDono
         </h2>
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 px-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 px-6 relative z-10">
           {[herobanner, hamberger, garan].map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt="McDono moment"
-              className="rounded-2xl shadow-lg hover:scale-105 transition-transform duration-300"
-            />
+            <div key={i} className="rounded-2xl overflow-hidden border-2 vn-border-gold shadow-lg group">
+              <img
+                src={img}
+                alt="McDono moment"
+                className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="text-center py-20 bg-gradient-to-br from-rose-600 to-red-600 text-white">
-        <h2 className="text-4xl font-extrabold mb-6">
-          Ghé McDono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
-        </h2>
-        <a
-          href="/menu"
-          className="inline-block bg-white hover:bg-gray-50 text-rose-600 font-bold text-lg px-10 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
-        >
-          Xem thực đơn ngay
-        </a>
+      <section className="text-center py-20 vn-gradient-red-gold text-white relative overflow-hidden">
+        <div className="absolute inset-0 vn-bamboo-lines opacity-10 pointer-events-none" />
+        <div className="absolute top-10 left-10 text-6xl opacity-20 vn-animate-lantern-sway">🏮</div>
+        <div className="absolute bottom-10 right-10 text-6xl opacity-20 vn-animate-lantern-sway" style={{ animationDelay: '1s' }}>🏮</div>
+
+        <div className="relative z-10 max-w-4xl mx-auto px-6">
+          <h2 className="text-4xl font-black mb-8 vn-heading-display">
+            Ghé McDono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
+          </h2>
+          <a
+            href="/menu"
+            className="vn-btn-gold inline-flex items-center gap-2 px-10 py-4 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all"
+          >
+            <span>Xem thực đơn ngay</span>
+            <span>→</span>
+          </a>
+        </div>
       </section>
     </div >
   );
