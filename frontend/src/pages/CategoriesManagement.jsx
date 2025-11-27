@@ -12,22 +12,42 @@ export default function CategoriesManagement() {
     const [selectedCategory, setSelectedCategory] = useState(null)
     const [error, setError] = useState(null)
     const [searchTerm, setSearchTerm] = useState('')
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const PAGE_SIZE = 12
 
     useEffect(() => {
         loadCategories()
-    }, [])
+    }, [page, searchTerm])
+
+    // Reset page when search changes
+    useEffect(() => {
+        setPage(1)
+    }, [searchTerm])
 
     const loadCategories = async () => {
         setLoading(true)
         try {
-            const response = await CatalogAPI.listCategories()
-            const data = response.data.results || response.data
-            setCategories(Array.isArray(data) ? data : [])
+            const params = {
+                page,
+                limit: PAGE_SIZE,
+                search: searchTerm
+            }
+            const response = await CatalogAPI.listCategories(params)
+            const data = response.data.results || []
+            const count = response.data.count || 0
+
+            setCategories(data)
+            setTotalItems(count)
+            setTotalPages(Math.ceil(count / PAGE_SIZE))
             setError(null)
         } catch (err) {
             console.error('Load categories error:', err.response || err)
             setError(`Không thể tải danh sách danh mục: ${err.response?.data?.detail || err.message}`)
             setCategories([])
+            setTotalItems(0)
+            setTotalPages(1)
         } finally {
             setLoading(false)
         }
@@ -81,9 +101,8 @@ export default function CategoriesManagement() {
         setSelectedCategory(null)
     }
 
-    const filteredCategories = categories.filter((category) =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    // Client-side filtering removed in favor of server-side filtering
+    const filteredCategories = categories
 
     if (loading) {
         return (
@@ -108,7 +127,7 @@ export default function CategoriesManagement() {
                                 📂 QUẢN LÝ DANH MỤC
                             </h1>
                             <p className="text-indigo-100 text-lg">
-                                Tổng cộng: <span className="font-bold text-white">{filteredCategories.length}</span> danh mục
+                                Tổng cộng: <span className="font-bold text-white">{totalItems}</span> danh mục
                             </p>
                         </div>
                         <button
@@ -219,6 +238,29 @@ export default function CategoriesManagement() {
                         <p className="text-gray-600 text-lg">
                             {!searchTerm && 'Nhấn "Thêm danh mục" để bắt đầu'}
                         </p>
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="mt-8 flex justify-center gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-4 py-2 rounded-lg border border-indigo-200 text-indigo-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-50"
+                        >
+                            Trước
+                        </button>
+                        <span className="px-4 py-2 font-bold text-gray-700">
+                            Trang {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-4 py-2 rounded-lg border border-indigo-200 text-indigo-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-50"
+                        >
+                            Sau
+                        </button>
                     </div>
                 )}
             </div>

@@ -15,27 +15,41 @@ export default function CombosManagement() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
     const [viewMode, setViewMode] = useState('grid')
-
     const [successMessage, setSuccessMessage] = useState(null)
     const [isFetchingComboDetail, setIsFetchingComboDetail] = useState(false)
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const PAGE_SIZE = 10
 
     const loadCombos = useCallback(async () => {
         try {
-            const response = await CatalogAPI.listCombos()
-            const data = response.data.results || response.data
-            setCombos(Array.isArray(data) ? data : [])
+            const params = {
+                page,
+                limit: PAGE_SIZE,
+                search: searchTerm,
+                category: filterCategory
+            }
+            const response = await CatalogAPI.listCombos(params)
+            const data = response.data.results || []
+            const count = response.data.count || 0
+
+            setCombos(data)
+            setTotalItems(count)
+            setTotalPages(Math.ceil(count / PAGE_SIZE))
             setError(null)
         } catch (err) {
             console.error('Load combos error:', err.response || err)
             setError(`Không thể tải danh sách combo: ${err.response?.data?.detail || err.message}`)
             setCombos([])
+            setTotalItems(0)
+            setTotalPages(1)
         }
-    }, [])
+    }, [page, searchTerm, filterCategory])
 
     const loadCategories = useCallback(async () => {
         try {
-            const response = await CatalogAPI.listCategories()
-            const data = response.data.results || response.data
+            const data = await CatalogAPI.listAllCategories()
             setCategories(Array.isArray(data) ? data : [])
         } catch (err) {
             console.error('Load categories error:', err.response || err)
@@ -43,15 +57,18 @@ export default function CombosManagement() {
         }
     }, [])
 
-    const loadData = useCallback(async () => {
-        setLoading(true)
-        await Promise.all([loadCategories(), loadCombos()])
-        setLoading(false)
-    }, [loadCategories, loadCombos])
+    useEffect(() => {
+        loadCategories()
+    }, [loadCategories])
 
     useEffect(() => {
-        loadData()
-    }, [loadData])
+        loadCombos()
+    }, [loadCombos])
+
+    // Reset page when filters change
+    useEffect(() => {
+        setPage(1)
+    }, [searchTerm, filterCategory])
 
     const handleAdd = () => {
         setSelectedCombo(null)
@@ -137,11 +154,8 @@ export default function CombosManagement() {
         }).format(value)
     }
 
-    const filteredCombos = combos.filter((combo) => {
-        const matchSearch = combo.name.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchCategory = !filterCategory || combo.category_id === parseInt(filterCategory)
-        return matchSearch && matchCategory
-    })
+    // Client-side filtering removed in favor of server-side filtering
+    const filteredCombos = combos
 
 
 
@@ -168,7 +182,7 @@ export default function CombosManagement() {
                                 🎁 QUẢN LÝ COMBO
                             </h1>
                             <p className="text-purple-100 text-lg">
-                                Tổng cộng: <span className="font-bold text-white">{filteredCombos.length}</span> combo
+                                Tổng cộng: <span className="font-bold text-white">{totalItems}</span> combo
                             </p>
                         </div>
                         <button
@@ -469,6 +483,29 @@ export default function CombosManagement() {
                                 <p className="text-xl text-gray-500 font-semibold">Không tìm thấy combo nào</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="mt-8 flex justify-center gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-4 py-2 rounded-lg border border-purple-200 text-purple-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50"
+                        >
+                            Trước
+                        </button>
+                        <span className="px-4 py-2 font-bold text-gray-700">
+                            Trang {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-4 py-2 rounded-lg border border-purple-200 text-purple-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-50"
+                        >
+                            Sau
+                        </button>
                     </div>
                 )}
             </div>

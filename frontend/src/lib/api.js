@@ -131,6 +131,7 @@ export const AccountsAPI = {
 // =============================================================================
 export const CatalogAPI = {
   listCategories: (params = {}) => api.get('/catalog/categories/', { params }),
+  listAllCategories: (params = {}) => fetchAllPages('/catalog/categories/', params),
   getCategory: (id) => api.get(`/catalog/categories/${id}/`),
   createCategory: (data) => api.post('/catalog/categories/', data),
   updateCategory: (id, data) => api.put(`/catalog/categories/${id}/`, data),
@@ -138,6 +139,7 @@ export const CatalogAPI = {
   uploadCategoryImage: (id, file) => uploadImage(`/catalog/categories/${id}/upload-image/`, file),
   deleteCategory: (id) => api.delete(`/catalog/categories/${id}/`),
   listItems: (params = {}) => api.get('/catalog/items/', { params }),
+  listAllItems: (params = {}) => fetchAllPages('/catalog/items/', params),
   getItem: (id) => api.get(`/catalog/items/${id}/`),
   createItem: (data) => api.post('/catalog/items/', data),
   updateItem: (id, data) => api.put(`/catalog/items/${id}/`, data),
@@ -145,6 +147,7 @@ export const CatalogAPI = {
   uploadItemImage: (id, file) => uploadImage(`/catalog/items/${id}/upload-image/`, file),
   deleteItem: (id) => api.delete(`/catalog/items/${id}/`),
   listCombos: (params = {}) => api.get('/catalog/combos/', { params }),
+  listAllCombos: (params = {}) => fetchAllPages('/catalog/combos/', params),
   getCombo: (id) => api.get(`/catalog/combos/${id}/`),
   createCombo: (data) => api.post('/catalog/combos/', data),
   updateCombo: (id, data) => api.put(`/catalog/combos/${id}/`, data),

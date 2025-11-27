@@ -18,24 +18,39 @@ export default function ItemsManagement() {
     const [bulkStockValue, setBulkStockValue] = useState('')
     const [bulkUpdatingItems, setBulkUpdatingItems] = useState(false)
     const [successMessage, setSuccessMessage] = useState(null)
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const PAGE_SIZE = 10
 
     const loadItems = useCallback(async () => {
         try {
-            const response = await CatalogAPI.listItems()
-            const data = response.data.results || response.data
-            setItems(Array.isArray(data) ? data : [])
+            const params = {
+                page,
+                limit: PAGE_SIZE,
+                search: searchTerm,
+                category: filterCategory
+            }
+            const response = await CatalogAPI.listItems(params)
+            const data = response.data.results || []
+            const count = response.data.count || 0
+
+            setItems(data)
+            setTotalItems(count)
+            setTotalPages(Math.ceil(count / PAGE_SIZE))
             setError(null)
         } catch (err) {
             console.error('Load items error:', err.response || err)
             setError(`Không thể tải danh sách món ăn: ${err.response?.data?.detail || err.message}`)
             setItems([])
+            setTotalItems(0)
+            setTotalPages(1)
         }
-    }, [])
+    }, [page, searchTerm, filterCategory])
 
     const loadCategories = useCallback(async () => {
         try {
-            const response = await CatalogAPI.listCategories()
-            const data = response.data.results || response.data
+            const data = await CatalogAPI.listAllCategories()
             setCategories(Array.isArray(data) ? data : [])
         } catch (err) {
             console.error('Load categories error:', err.response || err)
@@ -43,15 +58,18 @@ export default function ItemsManagement() {
         }
     }, [])
 
-    const loadData = useCallback(async () => {
-        setLoading(true)
-        await Promise.all([loadCategories(), loadItems()])
-        setLoading(false)
-    }, [loadCategories, loadItems])
+    useEffect(() => {
+        loadCategories()
+    }, [loadCategories])
 
     useEffect(() => {
-        loadData()
-    }, [loadData])
+        loadItems()
+    }, [loadItems])
+
+    // Reset page when filters change
+    useEffect(() => {
+        setPage(1)
+    }, [searchTerm, filterCategory])
 
     const handleAdd = () => {
         setSelectedItem(null)
@@ -165,11 +183,8 @@ export default function ItemsManagement() {
         return item.category_id
     }
 
-    const filteredItems = items.filter((item) => {
-        const matchSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchCategory = !filterCategory || getCategoryId(item) === parseInt(filterCategory)
-        return matchSearch && matchCategory
-    })
+    // Client-side filtering removed in favor of server-side filtering
+    const filteredItems = items
 
     if (loading) {
         return (
@@ -194,7 +209,7 @@ export default function ItemsManagement() {
                                 🍔 QUẢN LÝ MENU
                             </h1>
                             <p className="text-red-100 text-lg">
-                                Tổng cộng: <span className="font-bold text-white">{filteredItems.length}</span> món ăn
+                                Tổng cộng: <span className="font-bold text-white">{totalItems}</span> món ăn
                             </p>
                         </div>
                         <button
@@ -260,8 +275,8 @@ export default function ItemsManagement() {
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${viewMode === 'grid'
-                                        ? 'bg-red-600 text-white shadow-lg'
-                                        : 'text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 🎨 Lưới
@@ -269,8 +284,8 @@ export default function ItemsManagement() {
                             <button
                                 onClick={() => setViewMode('table')}
                                 className={`px-6 py-3 rounded-lg font-semibold transition-all ${viewMode === 'table'
-                                        ? 'bg-red-600 text-white shadow-lg'
-                                        : 'text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-red-600 text-white shadow-lg'
+                                    : 'text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 📋 Bảng
@@ -364,8 +379,8 @@ export default function ItemsManagement() {
                                         <button
                                             onClick={() => handleToggleAvailability(item)}
                                             className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${item.is_available
-                                                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                                    : 'bg-green-500 hover:bg-green-600 text-white'
+                                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                                                : 'bg-green-500 hover:bg-green-600 text-white'
                                                 }`}
                                         >
                                             {item.is_available ? '🚫 Ẩn' : '✅ Hiện'}
@@ -435,8 +450,8 @@ export default function ItemsManagement() {
                                             <td className="px-6 py-4">
                                                 <span
                                                     className={`px-4 py-2 rounded-full text-sm font-bold ${item.is_available
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
                                                         }`}
                                                 >
                                                     {item.is_available ? '✅ Còn hàng' : '🚫 Hết hàng'}
@@ -453,8 +468,8 @@ export default function ItemsManagement() {
                                                     <button
                                                         onClick={() => handleToggleAvailability(item)}
                                                         className={`px-4 py-2 rounded-lg font-semibold transition-all ${item.is_available
-                                                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                                                : 'bg-green-500 hover:bg-green-600 text-white'
+                                                            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                                                            : 'bg-green-500 hover:bg-green-600 text-white'
                                                             }`}
                                                     >
                                                         {item.is_available ? '🚫' : '✅'}
@@ -479,6 +494,29 @@ export default function ItemsManagement() {
                                 <p className="text-xl text-gray-500 font-semibold">Không tìm thấy món ăn nào</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="mt-8 flex justify-center gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-50"
+                        >
+                            Trước
+                        </button>
+                        <span className="px-4 py-2 font-bold text-gray-700">
+                            Trang {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-50"
+                        >
+                            Sau
+                        </button>
                     </div>
                 )}
             </div>

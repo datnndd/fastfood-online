@@ -56,6 +56,13 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name","description","category__name"]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category_id = self.request.query_params.get('category')
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        return queryset
+
     def get_permissions(self):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
@@ -97,6 +104,10 @@ class ComboViewSet(viewsets.ModelViewSet):
             available = self.request.query_params.get('available')
             if available and available.lower() in ['true', '1']:
                 queryset = queryset.filter(is_available=True)
+        
+        category_id = self.request.query_params.get('category')
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
         
         return queryset.order_by('-created_at')
     

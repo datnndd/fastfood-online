@@ -245,18 +245,14 @@ export default function MenuPage() {
 
     setLoading(true)
     Promise.all([
-      CatalogAPI.listCategories(),
-      CatalogAPI.listItems(categoryFromURL ? { catalog: categoryFromURL } : {}),
-      CatalogAPI.listCombos({ available: true })
+      CatalogAPI.listAllCategories(),
+      CatalogAPI.listAllItems(categoryFromURL ? { catalog: categoryFromURL } : {}),
+      CatalogAPI.listAllCombos({ available: true })
     ])
-      .then(([categoriesRes, itemsRes, combosRes]) => {
-        const cats = unwrapList(categoriesRes)
-        const itemsData = unwrapList(itemsRes)
-        const combosData = unwrapList(combosRes)
-
-        setCategories(cats)
-        setItems(itemsData)
-        setCombos(combosData)
+      .then(([cats, itemsData, combosData]) => {
+        setCategories(Array.isArray(cats) ? cats : [])
+        setItems(Array.isArray(itemsData) ? itemsData : [])
+        setCombos(Array.isArray(combosData) ? combosData : [])
       })
       .catch((error) => {
         console.error('Failed to load menu:', error)
@@ -582,8 +578,8 @@ export default function MenuPage() {
                     key={slug}
                     onClick={() => handleCategorySelect(slug)}
                     className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold border transition-all ${isActive
-                        ? 'border-red-500 bg-red-50 text-red-600 shadow-md transform scale-105'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:text-red-500'
+                      ? 'border-red-500 bg-red-50 text-red-600 shadow-md transform scale-105'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-red-300 hover:text-red-500'
                       }`}
                   >
                     {name}
