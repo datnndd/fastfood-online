@@ -890,14 +890,14 @@
   .w-80 {
     width: calc(var(--spacing) * 80);
   }
+  .w-\[50px\] {
+    width: 50px;
+  }
   .w-\[420px\] {
     width: 420px;
   }
   .w-\[800px\] {
     width: 800px;
-  }
-  .w-auto {
-    width: auto;
   }
   .w-fit {
     width: fit-content;
@@ -925,6 +925,9 @@
   }
   .max-w-\[130px\] {
     max-width: 130px;
+  }
+  .max-w-full {
+    max-width: 100%;
   }
   .max-w-md {
     max-width: var(--container-md);

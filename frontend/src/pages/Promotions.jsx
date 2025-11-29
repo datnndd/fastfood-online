@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import heroBanner from "../assets/images/herobanner2.jpg";
 import heroAbout from "../assets/images/hero-about.png";
 import locationImg from "../assets/images/location.jpg";
+import { ContentAPI } from '../lib/contentApi';
 import onlineImg from "../assets/images/online.jpg";
 import hotlineImg from "../assets/images/hotline.png";
 
@@ -315,7 +317,7 @@ export default function Promotions() {
             {digitalBanners.map((banner) => (
               <div
                 key={banner.id}
-                className={`rounded-3xl p-6 shadow-xl border-0 text-white ${banner.accent.includes('gradient') ? banner.accent : 'bg-gray-800'}`}
+                className={`rounded - 3xl p - 6 shadow - xl border - 0 text - white ${banner.accent.includes('gradient') ? banner.accent : 'bg-gray-800'} `}
               >
                 <p className="text-xs uppercase tracking-[0.4em] text-white/80 font-bold">
                   {banner.eyebrow}
@@ -363,13 +365,13 @@ export default function Promotions() {
                       {notice.label}
                     </p>
                     <p
-                      className={`text-xl font-black mt-1 vn-text-red-primary ${notice.label === "Email" ? "break-all" : ""
-                        }`}
+                      className={`text - xl font - black mt - 1 vn - text - red - primary ${notice.label === "Email" ? "break-all" : ""
+                        } `}
                       title={notice.value}
                     >
                       {notice.label === "Email" ? (
                         <a
-                          href={`mailto:${notice.value}`}
+                          href={`mailto:${notice.value} `}
                           className="hover:underline underline-offset-4"
                         >
                           {notice.value}

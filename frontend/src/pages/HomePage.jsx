@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/authContext'
-import { ContentAPI } from '../lib/api'
+import { ContentAPI } from '../lib/contentApi'
 import ContentDetailModal from '../components/ContentDetailModal'
 
 import Banner1 from '../assets/images/home/Banner1.png'

@@ -7,7 +7,8 @@ import {
   PhoneIcon,
 } from '@heroicons/react/24/outline'
 import logo from '../assets/images/logo.png'
-import { ContentAPI } from '../lib/api'
+import { CatalogAPI } from '../lib/api'
+import { ContentAPI } from '../lib/contentApi'
 
 const navSections = [
   {

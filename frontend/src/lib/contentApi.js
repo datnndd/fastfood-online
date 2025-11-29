@@ -5,7 +5,8 @@ export const ContentAPI = {
     // Pages
     async getPages() {
         const response = await api.get('/content/pages/')
-        return response.data
+        const data = response.data
+        return Array.isArray(data) ? data : data.results || []
     },
 
     async getPageContent(slug) {
@@ -17,7 +18,8 @@ export const ContentAPI = {
     async getContentItems(pageSlug = null) {
         const params = pageSlug ? { page_slug: pageSlug } : {}
         const response = await api.get('/content/items/', { params })
-        return response.data
+        const data = response.data
+        return Array.isArray(data) ? data : data.results || []
     },
 
     async createContentItem(data) {
@@ -38,7 +40,8 @@ export const ContentAPI = {
     // Stores
     async getStores() {
         const response = await api.get('/content/stores/')
-        return response.data
+        const data = response.data
+        return Array.isArray(data) ? data : data.results || []
     },
 
     async createStore(data) {

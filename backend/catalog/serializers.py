@@ -139,8 +139,6 @@ class ComboItemWriteSerializer(serializers.ModelSerializer):
         return value
 
 class ComboListSerializer(serializers.ModelSerializer):
-    original_price = serializers.SerializerMethodField()
-    final_price = serializers.SerializerMethodField()
     category = serializers.StringRelatedField()
     category_id = serializers.IntegerField(source="category.id", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
@@ -163,16 +161,8 @@ class ComboListSerializer(serializers.ModelSerializer):
             "category_slug",
         ]
 
-    def get_original_price(self, obj):
-        return str(obj.calculate_original_price())
-
-    def get_final_price(self, obj):
-        return str(obj.calculate_final_price())
-
 class ComboDetailSerializer(serializers.ModelSerializer):
     items = ComboItemReadSerializer(many=True, read_only=True)
-    original_price = serializers.SerializerMethodField()
-    final_price = serializers.SerializerMethodField()
     savings = serializers.SerializerMethodField()
     category = serializers.StringRelatedField()
     category_id = serializers.IntegerField(source="category.id", read_only=True)
@@ -200,16 +190,8 @@ class ComboDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_original_price(self, obj):
-        return str(obj.calculate_original_price())
-
-    def get_final_price(self, obj):
-        return str(obj.calculate_final_price())
-
     def get_savings(self, obj):
-        original = obj.calculate_original_price()
-        final = obj.calculate_final_price()
-        return str(original - final)
+        return str(obj.original_price - obj.final_price)
 
 class ComboCreateUpdateSerializer(serializers.ModelSerializer):
     items = ComboItemWriteSerializer(many=True, write_only=True)
@@ -246,6 +228,7 @@ class ComboCreateUpdateSerializer(serializers.ModelSerializer):
         items_data = validated_data.pop("items")
         combo = Combo.objects.create(**validated_data)
         self._sync_items(combo, items_data)
+        combo.update_calculated_fields()
         return combo
 
     def update(self, instance, validated_data):
@@ -256,6 +239,7 @@ class ComboCreateUpdateSerializer(serializers.ModelSerializer):
         if items_data is not None:
             instance.items.all().delete()
             self._sync_items(instance, items_data)
+        instance.update_calculated_fields()
         return instance
 
     def _sync_items(self, combo, items_data):
@@ -277,3 +261,27 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "slug", "image_url", "items", "combos"]
+
+class CategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug", "image_url"]
+
+class MenuItemListSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_id = serializers.IntegerField(source='category.id', read_only=True)
+
+    class Meta:
+        model = MenuItem
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "price",
+            "is_available",
+            "stock",
+            "category_id",
+            "category_name",
+            "image_url",
+        ]

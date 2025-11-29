@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
-import { ContentAPI } from '../lib/api'
+import { ContentAPI } from '../lib/contentApi'
 
 const PAGE_CHOICES = [
     { value: 'home', label: 'Home Page', supports: 'content' },
@@ -44,10 +44,6 @@ export default function ContentManagement() {
         loadPages()
     }, [])
 
-    useEffect(() => {
-        loadData()
-    }, [loadData])
-
     const loadData = useCallback(async () => {
         setLoading(true)
         try {
@@ -67,6 +63,10 @@ export default function ContentManagement() {
             setLoading(false)
         }
     }, [isStoreMode, selectedPage])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const handleCreate = () => {
         if (isStoreMode) {
@@ -184,8 +184,8 @@ export default function ContentManagement() {
                             key={page.value}
                             onClick={() => setSelectedPage(page.value)}
                             className={`rounded - lg px - 4 py - 2 font - semibold transition ${selectedPage === page.value
-                                    ? 'bg-rose-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
                                 } `}
                         >
                             {page.label}

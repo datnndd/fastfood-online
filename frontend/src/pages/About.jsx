@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ContentAPI } from "../lib/api";
+import { ContentAPI } from '../lib/contentApi';
 import heroAbout from "../assets/images/hero-about.png";
 import garan from "../assets/images/garan.png";
 import hamberger from "../assets/images/hamberger.jpg";

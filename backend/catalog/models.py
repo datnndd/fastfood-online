@@ -80,7 +80,10 @@ class Combo(models.Model):
         help_text="Phần trăm giảm giá (0-100)"
     )
     is_available = models.BooleanField(default=True)
-    # stock field removed, calculated dynamically
+    stock = models.PositiveIntegerField(default=0)
+    original_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    final_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
     category = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
@@ -90,8 +93,7 @@ class Combo(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    @property
-    def stock(self):
+    def calculate_stock(self):
         # Calculate stock based on the minimum stock of items in the combo
         min_stock = float('inf')
         combo_items = self.items.all()
@@ -105,24 +107,25 @@ class Combo(models.Model):
                 if item_stock < min_stock:
                     min_stock = item_stock
             else:
-                # If quantity is 0 (shouldn't happen for valid combo), it doesn't limit stock
                 continue
                 
         return min_stock if min_stock != float('inf') else 0
 
     def _sync_availability_with_stock(self):
-        # Availability is now derived from calculated stock
         if self.stock <= 0:
             self.is_available = False
 
     def save(self, *args, **kwargs):
         self.slug = generate_unique_slug(self, self.name, "combo")
-        # We can't easily sync availability here because stock depends on related items
-        # which might not be saved yet or might change independently.
-        # However, we can still check if we should force it to unavailable if we know stock is 0.
-        # But since stock is dynamic, it's better to rely on the property access or explicit checks.
-        # For now, we'll keep the basic check but it might be redundant.
-        # self._sync_availability_with_stock() 
+        # Note: We cannot calculate stock/price here if items are not yet saved (e.g. on create)
+        # So we expect a separate update call or signal to update these fields after items are added.
+        # However, for updates, we can try to recalculate if items exist.
+        if self.pk:
+            # This might be expensive on every save, but ensures consistency.
+            # Ideally, we should only do this when items change.
+            # For now, we rely on the fact that we will have a management command to sync.
+            # And in the serializer, we should handle the sync.
+            pass
         super().save(*args, **kwargs)
     
     def calculate_original_price(self):
@@ -136,6 +139,13 @@ class Combo(models.Model):
         discount = original * (self.discount_percentage / Decimal('100'))
         return original - discount
     
+    def update_calculated_fields(self):
+        """Helper to update stock and prices"""
+        self.stock = self.calculate_stock()
+        self.original_price = self.calculate_original_price()
+        self.final_price = self.calculate_final_price()
+        self.save(update_fields=['stock', 'original_price', 'final_price'])
+
     def __str__(self):
         return self.name
 

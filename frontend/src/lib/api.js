@@ -270,7 +270,7 @@ export const NotificationAPI = {
 // =============================================================================
 // CONTENT APIs
 //==============================================================================
-export { ContentAPI } from './contentApi'
+// export { ContentAPI } from './contentApi'
 
 export default api
 

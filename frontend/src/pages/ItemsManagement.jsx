@@ -32,8 +32,16 @@ export default function ItemsManagement() {
                 category: filterCategory
             }
             const response = await CatalogAPI.listItems(params)
-            const data = response.data.results || []
-            const count = response.data.count || 0
+            let data = []
+            let count = 0
+
+            if (Array.isArray(response.data)) {
+                data = response.data
+                count = data.length
+            } else {
+                data = response.data.results || []
+                count = response.data.count || 0
+            }
 
             setItems(data)
             setTotalItems(count)
@@ -45,6 +53,8 @@ export default function ItemsManagement() {
             setItems([])
             setTotalItems(0)
             setTotalPages(1)
+        } finally {
+            setLoading(false)
         }
     }, [page, searchTerm, filterCategory])
 

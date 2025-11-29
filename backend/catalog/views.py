@@ -11,15 +11,12 @@ from accounts.permissions import IsManager
 from .models import Category, MenuItem, Combo
 from .serializers import (
     CategorySerializer, MenuItemSerializer,
-    ComboListSerializer, ComboDetailSerializer, ComboCreateUpdateSerializer
+    ComboListSerializer, ComboDetailSerializer, ComboCreateUpdateSerializer,
+    CategoryListSerializer, MenuItemListSerializer
 )
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all().prefetch_related(
-        "items__option_groups__options",
-        "combos__items__menu_item",
-        "combos__items__selected_options",
-    )
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
@@ -28,6 +25,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated(), IsManager()]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CategoryListSerializer
+        return CategorySerializer
     
     @action(
         detail=True,
@@ -63,6 +65,11 @@ class MenuItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(category_id=category_id)
         return queryset
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MenuItemListSerializer
+        return MenuItemSerializer
+
     def get_permissions(self):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
@@ -94,11 +101,15 @@ class ComboViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "description"]
 
     def get_queryset(self):
-        queryset = Combo.objects.select_related("category").prefetch_related(
-            'items__menu_item__category',
-            'items__menu_item__option_groups__options',
-            'items__selected_options'
-        )
+        queryset = Combo.objects.select_related("category")
+        
+        if self.action == 'retrieve':
+             queryset = queryset.prefetch_related(
+                'items__menu_item__category',
+                'items__menu_item__option_groups__options',
+                'items__selected_options'
+            )
+        # List view doesn't need items anymore as we have cached fields
         
         if self.action in ['list', 'retrieve']:
             available = self.request.query_params.get('available')

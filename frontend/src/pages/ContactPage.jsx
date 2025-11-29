@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import logo from "../assets/images/logo.png";
 import hotline from "../assets/images/hotline.png";
 import locationImg from "../assets/images/location.jpg";
-import { FeedbackAPI, ContentAPI } from "../lib/api";
+import { FeedbackAPI } from "../lib/api";
+import { ContentAPI } from "../lib/contentApi";
 
 export default function ContactPage() {
   const [storeLocations, setStoreLocations] = useState([]);
