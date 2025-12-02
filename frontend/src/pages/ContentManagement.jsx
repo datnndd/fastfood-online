@@ -3,18 +3,18 @@ import { useState, useEffect, useCallback } from 'react'
 import { ContentAPI } from '../lib/contentApi'
 
 const PAGE_CHOICES = [
-    { value: 'home', label: 'Home Page', supports: 'content' },
-    { value: 'about', label: 'About Page', supports: 'content' },
-    { value: 'promotions', label: 'Promotions Page', supports: 'content' },
-    { value: 'contact', label: 'Contact Page', supports: 'stores' },
-    { value: 'global', label: 'Global Settings', supports: 'content' }
+    { value: 'home', label: 'Trang Chủ', supports: 'content', icon: '🏠', color: 'text-orange-600', bg: 'bg-orange-50' },
+    { value: 'about', label: 'Giới Thiệu', supports: 'content', icon: '📖', color: 'text-amber-600', bg: 'bg-amber-50' },
+    { value: 'promotions', label: 'Khuyến Mãi', supports: 'content', icon: '🎉', color: 'text-red-600', bg: 'bg-red-50' },
+    { value: 'contact', label: 'Liên Hệ', supports: 'stores', icon: '📍', color: 'text-green-600', bg: 'bg-green-50' },
+    { value: 'global', label: 'Cấu Hình Chung', supports: 'content', icon: '⚙️', color: 'text-stone-600', bg: 'bg-stone-100' }
 ]
 
 const CONTENT_TYPE_CHOICES = [
-    { value: 'card', label: 'Feature Card' },
+    { value: 'card', label: 'Thẻ Tính Năng' },
     { value: 'slide', label: 'Banner / Slide' },
-    { value: 'text_block', label: 'Text Block' },
-    { value: 'story', label: 'Story Moment' },
+    { value: 'text_block', label: 'Đoạn Văn Bản' },
+    { value: 'story', label: 'Câu Chuyện' },
 ]
 
 export default function ContentManagement() {
@@ -49,16 +49,14 @@ export default function ContentManagement() {
         try {
             if (isStoreMode) {
                 const data = await ContentAPI.getStores()
-                // Handle paginated response
                 setStores(Array.isArray(data) ? data : data.results || [])
             } else {
                 const data = await ContentAPI.getContentItems(selectedPage)
-                // Handle paginated response
                 setContentItems(Array.isArray(data) ? data : data.results || [])
             }
         } catch (error) {
             console.error('Error loading data:', error)
-            alert('Failed to load data')
+            alert('Không thể tải dữ liệu')
         } finally {
             setLoading(false)
         }
@@ -80,21 +78,14 @@ export default function ContentManagement() {
                 is_active: true
             })
         } else {
-            // Find the page ID for the selected page slug
             const pageObj = pages.find(p => p.slug === selectedPage)
-
-            // Set default type based on page
-            let defaultType = 'card'; // Default for home page
-            if (selectedPage === 'about') {
-                defaultType = 'story';
-            } else if (selectedPage === 'promotions') {
-                defaultType = 'slide';
-            } else if (selectedPage === 'global') {
-                defaultType = 'logo';
-            }
+            let defaultType = 'card';
+            if (selectedPage === 'about') defaultType = 'story';
+            else if (selectedPage === 'promotions') defaultType = 'slide';
+            else if (selectedPage === 'global') defaultType = 'logo';
 
             setEditingItem({
-                page: pageObj?.id || null, // Use page ID, not slug
+                page: pageObj?.id || null,
                 type: defaultType,
                 title: defaultType === 'logo' ? 'Site Logo' : '',
                 description: '',
@@ -115,7 +106,7 @@ export default function ContentManagement() {
     }
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this item?')) return
+        if (!confirm('Bạn có chắc chắn muốn xóa mục này?')) return
 
         try {
             if (isStoreMode) {
@@ -126,27 +117,23 @@ export default function ContentManagement() {
             loadData()
         } catch (error) {
             console.error('Error deleting:', error)
-            alert('Failed to delete item')
+            alert('Xóa thất bại')
         }
     }
 
     const handleSave = async () => {
         const buildContentPayload = () => {
             const payload = { ...editingItem }
-
-            // Remove read-only fields that come from the listing API
             delete payload.page_name
             delete payload.page_slug
             delete payload.created_at
             delete payload.updated_at
 
-            // Ensure we have a page id even if the initial lookup failed
             if (!payload.page) {
                 const pageObj = pages.find(p => p.slug === selectedPage)
                 if (pageObj?.id) payload.page = pageObj.id
             }
 
-            // Normalize optional fields
             payload.metadata = payload.metadata || {}
             if (payload.order === undefined || payload.order === null || Number.isNaN(payload.order)) {
                 payload.order = 0
@@ -155,7 +142,6 @@ export default function ContentManagement() {
                 payload.is_active = true
             }
 
-            // Logos require a non-empty title; provide sensible defaults
             if (payload.type === 'logo') {
                 payload.title = (payload.title || '').trim() || 'Site Logo'
                 payload.description = payload.description || ''
@@ -186,7 +172,7 @@ export default function ContentManagement() {
             loadData()
         } catch (error) {
             console.error('Error saving:', error)
-            alert('Failed to save item')
+            alert('Lưu thất bại')
         }
     }
 
@@ -200,7 +186,7 @@ export default function ContentManagement() {
             setEditingItem({ ...editingItem, image_url: result.url })
         } catch (error) {
             console.error('Error uploading image:', error)
-            alert('Failed to upload image')
+            alert('Tải ảnh thất bại')
         } finally {
             setUploadingImage(false)
         }
@@ -209,571 +195,318 @@ export default function ContentManagement() {
     const items = isStoreMode ? stores : contentItems
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
-                    <p className="mt-2 text-gray-600">Manage dynamic content for your pages</p>
+        <div className="min-h-screen bg-stone-50 font-sans flex">
+            {/* Sidebar */}
+            <aside className="w-64 bg-white border-r border-stone-200 hidden md:flex flex-col fixed h-full z-10">
+                <div className="p-6 border-b border-stone-100">
+                    <h1 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+                        <span className="text-2xl">📝</span> Quản Lý Nội Dung
+                    </h1>
                 </div>
-
-                {/* Page Selector */}
-                <div className="mb-6 flex gap-2">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                     {PAGE_CHOICES.map((page) => (
                         <button
                             key={page.value}
                             onClick={() => setSelectedPage(page.value)}
-                            className={`rounded - lg px - 4 py - 2 font - semibold transition ${selectedPage === page.value
-                                ? 'bg-rose-600 text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-100'
-                                } `}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-left ${selectedPage === page.value
+                                    ? `${page.bg} ${page.color} shadow-sm ring-1 ring-inset ring-black/5`
+                                    : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                                }`}
                         >
+                            <span className="text-xl">{page.icon}</span>
                             {page.label}
                         </button>
                     ))}
-                </div>
+                </nav>
+            </aside>
 
-                {/* Add Button */}
-                <div className="mb-6">
-                    <button
-                        onClick={handleCreate}
-                        className="rounded-lg bg-rose-600 px-6 py-3 font-semibold text-white transition hover:bg-rose-700"
-                    >
-                        + Add {isStoreMode ? 'Store' : 'Content Item'}
-                    </button>
-                </div>
-
-                {/* Items List */}
-                {loading ? (
-                    <div className="text-center text-gray-600">Loading...</div>
-                ) : isStoreMode ? (
-                    // Store List (No grouping needed)
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {items.map((item) => (
-                            <div key={item.id} className="rounded-lg bg-white p-6 shadow">
-                                <h3 className="text-lg font-semibold">{item.name}</h3>
-                                <p className="mt-2 text-sm text-gray-600 line-clamp-3">{item.address}</p>
-                                <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                                    <span>Order: {item.order}</span>
-                                    <span className={item.is_active ? 'text-green-600' : 'text-red-600'}>
-                                        {item.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
-                                <div className="mt-4 flex gap-2">
-                                    <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
-                                    <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    // Content Items Grouped by Type
-                    <div className="space-y-12">
-                        {selectedPage === 'home' && (
-                            <>
-                                {/* Text Blocks Section */}
-                                <section>
-                                    <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Text Blocks (Editable Text)</h2>
-                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                        {items.filter(i => i.type === 'text_block').map((item) => (
-                                            <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-gray-500">
-                                                <h3 className="text-lg font-semibold font-mono text-gray-700">{item.title}</h3>
-                                                <p className="mt-2 text-sm text-gray-600 line-clamp-3 italic">
-                                                    {item.metadata?.text || '(No text content)'}
-                                                </p>
-                                                <div className="mt-4">
-                                                    <button onClick={() => handleEdit(item)} className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit Text</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                {/* Banners Section */}
-                                <section>
-                                    <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Banners & Slides</h2>
-                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                        {items.filter(i => i.type === 'slide' || i.type === 'banner')
-                                            .sort((a, b) => {
-                                                // Hero banner first
-                                                if (a.metadata?.section === 'hero_banner') return -1;
-                                                if (b.metadata?.section === 'hero_banner') return 1;
-                                                return a.order - b.order;
-                                            })
-                                            .map((item) => (
-                                                <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-rose-500">
-                                                    {item.image_url && (
-                                                        <img src={item.image_url} alt={item.title} className="mb-4 h-32 w-full rounded object-cover bg-gray-100" />
-                                                    )}
-                                                    <div className="flex items-start justify-between">
-                                                        <h3 className="text-lg font-semibold">{item.title}</h3>
-                                                        {item.metadata?.section && (
-                                                            <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase text-gray-600 border border-gray-200">
-                                                                {item.metadata.section.replace('_', ' ')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    {item.eyebrow && <span className="mt-1 inline-block rounded bg-rose-100 px-2 py-1 text-xs text-rose-600">{item.eyebrow}</span>}
-                                                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
-                                                    <div className="mt-4 flex gap-2">
-                                                        <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
-                                                        {item.metadata?.section !== 'hero_banner' && (
-                                                            <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </section>
-
-                                {/* Feature Cards Section */}
-                                <section>
-                                    <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Feature Cards</h2>
-                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                                        {items.filter(i => i.type === 'card' || i.type === 'feature')
-                                            .sort((a, b) => {
-                                                // Highlight stats first
-                                                const aIsStat = a.metadata?.section === 'highlight_stats';
-                                                const bIsStat = b.metadata?.section === 'highlight_stats';
-                                                if (aIsStat && !bIsStat) return -1;
-                                                if (!aIsStat && bIsStat) return 1;
-                                                return a.order - b.order;
-                                            })
-                                            .map((item) => (
-                                                <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-indigo-500">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="text-2xl">{item.metadata?.icon || '📄'}</div>
-                                                        {item.metadata?.section && (
-                                                            <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase text-gray-600 border border-gray-200">
-                                                                {item.metadata.section.replace('_', ' ')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <h3 className="text-lg font-bold">{item.title}</h3>
-                                                    {item.eyebrow && <p className="text-xs font-bold uppercase text-indigo-600">{item.eyebrow}</p>}
-                                                    <p className="mt-2 text-sm text-gray-600">{item.description}</p>
-                                                    <div className="mt-4 flex gap-2">
-                                                        <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-2 py-1 text-sm text-white hover:bg-blue-700">Edit</button>
-                                                        {item.metadata?.section !== 'highlight_stats' && (
-                                                            <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-2 py-1 text-sm text-white hover:bg-red-700">Delete</button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </section>
-                            </>
-                        )}
-
-                        {selectedPage === 'about' && (
-                            /* Story Moments Section */
-                            <section>
-                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Story Moments (About Page)</h2>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {items.filter(i => i.type === 'story')
-                                        .sort((a, b) => a.order - b.order)
-                                        .map((item) => (
-                                            <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-amber-500">
-                                                {item.image_url && (
-                                                    <img src={item.image_url} alt={item.title} className="mb-4 h-32 w-full rounded object-cover bg-gray-100" />
-                                                )}
-                                                <h3 className="text-lg font-semibold">{item.title}</h3>
-                                                {item.eyebrow && <span className="mt-1 inline-block rounded bg-amber-100 px-2 py-1 text-xs text-amber-800">{item.eyebrow}</span>}
-                                                <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
-                                                {item.metadata?.stat && (
-                                                    <p className="mt-2 text-xs font-bold text-gray-500">Stat: {item.metadata.stat}</p>
-                                                )}
-                                                <div className="mt-4 flex gap-2">
-                                                    <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
-                                                    <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {selectedPage === 'promotions' && (
-                            /* Promotion Billboards Section */
-                            <section>
-                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">In-Store Billboards (Promotions Page)</h2>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {items.filter(i => i.type === 'slide' || i.type === 'banner')
-                                        .sort((a, b) => a.order - b.order)
-                                        .map((item) => (
-                                            <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-purple-500">
-                                                {item.image_url && (
-                                                    <img src={item.image_url} alt={item.title} className="mb-4 h-32 w-full rounded object-cover bg-gray-100" />
-                                                )}
-                                                <h3 className="text-lg font-semibold">{item.title}</h3>
-                                                {item.eyebrow && <span className="mt-1 inline-block rounded bg-purple-100 px-2 py-1 text-xs text-purple-800">{item.eyebrow}</span>}
-                                                <p className="mt-2 text-sm text-gray-600 line-clamp-2">{item.description}</p>
-                                                {item.metadata?.note && (
-                                                    <p className="mt-2 text-xs font-bold text-yellow-600">Note: {item.metadata.note}</p>
-                                                )}
-                                                <div className="mt-4 flex gap-2">
-                                                    <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
-                                                    <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                </div>
-                            </section>
-                        )}
-                        {selectedPage === 'global' && (
-                            /* Global Settings Section */
-                            <section>
-                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Global Settings - Logos</h2>
-                                <p className="mb-4 text-sm text-gray-600">Upload multiple logos and select which one to display on your website.</p>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {items.filter(i => i.type === 'logo').map((item) => {
-                                        const isSelected = item.metadata?.selected === true
-                                        return (
-                                            <div key={item.id} className={`rounded-lg bg-white p-6 shadow border-l-4 ${isSelected ? 'border-green-500 ring-2 ring-green-200' : 'border-blue-500'}`}>
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <h3 className="text-lg font-semibold">{item.title || 'Logo'}</h3>
-                                                    {isSelected && (
-                                                        <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                                            ✓ ACTIVE
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {item.image_url ? (
-                                                    <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center p-4">
-                                                        <img
-                                                            src={item.image_url}
-                                                            alt="Logo Preview"
-                                                            className="max-h-full max-w-full object-contain"
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                                                        No Logo
-                                                    </div>
-                                                )}
-                                                <p className="text-sm text-gray-600 mb-4">
-                                                    {isSelected
-                                                        ? 'This logo is currently displayed on the website.'
-                                                        : 'Click "Set as Active" to display this logo on the website.'}
-                                                </p>
-                                                <div className="flex gap-2 flex-col">
-                                                    {!isSelected && (
-                                                        <button
-                                                            onClick={async () => {
-                                                                try {
-                                                                    // Unselect all other logos first
-                                                                    const allLogos = items.filter(i => i.type === 'logo')
-                                                                    for (const logo of allLogos) {
-                                                                        if (logo.metadata?.selected) {
-                                                                            await ContentAPI.updateContentItem(logo.id, {
-                                                                                ...logo,
-                                                                                metadata: { ...logo.metadata, selected: false }
-                                                                            })
-                                                                        }
-                                                                    }
-                                                                    // Select this logo
-                                                                    await ContentAPI.updateContentItem(item.id, {
-                                                                        ...item,
-                                                                        metadata: { ...item.metadata, selected: true }
-                                                                    })
-                                                                    // Trigger logo update event
-                                                                    window.dispatchEvent(new Event('logoUpdated'))
-                                                                    loadData()
-                                                                } catch (error) {
-                                                                    console.error('Error setting active logo:', error)
-                                                                    alert('Failed to set active logo')
-                                                                }
-                                                            }}
-                                                            className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 font-semibold"
-                                                        >
-                                                            Set as Active
-                                                        </button>
-                                                    )}
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
-                                                        <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                    {items.filter(i => i.type === 'logo').length === 0 && (
-                                        <div className="rounded-lg bg-gray-50 p-8 text-center border-2 border-dashed border-gray-300">
-                                            <p className="text-gray-500 mb-4">No logo has been set yet.</p>
-                                            <button
-                                                onClick={handleCreate}
-                                                className="rounded bg-rose-600 px-4 py-2 text-white hover:bg-rose-700"
-                                            >
-                                                Upload Logo
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-                        )}
-                    </div>
-                )}
-
-                {/* Edit/Create Form Modal */}
-                {showForm && editingItem && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6">
-                            <h2 className="text-2xl font-bold">
-                                {editingItem.id ? 'Edit' : 'Create'} {isStoreMode ? 'Store' : 'Content Item'}
-                            </h2>
-
-                            <div className="mt-6 space-y-4">
-                                {isStoreMode ? (
-                                    // Store Form
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Name</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.name}
-                                                onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                                placeholder="e.g., Hoàn Kiếm, Hà Nội"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Address</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.address}
-                                                onChange={(e) => setEditingItem({ ...editingItem, address: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Hours</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.hours}
-                                                onChange={(e) => setEditingItem({ ...editingItem, hours: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                                placeholder="e.g., 8:00 - 22:00"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Hotline</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.hotline}
-                                                onChange={(e) => setEditingItem({ ...editingItem, hotline: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Map Query</label>
-                                            <input
-                                                type="text"
-                                                value={editingItem.map_query}
-                                                onChange={(e) => setEditingItem({ ...editingItem, map_query: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                                placeholder="Address for Google Maps"
-                                            />
-                                        </div>
-                                    </>
-                                ) : (
-                                    // Content Item Form
-                                    <>
-                                        {/* Only show Type selector if NOT a logo, or if it IS a logo but we want to allow changing it (though usually logo is fixed type) */}
-                                        {/* Actually, for 'global' page, we might only have 'logo'. Let's check selectedPage */}
-                                        {selectedPage !== 'global' && (
-                                            <div>
-                                                <label className="block text-sm font-semibold">Type</label>
-                                                <select
-                                                    value={editingItem.type}
-                                                    onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })}
-                                                    className="mt-1 w-full rounded border px-4 py-2"
-                                                    disabled={!editingItem.id || (editingItem.id && editingItem.type === 'text_block')}
-                                                >
-                                                    {CONTENT_TYPE_CHOICES.filter(t =>
-                                                        t.value !== 'text_block' || (editingItem.id && editingItem.type === 'text_block')
-                                                    ).map(type => (
-                                                        <option key={type.value} value={type.value}>{type.label}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {editingItem.type === 'logo' ? (
-                                            // Simplified form for Logo
-                                            <div className="mt-4">
-                                                <label className="block text-sm font-semibold">Logo Image</label>
-                                                <p className="text-xs text-gray-500 mb-2">Upload your logo here. It will be automatically cropped to a circle.</p>
-                                                {editingItem.image_url && (
-                                                    <div className="mt-2 mb-4 h-40 w-40 rounded-full overflow-hidden border-2 border-gray-200 mx-auto">
-                                                        <img src={editingItem.image_url} alt="Preview" className="h-full w-full object-cover" />
-                                                    </div>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageUpload}
-                                                    disabled={uploadingImage}
-                                                    className="mt-2 w-full"
-                                                />
-                                                {uploadingImage && <p className="text-sm text-gray-600">Uploading...</p>}
-                                            </div>
-                                        ) : editingItem.type === 'text_block' ? (
-                                            // Simplified form for text blocks
-                                            <>
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Identifier</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editingItem.title}
-                                                        onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                                                        className="mt-1 w-full rounded border px-4 py-2 bg-gray-100"
-                                                        placeholder="e.g., hero_title"
-                                                        disabled={editingItem.id} // Can't change identifier of existing text blocks
-                                                    />
-                                                    <p className="mt-1 text-xs text-gray-500">Unique identifier for this text block</p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Text Content</label>
-                                                    <textarea
-                                                        value={editingItem.metadata?.text || ''}
-                                                        onChange={(e) => setEditingItem({
-                                                            ...editingItem,
-                                                            metadata: { ...editingItem.metadata, text: e.target.value }
-                                                        })}
-                                                        className="mt-1 w-full rounded border px-4 py-2"
-                                                        rows={4}
-                                                        placeholder="Enter the text content..."
-                                                    />
-                                                </div>
-                                            </>
-                                        ) : (
-                                            // Full form for cards and slides
-                                            <>
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Title</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editingItem.title}
-                                                        onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                                                        className="mt-1 w-full rounded border px-4 py-2"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Description</label>
-                                                    <textarea
-                                                        value={editingItem.description}
-                                                        onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                                                        className="mt-1 w-full rounded border px-4 py-2"
-                                                        rows={4}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Eyebrow/Tag</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editingItem.eyebrow || ''}
-                                                        onChange={(e) => setEditingItem({ ...editingItem, eyebrow: e.target.value })}
-                                                        className="mt-1 w-full rounded border px-4 py-2"
-                                                        placeholder="Small tag above title"
-                                                    />
-                                                </div>
-
-                                                {editingItem.type === 'story' && (
-                                                    <div>
-                                                        <label className="block text-sm font-semibold">Stat / Highlight</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editingItem.metadata?.stat || ''}
-                                                            onChange={(e) => setEditingItem({
-                                                                ...editingItem,
-                                                                metadata: { ...editingItem.metadata, stat: e.target.value }
-                                                            })}
-                                                            className="mt-1 w-full rounded border px-4 py-2"
-                                                            placeholder="e.g., 120 phần bán hết sau 02 giờ"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {(editingItem.type === 'slide' || editingItem.type === 'banner') && (
-                                                    <div>
-                                                        <label className="block text-sm font-semibold">Note / Additional Info</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editingItem.metadata?.note || ''}
-                                                            onChange={(e) => setEditingItem({
-                                                                ...editingItem,
-                                                                metadata: { ...editingItem.metadata, note: e.target.value }
-                                                            })}
-                                                            className="mt-1 w-full rounded border px-4 py-2"
-                                                            placeholder="e.g., Chỉ áp dụng khi thanh toán trực tiếp"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                <div>
-                                                    <label className="block text-sm font-semibold">Image</label>
-                                                    {editingItem.image_url && (
-                                                        <img src={editingItem.image_url} alt="Preview" className="mt-2 h-40 rounded object-cover" />
-                                                    )}
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={handleImageUpload}
-                                                        disabled={uploadingImage}
-                                                        className="mt-2 w-full"
-                                                    />
-                                                    {uploadingImage && <p className="text-sm text-gray-600">Uploading...</p>}
-                                                </div>
-                                            </>
-                                        )}
-                                    </>
-                                )}
-
-                                {editingItem.type !== 'logo' && (
-                                    <>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Order</label>
-                                            <input
-                                                type="number"
-                                                value={editingItem.order}
-                                                onChange={(e) => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={editingItem.is_active}
-                                                onChange={(e) => setEditingItem({ ...editingItem, is_active: e.target.checked })}
-                                                className="mr-2"
-                                            />
-                                            <label className="text-sm font-semibold">Active</label>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="mt-6 flex gap-4">
+            {/* Main Content */}
+            <main className="flex-1 md:ml-64 min-h-screen">
+                <div className="max-w-7xl mx-auto p-6 lg:p-8">
+                    {/* Mobile Header */}
+                    <div className="md:hidden mb-6">
+                        <h1 className="text-2xl font-bold text-stone-800 mb-4">Quản Lý Nội Dung</h1>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                            {PAGE_CHOICES.map((page) => (
                                 <button
-                                    onClick={handleSave}
-                                    className="flex-1 rounded bg-rose-600 px-6 py-3 font-semibold text-white transition hover:bg-rose-700"
+                                    key={page.value}
+                                    onClick={() => setSelectedPage(page.value)}
+                                    className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${selectedPage === page.value
+                                            ? 'bg-orange-600 text-white shadow-md'
+                                            : 'bg-white text-stone-600 border border-stone-200'
+                                        }`}
                                 >
-                                    Save
+                                    {page.label}
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        setShowForm(false)
-                                        setEditingItem(null)
-                                    }}
-                                    className="flex-1 rounded bg-gray-300 px-6 py-3 font-semibold transition hover:bg-gray-400"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                            ))}
                         </div>
                     </div>
-                )}
-            </div>
-        </div >
+
+                    {/* Page Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h2 className="text-2xl font-bold text-stone-800">{currentPageConfig?.label}</h2>
+                            <p className="text-stone-500 mt-1">Quản lý nội dung hiển thị cho trang này</p>
+                        </div>
+                        <button
+                            onClick={handleCreate}
+                            className="inline-flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm transition-all hover:shadow-md active:scale-95"
+                        >
+                            <span>➕</span> Thêm Mới
+                        </button>
+                    </div>
+
+                    {/* Content List */}
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-64 bg-stone-200 rounded-2xl animate-pulse"></div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-10">
+                            {isStoreMode ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {items.map((item) => (
+                                        <div key={item.id} className="bg-white rounded-2xl border border-stone-200 shadow-sm hover:shadow-md transition-all p-5 group">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <h3 className="font-bold text-lg text-stone-800 group-hover:text-orange-700 transition-colors">{item.name}</h3>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-stone-100 text-stone-500'}`}>
+                                                    {item.is_active ? 'Hiện' : 'Ẩn'}
+                                                </span>
+                                            </div>
+                                            <p className="text-stone-600 text-sm mb-2 line-clamp-2">📍 {item.address}</p>
+                                            <p className="text-stone-500 text-xs mb-4">📞 {item.hotline}</p>
+                                            <div className="flex gap-2 pt-4 border-t border-stone-100">
+                                                <button onClick={() => handleEdit(item)} className="flex-1 py-1.5 text-sm font-medium text-stone-600 hover:bg-stone-50 rounded-lg transition-colors">Sửa</button>
+                                                <button onClick={() => handleDelete(item.id)} className="flex-1 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">Xóa</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Group by Type or Section if needed, for now flat list or simple grouping */}
+                                    {items.length === 0 && (
+                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300">
+                                            <p className="text-stone-500">Chưa có nội dung nào. Hãy thêm mới!</p>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {items.map((item) => {
+                                            const isLogo = item.type === 'logo'
+                                            const isSelected = item.metadata?.selected === true
+
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col ${isSelected ? 'border-green-500 ring-1 ring-green-500' : 'border-stone-200'
+                                                        }`}
+                                                >
+                                                    {/* Image Preview */}
+                                                    {(item.image_url || isLogo) && (
+                                                        <div className="h-48 bg-stone-100 relative group-hover:opacity-95 transition-opacity">
+                                                            {item.image_url ? (
+                                                                <img
+                                                                    src={item.image_url}
+                                                                    alt={item.title}
+                                                                    className={`w-full h-full ${isLogo ? 'object-contain p-8' : 'object-cover'}`}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-stone-400 text-sm">Không có ảnh</div>
+                                                            )}
+                                                            {item.eyebrow && (
+                                                                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold text-stone-700 shadow-sm">
+                                                                    {item.eyebrow}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="p-5 flex-1 flex flex-col">
+                                                        <div className="flex justify-between items-start gap-2 mb-2">
+                                                            <h3 className="font-bold text-stone-800 line-clamp-1" title={item.title}>
+                                                                {item.title || '(Không tiêu đề)'}
+                                                            </h3>
+                                                            {item.metadata?.section && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 text-[10px] uppercase font-bold tracking-wider whitespace-nowrap">
+                                                                    {item.metadata.section.replace('_', ' ')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <p className="text-stone-600 text-sm line-clamp-3 mb-4 flex-1">
+                                                            {item.description || item.metadata?.text || '(Không có mô tả)'}
+                                                        </p>
+
+                                                        {isLogo && (
+                                                            <div className="mb-4">
+                                                                {isSelected ? (
+                                                                    <div className="w-full py-2 bg-green-50 text-green-700 text-center text-sm font-medium rounded-lg border border-green-100">
+                                                                        ✓ Đang hiển thị
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                const allLogos = items.filter(i => i.type === 'logo')
+                                                                                for (const logo of allLogos) {
+                                                                                    if (logo.metadata?.selected) {
+                                                                                        await ContentAPI.updateContentItem(logo.id, { ...logo, metadata: { ...logo.metadata, selected: false } })
+                                                                                    }
+                                                                                }
+                                                                                await ContentAPI.updateContentItem(item.id, { ...item, metadata: { ...item.metadata, selected: true } })
+                                                                                window.dispatchEvent(new Event('logoUpdated'))
+                                                                                loadData()
+                                                                            } catch (err) {
+                                                                                alert('Lỗi cập nhật logo')
+                                                                            }
+                                                                        }}
+                                                                        className="w-full py-2 bg-stone-800 text-white text-sm font-medium rounded-lg hover:bg-stone-900 transition-colors"
+                                                                    >
+                                                                        Chọn làm Logo chính
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex gap-2 pt-4 border-t border-stone-100 mt-auto">
+                                                            <button onClick={() => handleEdit(item)} className="flex-1 py-2 text-sm font-medium text-stone-600 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors">Chỉnh sửa</button>
+                                                            <button onClick={() => handleDelete(item.id)} className="flex-1 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Xóa</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {/* Modal Form */}
+            {showForm && editingItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                            <h2 className="text-xl font-bold text-stone-800">
+                                {editingItem.id ? 'Chỉnh Sửa' : 'Thêm Mới'} {isStoreMode ? 'Cửa Hàng' : 'Nội Dung'}
+                            </h2>
+                            <button onClick={() => setShowForm(false)} className="text-stone-400 hover:text-stone-600 text-2xl leading-none">&times;</button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+                            {isStoreMode ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2">
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Tên Cửa Hàng</label>
+                                            <input type="text" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="VD: FastFood Hoàn Kiếm" />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Địa Chỉ</label>
+                                            <input type="text" value={editingItem.address} onChange={e => setEditingItem({ ...editingItem, address: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Giờ Mở Cửa</label>
+                                            <input type="text" value={editingItem.hours} onChange={e => setEditingItem({ ...editingItem, hours: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="8:00 - 22:00" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Hotline</label>
+                                            <input type="text" value={editingItem.hotline} onChange={e => setEditingItem({ ...editingItem, hotline: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {selectedPage !== 'global' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Loại Nội Dung</label>
+                                            <select
+                                                value={editingItem.type}
+                                                onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}
+                                                disabled={editingItem.id && editingItem.type === 'text_block'}
+                                                className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
+                                            >
+                                                {CONTENT_TYPE_CHOICES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {editingItem.type === 'logo' ? (
+                                        <div className="text-center p-6 border-2 border-dashed border-stone-200 rounded-xl bg-stone-50">
+                                            {editingItem.image_url ? (
+                                                <img src={editingItem.image_url} alt="Preview" className="h-32 mx-auto object-contain mb-4" />
+                                            ) : (
+                                                <div className="h-32 w-32 mx-auto bg-stone-200 rounded-full flex items-center justify-center text-stone-400 mb-4">Logo</div>
+                                            )}
+                                            <label className="cursor-pointer inline-block bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-medium py-2 px-4 rounded-lg transition-colors">
+                                                <span>{uploadingImage ? 'Đang tải...' : 'Chọn ảnh logo'}</span>
+                                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
+                                            </label>
+                                            <p className="text-xs text-stone-500 mt-2">Ảnh sẽ được tự động cắt tròn</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-stone-700 mb-1">Tiêu Đề / Identifier</label>
+                                                <input type="text" value={editingItem.title} onChange={e => setEditingItem({ ...editingItem, title: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                            </div>
+
+                                            {editingItem.type === 'text_block' ? (
+                                                <div>
+                                                    <label className="block text-sm font-medium text-stone-700 mb-1">Nội Dung Văn Bản</label>
+                                                    <textarea
+                                                        value={editingItem.metadata?.text || ''}
+                                                        onChange={e => setEditingItem({ ...editingItem, metadata: { ...editingItem.metadata, text: e.target.value } })}
+                                                        rows={6}
+                                                        className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-stone-700 mb-1">Mô Tả</label>
+                                                        <textarea value={editingItem.description} onChange={e => setEditingItem({ ...editingItem, description: e.target.value })} rows={3} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-stone-700 mb-1">Tag (Eyebrow)</label>
+                                                            <input type="text" value={editingItem.eyebrow || ''} onChange={e => setEditingItem({ ...editingItem, eyebrow: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-stone-700 mb-1">Thứ Tự</label>
+                                                            <input type="number" value={editingItem.order} onChange={e => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-stone-700 mb-1">Hình Ảnh</label>
+                                                        <div className="flex items-center gap-4">
+                                                            {editingItem.image_url && <img src={editingItem.image_url} alt="Preview" className="h-16 w-16 object-cover rounded-lg border border-stone-200" />}
+                                                            <label className="cursor-pointer bg-stone-100 hover:bg-stone-200 text-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                                                {uploadingImage ? 'Đang tải...' : 'Tải ảnh lên'}
+                                                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-stone-100 bg-stone-50 flex gap-3">
+                            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 text-stone-600 font-medium hover:bg-stone-200 rounded-xl transition-colors">Hủy Bỏ</button>
+                            <button onClick={handleSave} className="flex-1 py-2.5 bg-orange-600 text-white font-bold hover:bg-orange-700 rounded-xl shadow-sm transition-all">Lưu Thay Đổi</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     )
 }

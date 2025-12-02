@@ -284,3 +284,174 @@ def export_report(request, format='pdf'):
     response['Content-Disposition'] = f'attachment; filename="report-{from_date}-{to_date}.txt"'
     
     return response
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def revenue_chart_statistics(request):
+    """Thống kê doanh thu cho biểu đồ"""
+    if request.user.role not in ['manager', 'staff']:
+        return Response(
+            {'detail': 'Bạn không có quyền truy cập'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    timeframe = request.GET.get('timeframe', 'month')
+    
+    # Determine date range based on timeframe and filter value
+    today = timezone.now().date()
+    
+    if timeframe == 'day':
+        date_str = request.GET.get('date')
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else today
+        except ValueError:
+            target_date = today
+            
+        start_date = target_date
+        end_date = target_date
+        
+        # Query for hourly data
+        orders = Order.objects.filter(
+            created_at__date=target_date
+        ).annotate(
+            hour=F('created_at__hour')
+        ).values('hour').annotate(
+            revenue=Sum('total_amount')
+        ).order_by('hour')
+        
+        # Format data for 24 hours
+        data = {h: 0 for h in range(24)}
+        for item in orders:
+            data[item['hour']] = item['revenue']
+            
+        labels = [f"{h:02d}h" for h in range(24)]
+        values = [data[h] for h in range(24)]
+        
+    elif timeframe == 'month':
+        month_str = request.GET.get('month') # Format: YYYY-MM
+        try:
+            if month_str:
+                year, month = map(int, month_str.split('-'))
+                start_date = datetime(year, month, 1).date()
+            else:
+                start_date = today.replace(day=1)
+        except ValueError:
+            start_date = today.replace(day=1)
+            
+        # Calculate end date (last day of month)
+        if start_date.month == 12:
+            end_date = datetime(start_date.year + 1, 1, 1).date() - timedelta(days=1)
+        else:
+            end_date = datetime(start_date.year, start_date.month + 1, 1).date() - timedelta(days=1)
+            
+        # Query for daily data
+        orders = Order.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        ).annotate(
+            day=F('created_at__day')
+        ).values('day').annotate(
+            revenue=Sum('total_amount')
+        ).order_by('day')
+        
+        # Format data for all days in month
+        days_in_month = (end_date - start_date).days + 1
+        data = {d: 0 for d in range(1, days_in_month + 1)}
+        for item in orders:
+            data[item['day']] = item['revenue']
+            
+        labels = [f"{d}/{start_date.month}" for d in range(1, days_in_month + 1)]
+        values = [data[d] for d in range(1, days_in_month + 1)]
+        
+    else: # year
+        year_str = request.GET.get('year')
+        try:
+            year = int(year_str) if year_str else today.year
+        except ValueError:
+            year = today.year
+            
+        start_date = datetime(year, 1, 1).date()
+        end_date = datetime(year, 12, 31).date()
+        
+        # Query for monthly data
+        orders = Order.objects.filter(
+            created_at__year=year
+        ).annotate(
+            month=F('created_at__month')
+        ).values('month').annotate(
+            revenue=Sum('total_amount')
+        ).order_by('month')
+        
+        # Format data for 12 months
+        data = {m: 0 for m in range(1, 13)}
+        for item in orders:
+            data[item['month']] = item['revenue']
+            
+        labels = [f"T{m}" for m in range(1, 13)]
+        values = [data[m] for m in range(1, 13)]
+
+    return Response({
+        'labels': labels,
+        'values': values,
+        'timeframe': timeframe,
+        'start_date': start_date.isoformat(),
+        'end_date': end_date.isoformat()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def status_statistics(request):
+    """Thống kê trạng thái đơn hàng"""
+    if request.user.role not in ['manager', 'staff']:
+        return Response(
+            {'detail': 'Bạn không có quyền truy cập'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+        
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
+    
+    if not from_date or not to_date:
+        # Default to today if not provided
+        today = timezone.now().date()
+        from_date = today.isoformat()
+        to_date = today.isoformat()
+        
+    try:
+        from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+    except ValueError:
+        return Response(
+            {'detail': 'Định dạng ngày không hợp lệ'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
+    orders = Order.objects.filter(
+        created_at__date__gte=from_date_obj,
+        created_at__date__lte=to_date_obj
+    )
+    
+    stats = orders.values('status').annotate(count=Count('id'))
+    
+    result = {
+        'PREPARING': 0,
+        'READY': 0,
+        'DELIVERING': 0,
+        'COMPLETED': 0,
+        'CANCELLED': 0,
+        'total': 0
+    }
+    
+    total = 0
+    for item in stats:
+        status_key = item['status']
+        count = item['count']
+        if status_key in result:
+            result[status_key] = count
+            total += count
+            
+    result['total'] = total
+    
+    return Response(result)

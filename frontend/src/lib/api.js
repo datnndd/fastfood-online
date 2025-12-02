@@ -237,7 +237,9 @@ export const OrderAPI = {
       api.get(`/orders/stats/export/${format}/`, {
         params,
         responseType: 'blob'
-      })
+      }),
+    getRevenueChart: (params) => api.get('/orders/stats/chart/', { params }),
+    getStatusStats: (params) => api.get('/orders/stats/status/', { params })
   }
 }
 
