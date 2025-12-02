@@ -230,14 +230,6 @@ export default function MenuPage() {
     return false
   }
 
-  const unwrapList = (response) => {
-    const data = response?.data
-    if (!data) return []
-    if (Array.isArray(data)) return data
-    if (Array.isArray(data.results)) return data.results
-    return []
-  }
-
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const categoryFromURL = params.get('category')

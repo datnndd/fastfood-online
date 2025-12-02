@@ -225,3 +225,15 @@ class ClearCartView(generics.GenericAPIView):
         cart.items.all().delete()
         cart.combos.all().delete()
         return Response({'message': 'Cart đã được xóa'}, status=status.HTTP_204_NO_CONTENT)
+
+class CartCountView(generics.GenericAPIView):
+    """Lightweight endpoint to get cart item count without loading full cart data"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        item_count = cart.items.count()
+        combo_count = cart.combos.count()
+        total_count = item_count + combo_count
+        return Response({'count': total_count}, status=status.HTTP_200_OK)
+

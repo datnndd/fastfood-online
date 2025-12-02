@@ -34,10 +34,8 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ["id","menu_item","quantity","selected_options","menu_item_id","option_ids","note","item_total"]
 
     def get_item_total(self, obj):
-        price = obj.menu_item.price
-        for opt in obj.selected_options.all():
-            price += opt.price_delta
-        return str(price * obj.quantity)
+        # Use cached item_total field instead of recalculating
+        return str(obj.item_total)
 
     def validate(self, attrs):
         quantity = attrs.get("quantity")
@@ -93,7 +91,8 @@ class CartComboSerializer(serializers.ModelSerializer):
         fields = ["id", "combo", "combo_id", "quantity", "note", "combo_total", "added_at"]
     
     def get_combo_total(self, obj):
-        return str(obj.get_total_price())
+        # Use cached combo_total field instead of recalculating
+        return str(obj.combo_total)
 
     def validate(self, attrs):
         quantity = attrs.get("quantity")
@@ -150,13 +149,12 @@ class CartSerializer(serializers.ModelSerializer):
         from decimal import Decimal
         total = Decimal('0.00')
         
+        # Sum cached item_total values instead of recalculating
         for item in obj.items.all():
-            price = item.menu_item.price
-            for opt in item.selected_options.all():
-                price += opt.price_delta
-            total += price * item.quantity
+            total += item.item_total
         
+        # Sum cached combo_total values instead of recalculating
         for combo_item in obj.combos.all():
-            total += combo_item.get_total_price()
+            total += combo_item.combo_total
         
         return str(total)

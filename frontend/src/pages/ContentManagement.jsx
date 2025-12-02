@@ -422,34 +422,80 @@ export default function ContentManagement() {
                         {selectedPage === 'global' && (
                             /* Global Settings Section */
                             <section>
-                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Global Settings</h2>
+                                <h2 className="mb-4 text-xl font-bold text-gray-800 border-b pb-2">Global Settings - Logos</h2>
+                                <p className="mb-4 text-sm text-gray-600">Upload multiple logos and select which one to display on your website.</p>
                                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {items.filter(i => i.type === 'logo').map((item) => (
-                                        <div key={item.id} className="rounded-lg bg-white p-6 shadow border-l-4 border-blue-500">
-                                            <h3 className="text-lg font-semibold mb-2">Website Logo</h3>
-                                            {item.image_url ? (
-                                                <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center p-4">
-                                                    <img
-                                                        src={item.image_url}
-                                                        alt="Logo Preview"
-                                                        className="max-h-full max-w-full object-contain"
-                                                    />
+                                    {items.filter(i => i.type === 'logo').map((item) => {
+                                        const isSelected = item.metadata?.selected === true
+                                        return (
+                                            <div key={item.id} className={`rounded-lg bg-white p-6 shadow border-l-4 ${isSelected ? 'border-green-500 ring-2 ring-green-200' : 'border-blue-500'}`}>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h3 className="text-lg font-semibold">{item.title || 'Logo'}</h3>
+                                                    {isSelected && (
+                                                        <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                                            ✓ ACTIVE
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                                                    No Logo
+                                                {item.image_url ? (
+                                                    <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center p-4">
+                                                        <img
+                                                            src={item.image_url}
+                                                            alt="Logo Preview"
+                                                            className="max-h-full max-w-full object-contain"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="mb-4 h-32 w-full bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                                                        No Logo
+                                                    </div>
+                                                )}
+                                                <p className="text-sm text-gray-600 mb-4">
+                                                    {isSelected
+                                                        ? 'This logo is currently displayed on the website.'
+                                                        : 'Click "Set as Active" to display this logo on the website.'}
+                                                </p>
+                                                <div className="flex gap-2 flex-col">
+                                                    {!isSelected && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    // Unselect all other logos first
+                                                                    const allLogos = items.filter(i => i.type === 'logo')
+                                                                    for (const logo of allLogos) {
+                                                                        if (logo.metadata?.selected) {
+                                                                            await ContentAPI.updateContentItem(logo.id, {
+                                                                                ...logo,
+                                                                                metadata: { ...logo.metadata, selected: false }
+                                                                            })
+                                                                        }
+                                                                    }
+                                                                    // Select this logo
+                                                                    await ContentAPI.updateContentItem(item.id, {
+                                                                        ...item,
+                                                                        metadata: { ...item.metadata, selected: true }
+                                                                    })
+                                                                    // Trigger logo update event
+                                                                    window.dispatchEvent(new Event('logoUpdated'))
+                                                                    loadData()
+                                                                } catch (error) {
+                                                                    console.error('Error setting active logo:', error)
+                                                                    alert('Failed to set active logo')
+                                                                }
+                                                            }}
+                                                            className="w-full rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 font-semibold"
+                                                        >
+                                                            Set as Active
+                                                        </button>
+                                                    )}
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Edit</button>
+                                                        <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <p className="text-sm text-gray-600 mb-4">
-                                                This logo will appear in the navigation bar and footer.
-                                                Auto-fit is applied.
-                                            </p>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => handleEdit(item)} className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Change Logo</button>
-                                                <button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700">Delete</button>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                     {items.filter(i => i.type === 'logo').length === 0 && (
                                         <div className="rounded-lg bg-gray-50 p-8 text-center border-2 border-dashed border-gray-300">
                                             <p className="text-gray-500 mb-4">No logo has been set yet.</p>

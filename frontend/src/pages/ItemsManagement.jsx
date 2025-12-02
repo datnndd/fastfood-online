@@ -189,10 +189,6 @@ export default function ItemsManagement() {
         return item.category_name || 'N/A'
     }
 
-    const getCategoryId = (item) => {
-        return item.category_id
-    }
-
     // Client-side filtering removed in favor of server-side filtering
     const filteredItems = items
 

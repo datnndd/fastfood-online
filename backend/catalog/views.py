@@ -21,6 +21,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
 
+    def get_queryset(self):
+        from django.db.models import Count
+        return Category.objects.annotate(
+            items_count=Count('items', distinct=True),
+            combos_count=Count('combos', distinct=True)
+        )
+
     def get_permissions(self):
         if self.action in {"list","retrieve"}:
             return [permissions.AllowAny()]
@@ -59,7 +66,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     search_fields = ["name","description","category__name"]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().prefetch_related('option_groups__options')
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)

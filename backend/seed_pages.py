@@ -6,6 +6,7 @@ pages_data = [
     {'name': 'About', 'slug': 'about', 'description': 'About page content'},
     {'name': 'Promotions', 'slug': 'promotions', 'description': 'Promotions page content'},
     {'name': 'Contact', 'slug': 'contact', 'description': 'Contact page content'},
+    {'name': 'Global Settings', 'slug': 'global', 'description': 'Global site settings'},
 ]
 
 for page_data in pages_data:

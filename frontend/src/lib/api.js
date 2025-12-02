@@ -161,6 +161,7 @@ export const CatalogAPI = {
 // =============================================================================
 export const CartAPI = {
   getCart: () => api.get('/cart/'),
+  getCount: () => api.get('/cart/count/'),
   addItem: ({ menu_item_id, quantity = 1, option_ids = [] }) =>
     api.post('/cart/items/', {
       menu_item_id,

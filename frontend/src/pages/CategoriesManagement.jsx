@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CatalogAPI } from '../lib/api'
 import CategoryFormModal from '../components/CategoryFormModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
@@ -17,16 +17,7 @@ export default function CategoriesManagement() {
     const [totalItems, setTotalItems] = useState(0)
     const PAGE_SIZE = 12
 
-    useEffect(() => {
-        loadCategories()
-    }, [page, searchTerm])
-
-    // Reset page when search changes
-    useEffect(() => {
-        setPage(1)
-    }, [searchTerm])
-
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         setLoading(true)
         try {
             const params = {
@@ -51,7 +42,16 @@ export default function CategoriesManagement() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [page, searchTerm])
+
+    useEffect(() => {
+        loadCategories()
+    }, [loadCategories])
+
+    // Reset page when search changes
+    useEffect(() => {
+        setPage(1)
+    }, [searchTerm])
 
     const handleAdd = () => {
         setSelectedCategory(null)
@@ -201,10 +201,10 @@ export default function CategoriesManagement() {
                                     </p>
                                     <div className="mt-3 flex items-center gap-2">
                                         <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-bold">
-                                            🍔 {category.items?.length || 0} món
+                                            🍔 {category.items_count || 0} món
                                         </span>
                                         <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-bold">
-                                            🎁 {category.combos?.length || 0} combo
+                                            🎁 {category.combos_count || 0} combo
                                         </span>
                                     </div>
                                 </div>

@@ -36,7 +36,7 @@ class MenuItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_available = models.BooleanField(default=True)
     stock = models.PositiveIntegerField(default=0)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="items")
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="items", null=True, blank=True)
     image_url = models.URLField(blank=True)
 
     def _sync_availability_with_stock(self):
@@ -86,8 +86,10 @@ class Combo(models.Model):
     
     category = models.ForeignKey(
         Category,
-        on_delete=models.PROTECT,
-        related_name="combos"
+        on_delete=models.SET_NULL,
+        related_name="combos",
+        null=True,
+        blank=True
     )
     image_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

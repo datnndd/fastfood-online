@@ -86,7 +86,9 @@ export default function Footer() {
     const fetchLogo = async () => {
       try {
         const items = await ContentAPI.getContentItems('global')
-        const logoItem = items.find(i => i.type === 'logo')
+        const logoItems = items.filter(i => i.type === 'logo')
+        // Find selected logo first, otherwise use the first active one
+        const logoItem = logoItems.find(i => i.metadata?.selected === true) || logoItems[0]
         if (logoItem && logoItem.image_url) {
           setLogoUrl(logoItem.image_url)
         }
@@ -95,6 +97,11 @@ export default function Footer() {
       }
     }
     fetchLogo()
+
+    // Listen for logo updates
+    const handleLogoUpdate = () => fetchLogo()
+    window.addEventListener('logoUpdated', handleLogoUpdate)
+    return () => window.removeEventListener('logoUpdated', handleLogoUpdate)
   }, [])
 
   const handleNewsletter = (event) => {
@@ -115,11 +122,11 @@ export default function Footer() {
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr_1fr]">
           <div>
             <Link to="/" className="flex items-center gap-4 group" onClick={scrollToTop}>
-              <div className="bg-white p-1.5 rounded-xl shadow-lg group-hover:scale-105 transition-transform h-14 w-14 flex items-center justify-center">
+              <div className="bg-white p-1.5 rounded-full overflow-hidden shadow-lg group-hover:scale-105 transition-transform h-14 w-14 flex items-center justify-center">
                 <img
                   src={logoUrl}
                   alt="McDono"
-                  className="max-h-full max-w-full object-contain"
+                  className="h-full w-full object-cover"
                 />
               </div>
               <div>

@@ -87,6 +87,14 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated or not (hasattr(user, 'role') and user.role == 'manager'):
             queryset = queryset.filter(is_active=True)
         return queryset.select_related('page')
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to log validation errors"""
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print(f"Validation errors: {serializer.errors}")
+            print(f"Request data: {request.data}")
+        return super().create(request, *args, **kwargs)
 
 
 class StoreViewSet(viewsets.ModelViewSet):
