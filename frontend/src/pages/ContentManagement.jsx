@@ -96,10 +96,13 @@ export default function ContentManagement() {
             setEditingItem({
                 page: pageObj?.id || null, // Use page ID, not slug
                 type: defaultType,
-                title: '',
+                title: defaultType === 'logo' ? 'Site Logo' : '',
                 description: '',
                 eyebrow: '',
+                tag: '',
                 image_url: '',
+                order: 0,
+                is_active: true,
                 metadata: {}
             })
         }
@@ -128,6 +131,41 @@ export default function ContentManagement() {
     }
 
     const handleSave = async () => {
+        const buildContentPayload = () => {
+            const payload = { ...editingItem }
+
+            // Remove read-only fields that come from the listing API
+            delete payload.page_name
+            delete payload.page_slug
+            delete payload.created_at
+            delete payload.updated_at
+
+            // Ensure we have a page id even if the initial lookup failed
+            if (!payload.page) {
+                const pageObj = pages.find(p => p.slug === selectedPage)
+                if (pageObj?.id) payload.page = pageObj.id
+            }
+
+            // Normalize optional fields
+            payload.metadata = payload.metadata || {}
+            if (payload.order === undefined || payload.order === null || Number.isNaN(payload.order)) {
+                payload.order = 0
+            }
+            if (payload.is_active === undefined || payload.is_active === null) {
+                payload.is_active = true
+            }
+
+            // Logos require a non-empty title; provide sensible defaults
+            if (payload.type === 'logo') {
+                payload.title = (payload.title || '').trim() || 'Site Logo'
+                payload.description = payload.description || ''
+                payload.eyebrow = payload.eyebrow || ''
+                payload.tag = payload.tag || ''
+            }
+
+            return payload
+        }
+
         try {
             if (isStoreMode) {
                 if (editingItem.id) {
@@ -136,10 +174,11 @@ export default function ContentManagement() {
                     await ContentAPI.createStore(editingItem)
                 }
             } else {
+                const payload = buildContentPayload()
                 if (editingItem.id) {
-                    await ContentAPI.updateContentItem(editingItem.id, editingItem)
+                    await ContentAPI.updateContentItem(editingItem.id, payload)
                 } else {
-                    await ContentAPI.createContentItem(editingItem)
+                    await ContentAPI.createContentItem(payload)
                 }
             }
             setShowForm(false)
@@ -492,24 +531,46 @@ export default function ContentManagement() {
                                 ) : (
                                     // Content Item Form
                                     <>
-                                        <div>
-                                            <label className="block text-sm font-semibold">Type</label>
-                                            <select
-                                                value={editingItem.type}
-                                                onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })}
-                                                className="mt-1 w-full rounded border px-4 py-2"
-                                                disabled={!editingItem.id || (editingItem.id && editingItem.type === 'text_block')} // Disable if creating new (forced to story) or editing text block
-                                            >
-                                                {CONTENT_TYPE_CHOICES.filter(t =>
-                                                    // Only show text_block if we are editing an existing text_block
-                                                    t.value !== 'text_block' || (editingItem.id && editingItem.type === 'text_block')
-                                                ).map(type => (
-                                                    <option key={type.value} value={type.value}>{type.label}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        {/* Only show Type selector if NOT a logo, or if it IS a logo but we want to allow changing it (though usually logo is fixed type) */}
+                                        {/* Actually, for 'global' page, we might only have 'logo'. Let's check selectedPage */}
+                                        {selectedPage !== 'global' && (
+                                            <div>
+                                                <label className="block text-sm font-semibold">Type</label>
+                                                <select
+                                                    value={editingItem.type}
+                                                    onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })}
+                                                    className="mt-1 w-full rounded border px-4 py-2"
+                                                    disabled={!editingItem.id || (editingItem.id && editingItem.type === 'text_block')}
+                                                >
+                                                    {CONTENT_TYPE_CHOICES.filter(t =>
+                                                        t.value !== 'text_block' || (editingItem.id && editingItem.type === 'text_block')
+                                                    ).map(type => (
+                                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
 
-                                        {editingItem.type === 'text_block' ? (
+                                        {editingItem.type === 'logo' ? (
+                                            // Simplified form for Logo
+                                            <div className="mt-4">
+                                                <label className="block text-sm font-semibold">Logo Image</label>
+                                                <p className="text-xs text-gray-500 mb-2">Upload your logo here. It will be automatically cropped to a circle.</p>
+                                                {editingItem.image_url && (
+                                                    <div className="mt-2 mb-4 h-40 w-40 rounded-full overflow-hidden border-2 border-gray-200 mx-auto">
+                                                        <img src={editingItem.image_url} alt="Preview" className="h-full w-full object-cover" />
+                                                    </div>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    disabled={uploadingImage}
+                                                    className="mt-2 w-full"
+                                                />
+                                                {uploadingImage && <p className="text-sm text-gray-600">Uploading...</p>}
+                                            </div>
+                                        ) : editingItem.type === 'text_block' ? (
                                             // Simplified form for text blocks
                                             <>
                                                 <div>
@@ -621,25 +682,29 @@ export default function ContentManagement() {
                                     </>
                                 )}
 
-                                <div>
-                                    <label className="block text-sm font-semibold">Order</label>
-                                    <input
-                                        type="number"
-                                        value={editingItem.order}
-                                        onChange={(e) => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })}
-                                        className="mt-1 w-full rounded border px-4 py-2"
-                                    />
-                                </div>
+                                {editingItem.type !== 'logo' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-semibold">Order</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.order}
+                                                onChange={(e) => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })}
+                                                className="mt-1 w-full rounded border px-4 py-2"
+                                            />
+                                        </div>
 
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={editingItem.is_active}
-                                        onChange={(e) => setEditingItem({ ...editingItem, is_active: e.target.checked })}
-                                        className="mr-2"
-                                    />
-                                    <label className="text-sm font-semibold">Active</label>
-                                </div>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={editingItem.is_active}
+                                                onChange={(e) => setEditingItem({ ...editingItem, is_active: e.target.checked })}
+                                                className="mr-2"
+                                            />
+                                            <label className="text-sm font-semibold">Active</label>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="mt-6 flex gap-4">
