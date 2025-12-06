@@ -74,7 +74,9 @@ class CartItemSerializer(serializers.ModelSerializer):
         else:
             create_kwargs["menu_item_id"] = menu_item_id
         item = CartItem.objects.create(**create_kwargs)
-        if option_ids: item.selected_options.set(option_ids)
+        if option_ids: 
+            item.selected_options.set(option_ids)
+            item.save()
         return item
 
     def update(self, instance, validated_data):

@@ -19,8 +19,9 @@ class CartItem(models.Model):
     def calculate_total(self):
         """Calculate the total price for this cart item including options"""
         price = self.menu_item.price
-        for option in self.selected_options.all():
-            price += option.price_delta
+        if self.pk:
+            for option in self.selected_options.all():
+                price += option.price_delta
         return price * self.quantity
     
     def save(self, *args, **kwargs):
