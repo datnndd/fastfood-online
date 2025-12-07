@@ -17,6 +17,17 @@ const CONTENT_TYPE_CHOICES = [
     { value: 'story', label: 'Câu Chuyện' },
 ]
 
+// Helper function to clean content item payload, removing read-only fields
+const cleanContentPayload = (item) => {
+    const payload = { ...item }
+    // Remove read-only fields that shouldn't be sent to the API
+    delete payload.page_name
+    delete payload.page_slug
+    delete payload.created_at
+    delete payload.updated_at
+    return payload
+}
+
 export default function ContentManagement() {
     const [selectedPage, setSelectedPage] = useState('home')
     const [pages, setPages] = useState([])
@@ -186,7 +197,8 @@ export default function ContentManagement() {
             setEditingItem({ ...editingItem, image_url: result.url })
         } catch (error) {
             console.error('Error uploading image:', error)
-            alert('Tải ảnh thất bại')
+            const errorMessage = error.response?.data?.error || error.message || 'Tải ảnh thất bại'
+            alert(errorMessage)
         } finally {
             setUploadingImage(false)
         }
@@ -209,8 +221,8 @@ export default function ContentManagement() {
                             key={page.value}
                             onClick={() => setSelectedPage(page.value)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-left ${selectedPage === page.value
-                                    ? `${page.bg} ${page.color} shadow-sm ring-1 ring-inset ring-black/5`
-                                    : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+                                ? `${page.bg} ${page.color} shadow-sm ring-1 ring-inset ring-black/5`
+                                : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
                                 }`}
                         >
                             <span className="text-xl">{page.icon}</span>
@@ -232,8 +244,8 @@ export default function ContentManagement() {
                                     key={page.value}
                                     onClick={() => setSelectedPage(page.value)}
                                     className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${selectedPage === page.value
-                                            ? 'bg-orange-600 text-white shadow-md'
-                                            : 'bg-white text-stone-600 border border-stone-200'
+                                        ? 'bg-orange-600 text-white shadow-md'
+                                        : 'bg-white text-stone-600 border border-stone-200'
                                         }`}
                                 >
                                     {page.label}
@@ -353,13 +365,16 @@ export default function ContentManagement() {
                                                                                 const allLogos = items.filter(i => i.type === 'logo')
                                                                                 for (const logo of allLogos) {
                                                                                     if (logo.metadata?.selected) {
-                                                                                        await ContentAPI.updateContentItem(logo.id, { ...logo, metadata: { ...logo.metadata, selected: false } })
+                                                                                        const cleanedPayload = cleanContentPayload({ ...logo, metadata: { ...logo.metadata, selected: false } })
+                                                                                        await ContentAPI.updateContentItem(logo.id, cleanedPayload)
                                                                                     }
                                                                                 }
-                                                                                await ContentAPI.updateContentItem(item.id, { ...item, metadata: { ...item.metadata, selected: true } })
+                                                                                const cleanedPayload = cleanContentPayload({ ...item, metadata: { ...item.metadata, selected: true } })
+                                                                                await ContentAPI.updateContentItem(item.id, cleanedPayload)
                                                                                 window.dispatchEvent(new Event('logoUpdated'))
                                                                                 loadData()
                                                                             } catch (err) {
+                                                                                console.error('Error updating logo:', err)
                                                                                 alert('Lỗi cập nhật logo')
                                                                             }
                                                                         }}

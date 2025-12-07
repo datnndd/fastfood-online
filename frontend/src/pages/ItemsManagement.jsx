@@ -110,7 +110,7 @@ export default function ItemsManagement() {
                 if (err.response.status === 500) {
                     errorMessage = 'Món ăn đang được sử dụng, không thể xóa.'
                 } else if (err.response.data?.detail) {
-                    errorMessage = `Không thể xóa: ${err.response.data.detail}`
+                    errorMessage = err.response.data.detail
                 }
             }
             setError(errorMessage)

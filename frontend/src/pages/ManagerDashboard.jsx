@@ -277,8 +277,7 @@ export default function ManagerDashboard() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'right',
-        labels: { usePointStyle: true, font: { size: 12 }, color: '#44403c' }
+        display: false
       }
     },
     cutout: '75%'
@@ -303,8 +302,8 @@ export default function ManagerDashboard() {
                   key={tab.value}
                   onClick={() => handleTimeframeChange(tab.value)}
                   className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${timeframe === tab.value
-                      ? 'bg-white text-orange-700 shadow-sm'
-                      : 'text-stone-500 hover:text-stone-700'
+                    ? 'bg-white text-orange-700 shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700'
                     }`}
                 >
                   {tab.label}

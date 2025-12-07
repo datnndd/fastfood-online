@@ -49,7 +49,10 @@ def revenue_statistics(request):
     
     # Calculate statistics
     total_orders = orders.count()
-    total_revenue = orders.aggregate(
+    
+    # Calculate revenue only for COMPLETED orders
+    revenue_orders = orders.filter(status='COMPLETED')
+    total_revenue = revenue_orders.aggregate(
         total=Sum('total_amount')
     )['total'] or Decimal('0')
     
@@ -313,7 +316,8 @@ def revenue_chart_statistics(request):
         
         # Query for hourly data
         orders = Order.objects.filter(
-            created_at__date=target_date
+            created_at__date=target_date,
+            status='COMPLETED'
         ).annotate(
             hour=F('created_at__hour')
         ).values('hour').annotate(
@@ -348,7 +352,8 @@ def revenue_chart_statistics(request):
         # Query for daily data
         orders = Order.objects.filter(
             created_at__date__gte=start_date,
-            created_at__date__lte=end_date
+            created_at__date__lte=end_date,
+            status='COMPLETED'
         ).annotate(
             day=F('created_at__day')
         ).values('day').annotate(
@@ -376,7 +381,8 @@ def revenue_chart_statistics(request):
         
         # Query for monthly data
         orders = Order.objects.filter(
-            created_at__year=year
+            created_at__year=year,
+            status='COMPLETED'
         ).annotate(
             month=F('created_at__month')
         ).values('month').annotate(
