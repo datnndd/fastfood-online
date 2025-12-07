@@ -28,6 +28,8 @@ const cleanContentPayload = (item) => {
     return payload
 }
 
+const FIXED_SECTIONS = ['hero', 'stats', 'hero_banner', 'highlight_stats']
+
 export default function ContentManagement() {
     const [selectedPage, setSelectedPage] = useState('home')
     const [pages, setPages] = useState([])
@@ -298,15 +300,11 @@ export default function ContentManagement() {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Group by Type or Section if needed, for now flat list or simple grouping */}
-                                    {items.length === 0 && (
-                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300">
-                                            <p className="text-stone-500">Chưa có nội dung nào. Hãy thêm mới!</p>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const fixedItems = items.filter(item => item.metadata?.section && FIXED_SECTIONS.includes(item.metadata.section))
+                                        const otherItems = items.filter(item => !item.metadata?.section || !FIXED_SECTIONS.includes(item.metadata.section))
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {items.map((item) => {
+                                        const renderItemCard = (item, isFixed = false) => {
                                             const isLogo = item.type === 'logo'
                                             const isSelected = item.metadata?.selected === true
 
@@ -388,13 +386,51 @@ export default function ContentManagement() {
 
                                                         <div className="flex gap-2 pt-4 border-t border-stone-100 mt-auto">
                                                             <button onClick={() => handleEdit(item)} className="flex-1 py-2 text-sm font-medium text-stone-600 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors">Chỉnh sửa</button>
-                                                            <button onClick={() => handleDelete(item.id)} className="flex-1 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Xóa</button>
+                                                            {!isFixed && (
+                                                                <button onClick={() => handleDelete(item.id)} className="flex-1 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Xóa</button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             )
-                                        })}
-                                    </div>
+                                        }
+
+                                        return (
+                                            <div className="space-y-12">
+                                                {/* Dynamic Items - Danh Sách Thẻ */}
+                                                <section>
+                                                    {fixedItems.length > 0 && (
+                                                        <div className="flex items-center gap-3 mb-6">
+                                                            <h3 className="text-xl font-bold text-stone-800">Danh Sách Thẻ</h3>
+                                                        </div>
+                                                    )}
+
+                                                    {otherItems.length === 0 ? (
+                                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300">
+                                                            <p className="text-stone-500">Chưa có nội dung nào. Hãy thêm mới!</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                            {otherItems.map(item => renderItemCard(item, false))}
+                                                        </div>
+                                                    )}
+                                                </section>
+
+                                                {/* Fixed Sections - Nội Dung Cố Định */}
+                                                {fixedItems.length > 0 && (
+                                                    <section>
+                                                        <div className="flex items-center gap-3 mb-6">
+                                                            <h3 className="text-xl font-bold text-stone-800">Nội Dung Cố Định</h3>
+                                                            <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-500 text-xs font-medium">Chỉ chỉnh sửa</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                            {fixedItems.map(item => renderItemCard(item, true))}
+                                                        </div>
+                                                    </section>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
                                 </>
                             )}
                         </div>
@@ -419,19 +455,19 @@ export default function ContentManagement() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="col-span-2">
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Tên Cửa Hàng</label>
-                                            <input type="text" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="VD: FastFood Hoàn Kiếm" />
+                                            <input type="text" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="VD: FastFood Hoàn Kiếm" />
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Địa Chỉ</label>
-                                            <input type="text" value={editingItem.address} onChange={e => setEditingItem({ ...editingItem, address: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                            <input type="text" value={editingItem.address} onChange={e => setEditingItem({ ...editingItem, address: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Giờ Mở Cửa</label>
-                                            <input type="text" value={editingItem.hours} onChange={e => setEditingItem({ ...editingItem, hours: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="8:00 - 22:00" />
+                                            <input type="text" value={editingItem.hours} onChange={e => setEditingItem({ ...editingItem, hours: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="8:00 - 22:00" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Hotline</label>
-                                            <input type="text" value={editingItem.hotline} onChange={e => setEditingItem({ ...editingItem, hotline: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                            <input type="text" value={editingItem.hotline} onChange={e => setEditingItem({ ...editingItem, hotline: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
                                         </div>
                                     </div>
                                 </>
@@ -443,11 +479,14 @@ export default function ContentManagement() {
                                             <select
                                                 value={editingItem.type}
                                                 onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}
-                                                disabled={editingItem.id && editingItem.type === 'text_block'}
-                                                className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
+                                                disabled={(editingItem.id && editingItem.type === 'text_block') || (editingItem.metadata?.section && FIXED_SECTIONS.includes(editingItem.metadata.section))}
+                                                className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500 disabled:bg-stone-100 disabled:text-stone-500"
                                             >
                                                 {CONTENT_TYPE_CHOICES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                             </select>
+                                            {editingItem.metadata?.section && FIXED_SECTIONS.includes(editingItem.metadata.section) && (
+                                                <p className="text-xs text-stone-500 mt-1">Loại nội dung được cố định cho phần này.</p>
+                                            )}
                                         </div>
                                     )}
 
@@ -468,7 +507,16 @@ export default function ContentManagement() {
                                         <div className="space-y-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-stone-700 mb-1">Tiêu Đề / Identifier</label>
-                                                <input type="text" value={editingItem.title} onChange={e => setEditingItem({ ...editingItem, title: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                <input
+                                                    type="text"
+                                                    value={editingItem.title}
+                                                    onChange={e => setEditingItem({ ...editingItem, title: e.target.value })}
+                                                    disabled={editingItem.type === 'text_block'}
+                                                    className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500 disabled:bg-stone-100 disabled:text-stone-500"
+                                                />
+                                                {editingItem.type === 'text_block' && (
+                                                    <p className="text-xs text-stone-500 mt-1">Tiêu đề này là định danh hệ thống, không thể thay đổi.</p>
+                                                )}
                                             </div>
 
                                             {editingItem.type === 'text_block' ? (
@@ -478,23 +526,23 @@ export default function ContentManagement() {
                                                         value={editingItem.metadata?.text || ''}
                                                         onChange={e => setEditingItem({ ...editingItem, metadata: { ...editingItem.metadata, text: e.target.value } })}
                                                         rows={6}
-                                                        className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
+                                                        className="w-full px-4 py-3 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
                                                     />
                                                 </div>
                                             ) : (
                                                 <>
                                                     <div>
                                                         <label className="block text-sm font-medium text-stone-700 mb-1">Mô Tả</label>
-                                                        <textarea value={editingItem.description} onChange={e => setEditingItem({ ...editingItem, description: e.target.value })} rows={3} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                        <textarea value={editingItem.description} onChange={e => setEditingItem({ ...editingItem, description: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
                                                             <label className="block text-sm font-medium text-stone-700 mb-1">Tag (Eyebrow)</label>
-                                                            <input type="text" value={editingItem.eyebrow || ''} onChange={e => setEditingItem({ ...editingItem, eyebrow: e.target.value })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                            <input type="text" value={editingItem.eyebrow || ''} onChange={e => setEditingItem({ ...editingItem, eyebrow: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
                                                         </div>
                                                         <div>
                                                             <label className="block text-sm font-medium text-stone-700 mb-1">Thứ Tự</label>
-                                                            <input type="number" value={editingItem.order} onChange={e => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })} className="w-full rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                            <input type="number" value={editingItem.order} onChange={e => setEditingItem({ ...editingItem, order: parseInt(e.target.value) })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
                                                         </div>
                                                     </div>
                                                     <div>
