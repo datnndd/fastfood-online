@@ -9,6 +9,7 @@ from core.utils.supabase_storage import upload_and_get_public_url
 from rest_framework import viewsets, permissions, filters
 from accounts.permissions import IsManager
 from .models import Category, MenuItem, Combo
+from django.db.models import ProtectedError
 from .serializers import (
     CategorySerializer, MenuItemSerializer,
     ComboListSerializer, ComboDetailSerializer, ComboCreateUpdateSerializer,
@@ -101,7 +102,40 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         public_url = upload_and_get_public_url(f, dest_path, f.content_type or "image/jpeg")
         obj.image_url = public_url
         obj.save(update_fields=["image_url"])
+        obj.save(update_fields=["image_url"])
         return Response({"image_url": public_url}, status=200)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError as e:
+            protected_objects = list(e.protected_objects)
+            combo_names = set()
+            has_orders = False
+            
+            # Local import to avoid circular dependency if needed, 
+            # though checking class name is safer for loose coupling
+            for obj in protected_objects:
+                # Check for ComboItem
+                if hasattr(obj, 'combo') and hasattr(obj.combo, 'name'):
+                    combo_names.add(obj.combo.name)
+                # Check for OrderItem (has 'order' attribute)
+                elif hasattr(obj, 'order'):
+                    has_orders = True
+            
+            details = []
+            if combo_names:
+                details.append(f"đang có trong các Combo: {', '.join(combo_names)}")
+            if has_orders:
+                details.append("đã có trong đơn hàng")
+            
+            reason = " và ".join(details)
+            message = f"Không thể xóa món ăn này vì {reason}." if reason else "Không thể xóa món ăn này vì nó đang được sử dụng."
+            
+            return Response(
+                {"detail": message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
 class ComboViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
