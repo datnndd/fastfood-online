@@ -14,6 +14,7 @@ export default function ItemsManagement() {
     const [error, setError] = useState(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
+    const [filterStock, setFilterStock] = useState('') // '', 'in_stock', 'out_of_stock'
     const [viewMode, setViewMode] = useState('grid') // 'grid' or 'table'
     const [bulkStockValue, setBulkStockValue] = useState('')
     const [bulkUpdatingItems, setBulkUpdatingItems] = useState(false)
@@ -29,7 +30,8 @@ export default function ItemsManagement() {
                 page,
                 limit: PAGE_SIZE,
                 search: searchTerm,
-                category: filterCategory
+                category: filterCategory,
+                stock_status: filterStock
             }
             const response = await CatalogAPI.listItems(params)
             let data = []
@@ -56,7 +58,7 @@ export default function ItemsManagement() {
         } finally {
             setLoading(false)
         }
-    }, [page, searchTerm, filterCategory])
+    }, [page, searchTerm, filterCategory, filterStock])
 
     const loadCategories = useCallback(async () => {
         try {
@@ -79,7 +81,7 @@ export default function ItemsManagement() {
     // Reset page when filters change
     useEffect(() => {
         setPage(1)
-    }, [searchTerm, filterCategory])
+    }, [searchTerm, filterCategory, filterStock])
 
     const handleAdd = () => {
         setSelectedItem(null)
@@ -276,6 +278,15 @@ export default function ItemsManagement() {
                                     {cat.name}
                                 </option>
                             ))}
+                        </select>
+                        <select
+                            value={filterStock}
+                            onChange={(e) => setFilterStock(e.target.value)}
+                            className="px-6 py-4 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all"
+                        >
+                            <option value="">📦 Tất cả trạng thái</option>
+                            <option value="in_stock">✅ Còn hàng</option>
+                            <option value="out_of_stock">🚫 Hết hàng</option>
                         </select>
                         <div className="flex gap-2 bg-gray-100 p-2 rounded-xl">
                             <button

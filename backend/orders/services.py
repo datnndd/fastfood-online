@@ -1,10 +1,39 @@
 # orders/services.py
 from django.db import transaction
 from cart.models import Cart
-from catalog.models import Option, MenuItem, Combo
+from catalog.models import Option, MenuItem, Combo, ComboItem
 from .models import Order, OrderItem
 from decimal import Decimal, ROUND_HALF_UP
 from collections import Counter
+
+
+def update_affected_combos(menu_item_ids: list):
+    """
+    Cập nhật stock và is_available của tất cả combo chứa các menu items bị ảnh hưởng.
+    Nếu combo hết stock thì tự động set is_available = False.
+    """
+    if not menu_item_ids:
+        return
+    
+    # Tìm tất cả combo chứa các menu item bị ảnh hưởng
+    affected_combo_ids = ComboItem.objects.filter(
+        menu_item_id__in=menu_item_ids
+    ).values_list('combo_id', flat=True).distinct()
+    
+    if not affected_combo_ids:
+        return
+    
+    combos_to_update = []
+    for combo in Combo.objects.filter(id__in=affected_combo_ids):
+        new_stock = combo.calculate_stock()
+        combo.stock = new_stock
+        # Auto disable combo if out of stock
+        if new_stock <= 0:
+            combo.is_available = False
+        combos_to_update.append(combo)
+    
+    if combos_to_update:
+        Combo.objects.bulk_update(combos_to_update, ['stock', 'is_available'])
 
 @transaction.atomic
 def create_order_from_cart(
@@ -49,11 +78,13 @@ def create_order_from_cart(
     total = Decimal("0.00")
     
     # Normalize selections
-    item_id_set = set(selected_item_ids or [])
-    combo_id_set = set(selected_combo_ids or [])
+    # If caller passes item/combo ids, treat that as an explicit selection set; otherwise use the whole cart
+    selection_mode = (selected_item_ids is not None) or (selected_combo_ids is not None)
+    item_id_set = set(selected_item_ids or []) if selection_mode else set()
+    combo_id_set = set(selected_combo_ids or []) if selection_mode else set()
 
     items_qs = cart.items.select_related("menu_item").prefetch_related("selected_options")
-    if item_id_set:
+    if selection_mode:
         items_qs = items_qs.filter(id__in=item_id_set)
 
     items_qs = list(items_qs)
@@ -61,7 +92,7 @@ def create_order_from_cart(
         "combo__items__menu_item",
         "combo__items__selected_options"
     )
-    if combo_id_set:
+    if selection_mode:
         combos_qs = combos_qs.filter(id__in=combo_id_set)
     combos_qs = list(combos_qs)
 
@@ -186,17 +217,17 @@ def create_order_from_cart(
     
     if menu_items_to_update:
         MenuItem.objects.bulk_update(menu_items_to_update, ["stock", "is_available"])
-    # No combo updates needed for stock
+        # Update affected combos - auto disable if out of stock
+        update_affected_combos(list(final_menu_item_quantities.keys()))
 
     # Dọn giỏ hàng theo cấu hình
-    if item_id_set:
-        cart.items.filter(id__in=item_id_set).delete()
+    if selection_mode:
+        if item_id_set:
+            cart.items.filter(id__in=item_id_set).delete()
+        if combo_id_set:
+            cart.combos.filter(id__in=combo_id_set).delete()
     elif clear_cart:
         cart.items.all().delete()
-
-    if combo_id_set:
-        cart.combos.filter(id__in=combo_id_set).delete()
-    elif clear_cart:
         cart.combos.all().delete()
     
     return order

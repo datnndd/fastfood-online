@@ -71,6 +71,15 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        
+        # Stock status filter for management pages
+        stock_status = self.request.query_params.get('stock_status')
+        if stock_status == 'in_stock':
+            queryset = queryset.filter(stock__gt=0, is_available=True)
+        elif stock_status == 'out_of_stock':
+            from django.db.models import Q
+            queryset = queryset.filter(Q(stock__lte=0) | Q(is_available=False))
+        
         return queryset
 
     def get_serializer_class(self):
@@ -160,6 +169,14 @@ class ComboViewSet(viewsets.ModelViewSet):
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        
+        # Stock status filter for management pages
+        stock_status = self.request.query_params.get('stock_status')
+        if stock_status == 'in_stock':
+            queryset = queryset.filter(stock__gt=0, is_available=True)
+        elif stock_status == 'out_of_stock':
+            from django.db.models import Q
+            queryset = queryset.filter(Q(stock__lte=0) | Q(is_available=False))
         
         return queryset.order_by('-created_at')
     
