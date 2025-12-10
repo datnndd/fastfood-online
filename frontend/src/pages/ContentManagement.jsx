@@ -100,7 +100,7 @@ export default function ContentManagement() {
             let defaultType = 'card';
             if (selectedPage === 'about') defaultType = 'story';
             else if (selectedPage === 'promotions') defaultType = 'slide';
-            else if (selectedPage === 'global') defaultType = 'logo';
+            else if (selectedPage === 'global') defaultType = 'card';
 
             setEditingItem({
                 page: pageObj?.id || null,
@@ -531,7 +531,7 @@ export default function ContentManagement() {
                                 </>
                             ) : (
                                 <>
-                                    {selectedPage !== 'global' && (
+                                    {true && (
                                         <div>
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Loại Nội Dung</label>
                                             <select
@@ -595,8 +595,12 @@ export default function ContentManagement() {
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <label className="block text-sm font-medium text-stone-700 mb-1">Tag (Eyebrow)</label>
-                                                            <input type="text" value={editingItem.eyebrow || ''} onChange={e => setEditingItem({ ...editingItem, eyebrow: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                                            <label className="block text-sm font-medium text-stone-700 mb-1">Eyebrow (Nhãn phụ)</label>
+                                                            <input type="text" value={editingItem.eyebrow || ''} onChange={e => setEditingItem({ ...editingItem, eyebrow: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="VD: 50+, Mới..." />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-stone-700 mb-1">System Tag (Mã hệ thống)</label>
+                                                            <input type="text" value={editingItem.tag || ''} onChange={e => setEditingItem({ ...editingItem, tag: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" placeholder="VD: footer_stat, footer_contact" />
                                                         </div>
                                                         <div>
                                                             <label className="block text-sm font-medium text-stone-700 mb-1">Thứ Tự</label>

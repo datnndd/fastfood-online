@@ -81,25 +81,75 @@ const contactChannels = [
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const [logoUrl, setLogoUrl] = useState(logo)
+  const [stores, setStores] = useState(featuredStores)
+  const [stats, setStats] = useState(promiseStats)
+  const [contactInfo, setContactInfo] = useState(contactChannels)
 
   useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchContent = async () => {
       try {
+        // Fetch Global Content (Logo, Stats, Contact Info)
         const items = await ContentAPI.getContentItems('global')
+
+        // Logo
         const logoItems = items.filter(i => i.type === 'logo')
-        // Find selected logo first, otherwise use the first active one
         const logoItem = logoItems.find(i => i.metadata?.selected === true) || logoItems[0]
         if (logoItem && logoItem.image_url) {
           setLogoUrl(logoItem.image_url)
         }
+
+        // Stats (tag: footer_stat)
+        const statItems = items.filter(i => i.tag === 'footer_stat' && i.is_active)
+        if (statItems.length > 0) {
+          const mappedStats = statItems.map(item => ({
+            value: item.eyebrow || item.title, // Use eyebrow as value (e.g., "50+")
+            label: item.description || item.title // Use description as label
+          })).sort((a, b) => a.order - b.order)
+          setStats(mappedStats)
+        }
+
+        // Contact Info (tag: footer_contact)
+        const contactItems = items.filter(i => i.tag === 'footer_contact' && i.is_active)
+        if (contactItems.length > 0) {
+          const mappedContacts = contactItems.map(item => {
+            // Map icons based on title or metadata
+            let icon = PhoneIcon
+            const titleLower = item.title.toLowerCase()
+            if (titleLower.includes('email') || titleLower.includes('mail')) icon = EnvelopeIcon
+            if (titleLower.includes('giờ') || titleLower.includes('time') || titleLower.includes('open')) icon = ClockIcon
+
+            return {
+              icon: icon,
+              title: item.title,
+              value: item.eyebrow,
+              description: item.description
+            }
+          }).sort((a, b) => a.order - b.order)
+          setContactInfo(mappedContacts)
+        }
+
+        // Fetch Stores
+        const storesData = await ContentAPI.getStores()
+        if (storesData && storesData.length > 0) {
+          // Map backend store model to frontend structure
+          const mappedStores = storesData.map(store => ({
+            district: store.name,
+            address: store.address,
+            hours: store.hours,
+            hotline: store.hotline
+          })).slice(0, 3) // Limit to 3 stores
+          setStores(mappedStores)
+        }
+
       } catch (error) {
-        console.error('Error fetching logo:', error)
+        console.error('Error fetching footer content:', error)
       }
     }
-    fetchLogo()
+
+    fetchContent()
 
     // Listen for logo updates
-    const handleLogoUpdate = () => fetchLogo()
+    const handleLogoUpdate = () => fetchContent()
     window.addEventListener('logoUpdated', handleLogoUpdate)
     return () => window.removeEventListener('logoUpdated', handleLogoUpdate)
   }, [])
@@ -142,7 +192,7 @@ export default function Footer() {
               tại Hà Nội trong vòng 30 phút.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              {promiseStats.map(({ value, label }) => (
+              {stats.map(({ value, label }) => (
                 <div
                   key={label}
                   className="min-w-[130px] rounded-2xl border border-white/10 px-4 py-3 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-colors"
@@ -193,7 +243,7 @@ export default function Footer() {
               Ghé thăm
             </p>
             <ul className="space-y-4 text-sm text-white/80">
-              {featuredStores.map((store) => (
+              {stores.map((store) => (
                 <li
                   key={store.district}
                   className="rounded-2xl border border-white/10 p-4 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-colors group"
@@ -222,7 +272,7 @@ export default function Footer() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {contactChannels.map((channel) => {
+          {contactInfo.map((channel) => {
             const IconComponent = channel.icon
             return (
               <div
