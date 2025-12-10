@@ -3,7 +3,8 @@ from datetime import date
 
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.db.models import Q, UniqueConstraint
 
 
@@ -152,8 +153,13 @@ class DeliveryAddress(models.Model):
             raise ValidationError({"ward": "Vui lòng chọn phường/xã"})
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-        saved = super().save(*args, **kwargs)
-        if self.is_default:
-            self.user.delivery_addresses.exclude(pk=self.pk).update(is_default=False)
-        return saved
+        with transaction.atomic():
+            if self.is_default:
+                # Update others to False BEFORE saving to avoid UniqueConstraint violation
+                qs = self.user.delivery_addresses.all()
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+                qs.update(is_default=False)
+            
+            self.full_clean()
+            return super().save(*args, **kwargs)
