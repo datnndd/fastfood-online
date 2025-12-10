@@ -465,6 +465,72 @@ export default function ManagerDashboard() {
               </div>
             </section>
 
+            {/* Recent Feedback */}
+            <section>
+              <h3 className="text-lg font-bold text-stone-800 mb-4">Feedback Gần Đây</h3>
+              <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+                {feedbacks.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="text-4xl mb-3">💬</div>
+                    <p className="text-stone-500 text-sm">Chưa có feedback nào</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-stone-100">
+                    {feedbacks.map((feedback) => (
+                      <div key={feedback.id} className="p-5 hover:bg-stone-50 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-3 mb-2">
+                              <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 rounded-full text-lg flex-shrink-0">
+                                💬
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <h4 className="font-semibold text-stone-800 text-sm truncate">
+                                    {feedback.full_name}
+                                  </h4>
+                                  {feedback.subject && (
+                                    <span className="text-xs text-stone-500 truncate">
+                                      • {feedback.subject}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-stone-600 line-clamp-2 mb-2">
+                                  {feedback.message}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
+                                  <span className="flex items-center gap-1">
+                                    <span>📧</span>
+                                    {feedback.email}
+                                  </span>
+                                  {feedback.phone && (
+                                    <span className="flex items-center gap-1">
+                                      <span>📱</span>
+                                      {feedback.phone}
+                                    </span>
+                                  )}
+                                  <span className="flex items-center gap-1">
+                                    <span>🕒</span>
+                                    {new Date(feedback.created_at).toLocaleString('vi-VN', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* Quick Links */}
             <section>
               <h3 className="text-lg font-bold text-stone-800 mb-4">Truy cập nhanh</h3>
