@@ -172,10 +172,15 @@ export default function ContentManagement() {
 
         try {
             if (isStoreMode) {
+                const payload = { ...editingItem }
+                if (!payload.map_query && payload.address) {
+                    payload.map_query = payload.address
+                }
+
                 if (editingItem.id) {
-                    await ContentAPI.updateStore(editingItem.id, editingItem)
+                    await ContentAPI.updateStore(editingItem.id, payload)
                 } else {
-                    await ContentAPI.createStore(editingItem)
+                    await ContentAPI.createStore(payload)
                 }
             } else {
                 const payload = buildContentPayload()
@@ -510,6 +515,17 @@ export default function ContentManagement() {
                                         <div>
                                             <label className="block text-sm font-medium text-stone-700 mb-1">Hotline</label>
                                             <input type="text" value={editingItem.hotline} onChange={e => setEditingItem({ ...editingItem, hotline: e.target.value })} className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500" />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-sm font-medium text-stone-700 mb-1">Maps Query (Tùy chọn)</label>
+                                            <input
+                                                type="text"
+                                                value={editingItem.map_query || ''}
+                                                onChange={e => setEditingItem({ ...editingItem, map_query: e.target.value })}
+                                                className="w-full px-4 py-2 rounded-xl border-stone-200 focus:border-orange-500 focus:ring-orange-500"
+                                                placeholder="Để trống sẽ tự động dùng địa chỉ"
+                                            />
+                                            <p className="text-xs text-stone-500 mt-1">Từ khóa chính xác để hiển thị bản đồ (nếu địa chỉ không tìm thấy).</p>
                                         </div>
                                     </div>
                                 </>
