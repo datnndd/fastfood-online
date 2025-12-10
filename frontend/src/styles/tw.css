@@ -621,6 +621,9 @@
   .-mr-16 {
     margin-right: calc(var(--spacing) * -16);
   }
+  .mr-1 {
+    margin-right: calc(var(--spacing) * 1);
+  }
   .mr-2 {
     margin-right: calc(var(--spacing) * 2);
   }

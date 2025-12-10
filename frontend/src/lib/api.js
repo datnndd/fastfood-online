@@ -90,6 +90,9 @@ export const AuthAPI = {
   },
   setPassword: (password) => {
     return api.post('/accounts/set-password/', { password })
+  },
+  changePassword: (data) => {
+    return api.post('/accounts/change-password/', data)
   }
 }
 

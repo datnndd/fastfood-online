@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
       if (nextSession?.access_token) {
         setLoading(true)
         fetchProfile()
-          .catch(() => {})
+          .catch(() => { })
           .finally(() => {
             if (mounted) {
               setLoading(false)
@@ -133,8 +133,8 @@ export function AuthProvider({ children }) {
     })
     if (error) {
       if (error.message.includes('Anonymous sign-ins are disabled')) {
-          throw new Error('Nhập thêm email hoặc số điện thoại.')
-        }
+        throw new Error('Nhập thêm email hoặc số điện thoại.')
+      }
       throw error
     }
 
@@ -210,6 +210,20 @@ export function AuthProvider({ children }) {
 
   const refreshProfile = useCallback(() => fetchProfile(), [fetchProfile])
 
+  // Change password with sync to both Django and Supabase
+  const changePasswordWithSync = useCallback(async ({ old_password, new_password }) => {
+    // 1. First, update Django (validates old password if applicable)
+    await AuthAPI.changePassword({ old_password, new_password, confirm_password: new_password })
+
+    // 2. Sync to Supabase
+    const { error } = await supabase.auth.updateUser({ password: new_password })
+    if (error) {
+      console.error('Supabase sync failed:', error)
+      // Django was updated but Supabase failed - notify user
+      throw new Error('Mật khẩu đã được cập nhật, nhưng không thể đồng bộ với hệ thống đăng nhập. Vui lòng thử đăng nhập lại.')
+    }
+  }, [])
+
   const value = useMemo(() => ({
     user,
     session,
@@ -220,8 +234,9 @@ export function AuthProvider({ children }) {
     register,
     refreshProfile,
     resetPasswordForEmail,
-    updatePassword
-  }), [user, session, loading, login, loginWithProvider, logout, register, refreshProfile, resetPasswordForEmail, updatePassword])
+    updatePassword,
+    changePasswordWithSync
+  }), [user, session, loading, login, loginWithProvider, logout, register, refreshProfile, resetPasswordForEmail, updatePassword, changePasswordWithSync])
 
   return (
     <AuthContext.Provider value={value}>

@@ -3,6 +3,7 @@ from datetime import date
 import re
 
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework import serializers
 
@@ -109,8 +110,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             elif is_new_user:
                 user.set_unusable_password()
 
-            user.save()
-            user.refresh_from_db(fields=["full_name", "phone", "address_line", "province", "ward"])
+            try:
+                user.save()
+                user.refresh_from_db(fields=["full_name", "phone", "address_line", "province", "ward"])
+            except ValidationError as e:
+                raise serializers.ValidationError(e.message_dict)
 
         return user
 
@@ -178,11 +182,30 @@ class ProfileSerializer(serializers.ModelSerializer):
             "province",
             "ward",
             "has_saved_card",
+            "has_usable_password",
         ]
         read_only_fields = fields
 
     def get_has_saved_card(self, obj):
         return bool(obj.stripe_customer_id and obj.stripe_payment_method_id)
+      
+    def get_has_usable_password(self, obj):
+        return obj.has_usable_password()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=False)
+    new_password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Mật khẩu xác nhận không khớp"})
+        return attrs
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
@@ -345,3 +368,5 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
             })
 
         return attrs
+
+
