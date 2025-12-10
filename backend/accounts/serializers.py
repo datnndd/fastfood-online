@@ -278,10 +278,23 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 class CreateStaffSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
+    supabase_id = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "role"]
+        fields = ["username", "email", "password", "role", "supabase_id"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        supabase_id = validated_data.pop("supabase_id", None)
+        
+        user = User(**validated_data)
+        user.set_password(password)
+        if supabase_id:
+            user.supabase_id = supabase_id
+        user.save()
+        return user
+
 
 
 class ManageUserListSerializer(serializers.ModelSerializer):

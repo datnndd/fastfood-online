@@ -114,8 +114,20 @@ def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
     user = User.objects.filter(supabase_id=supabase_uuid).first()
     if not user and email:
         user = User.objects.filter(email__iexact=email).first()
+    # Also try to find by username from metadata (handles race condition with createStaff)
+    if not user and username_hint:
+        user = User.objects.filter(username__iexact=username_hint).first()
+        if user and user.supabase_id and user.supabase_id != supabase_uuid:
+            # Username exists but belongs to a different supabase user, don't use it
+            user = None
 
     if not user:
+        # Extract role from metadata if provided (e.g., from createStaffWithSync)
+        metadata_role = user_meta.get("role")
+        user_role = User.Role.CUSTOMER  # default
+        if metadata_role and metadata_role in {choice[0] for choice in User.Role.choices}:
+            user_role = metadata_role
+        
         user = User(
             username=_generate_username(username_hint, supabase_uuid),
             email=email,
@@ -123,6 +135,7 @@ def _sync_user_from_claims(payload: Dict[str, Any]) -> User:
             auth_provider=provider,
             email_verified=bool(payload.get("email_confirmed_at")),
             phone_verified=bool(payload.get("phone_confirmed_at")),
+            role=user_role,
         )
         if phone:
             user.phone = phone
