@@ -28,7 +28,7 @@ const cleanContentPayload = (item) => {
     return payload
 }
 
-const FIXED_SECTIONS = ['hero', 'stats', 'hero_banner', 'highlight_stats']
+const FIXED_SECTIONS = ['hero', 'stats', 'hero_banner', 'highlight_stats', 'hero_metrics']
 
 export default function ContentManagement() {
     const [selectedPage, setSelectedPage] = useState('home')
@@ -39,6 +39,7 @@ export default function ContentManagement() {
     const [editingItem, setEditingItem] = useState(null)
     const [showForm, setShowForm] = useState(false)
     const [uploadingImage, setUploadingImage] = useState(false)
+    const [bannerPage, setBannerPage] = useState(0)
 
     const currentPageConfig = PAGE_CHOICES.find(p => p.value === selectedPage)
     const isStoreMode = currentPageConfig?.supports === 'stores'
@@ -56,6 +57,10 @@ export default function ContentManagement() {
         }
         loadPages()
     }, [])
+
+    useEffect(() => {
+        setBannerPage(0)
+    }, [selectedPage])
 
     const loadData = useCallback(async () => {
         setLoading(true)
@@ -302,7 +307,16 @@ export default function ContentManagement() {
                                 <>
                                     {(() => {
                                         const fixedItems = items.filter(item => item.metadata?.section && FIXED_SECTIONS.includes(item.metadata.section))
-                                        const otherItems = items.filter(item => !item.metadata?.section || !FIXED_SECTIONS.includes(item.metadata.section))
+
+                                        // For Promotions: Separate Banners (slides) and Hero Metrics
+                                        let otherItems = items.filter(item => !item.metadata?.section || !FIXED_SECTIONS.includes(item.metadata.section))
+
+                                        // Pagination logic for Banners (only if we have many)
+                                        const ITEMS_PER_PAGE = 4
+                                        const totalPages = Math.ceil(otherItems.length / ITEMS_PER_PAGE)
+                                        const paginatedItems = selectedPage === 'promotions'
+                                            ? otherItems.slice(bannerPage * ITEMS_PER_PAGE, (bannerPage + 1) * ITEMS_PER_PAGE)
+                                            : otherItems
 
                                         const renderItemCard = (item, isFixed = false) => {
                                             const isLogo = item.type === 'logo'
@@ -397,30 +411,16 @@ export default function ContentManagement() {
 
                                         return (
                                             <div className="space-y-12">
-                                                {/* Dynamic Items - Danh Sách Thẻ */}
-                                                <section>
-                                                    {fixedItems.length > 0 && (
-                                                        <div className="flex items-center gap-3 mb-6">
-                                                            <h3 className="text-xl font-bold text-stone-800">Danh Sách Thẻ</h3>
-                                                        </div>
-                                                    )}
+                                                {/* Fixed Sections - Nội Dung Cố Định (Hero Metrics should be first for promotions if that's what user wants, or maintain order) */}
+                                                {/* User said: "hero metric thì cố định chỉ có thể sửa. Còn những thứ kia khi thêm thì có phân trang" */}
 
-                                                    {otherItems.length === 0 ? (
-                                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300">
-                                                            <p className="text-stone-500">Chưa có nội dung nào. Hãy thêm mới!</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                            {otherItems.map(item => renderItemCard(item, false))}
-                                                        </div>
-                                                    )}
-                                                </section>
-
-                                                {/* Fixed Sections - Nội Dung Cố Định */}
+                                                {/* Fixed Items Section */}
                                                 {fixedItems.length > 0 && (
                                                     <section>
                                                         <div className="flex items-center gap-3 mb-6">
-                                                            <h3 className="text-xl font-bold text-stone-800">Nội Dung Cố Định</h3>
+                                                            <h3 className="text-xl font-bold text-stone-800">
+                                                                {selectedPage === 'promotions' ? 'Hero Metrics' : 'Nội Dung Cố Định'}
+                                                            </h3>
                                                             <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-500 text-xs font-medium">Chỉ chỉnh sửa</span>
                                                         </div>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -428,6 +428,48 @@ export default function ContentManagement() {
                                                         </div>
                                                     </section>
                                                 )}
+
+                                                {/* Dynamic Items - Banners/Slides */}
+                                                <section>
+                                                    <div className="flex items-center justify-between mb-6">
+                                                        <h3 className="text-xl font-bold text-stone-800">
+                                                            {selectedPage === 'promotions' ? 'Danh Sách Banner' : 'Danh Sách Thẻ'}
+                                                        </h3>
+
+                                                        {/* Pagination Controls */}
+                                                        {selectedPage === 'promotions' && totalPages > 1 && (
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    disabled={bannerPage === 0}
+                                                                    onClick={() => setBannerPage(p => Math.max(0, p - 1))}
+                                                                    className="p-2 rounded-lg hover:bg-stone-100 disabled:opacity-50 transition-colors"
+                                                                >
+                                                                    ←
+                                                                </button>
+                                                                <span className="text-sm font-medium text-stone-600">
+                                                                    Trang {bannerPage + 1} / {totalPages}
+                                                                </span>
+                                                                <button
+                                                                    disabled={bannerPage >= totalPages - 1}
+                                                                    onClick={() => setBannerPage(p => Math.min(totalPages - 1, p + 1))}
+                                                                    className="p-2 rounded-lg hover:bg-stone-100 disabled:opacity-50 transition-colors"
+                                                                >
+                                                                    →
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {otherItems.length === 0 ? (
+                                                        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-stone-300">
+                                                            <p className="text-stone-500">Chưa có nội dung nào. Hãy thêm mới!</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-right-4 duration-300" key={bannerPage}>
+                                                            {paginatedItems.map(item => renderItemCard(item, false))}
+                                                        </div>
+                                                    )}
+                                                </section>
                                             </div>
                                         )
                                     })()}
