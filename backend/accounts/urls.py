@@ -13,6 +13,7 @@ from .views import (
     DeliveryAddressViewSet,
     get_email_for_username,
     set_password,
+    ChangePasswordView,
 )
 
 router = DefaultRouter()
@@ -21,6 +22,7 @@ router.register("addresses", DeliveryAddressViewSet, basename="delivery-address"
 urlpatterns = [
     path("register/", RegisterView.as_view()),
     path("me/", MeView.as_view()),
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("staff/create/", CreateStaffView.as_view()),
     path("users/", UserListView.as_view()),
     path("users/<int:pk>/role/", UpdateUserRoleView.as_view()),

@@ -455,13 +455,25 @@ export default function CartPage() {
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] xl:gap-8">
               <div className="space-y-4 lg:pr-2 xl:pr-4">
+                {((cart?.items ?? []).some(item => !isMenuItemInStock(item.menu_item)) ||
+                  (cart?.combos ?? []).some(combo => !isComboInStock(combo.combo))) && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-4 flex items-start gap-3">
+                      <span className="text-xl">⚠️</span>
+                      <div>
+                        <h3 className="font-bold text-red-800">Một số món trong giỏ hàng đã hết hàng</h3>
+                        <p className="text-sm text-red-700 mt-1">
+                          Vui lòng kiểm tra và xóa các món được đánh dấu mờ để tiếp tục đặt hàng.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 {(cart?.items ?? []).map((item) => {
                   const itemOutOfStock = !isMenuItemInStock(item.menu_item)
                   const stockCount = getNumericStock(item.menu_item?.stock)
                   const canIncreaseItem =
                     !itemOutOfStock && (stockCount === null || item.quantity < stockCount)
                   return (
-                    <div key={`item-${item.id}`} className="vn-card border-2 vn-border-gold p-4 hover:shadow-md transition-shadow">
+                    <div key={`item-${item.id}`} className={`vn-card border-2 p-4 transition-shadow ${itemOutOfStock ? 'border-red-400 bg-red-50 opacity-75' : 'vn-border-gold hover:shadow-md'}`}>
                       <div className="flex flex-col md:flex-row md:items-center gap-4">
                         <input
                           type="checkbox"
@@ -551,7 +563,7 @@ export default function CartPage() {
                   const canIncreaseCombo =
                     !comboOutOfStock && (comboStock === null || comboItem.quantity < comboStock)
                   return (
-                    <div key={`combo-${comboItem.id}`} className="vn-card border-2 vn-border-lotus p-4 hover:shadow-md transition-shadow bg-red-50/30">
+                    <div key={`combo-${comboItem.id}`} className={`vn-card border-2 p-4 transition-shadow ${comboOutOfStock ? 'border-red-400 bg-red-100 opacity-75' : 'vn-border-lotus bg-red-50/30 hover:shadow-md'}`}>
                       <div className="flex flex-col md:flex-row md:items-start gap-4">
                         <input
                           type="checkbox"

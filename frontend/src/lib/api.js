@@ -90,6 +90,9 @@ export const AuthAPI = {
   },
   setPassword: (password) => {
     return api.post('/accounts/set-password/', { password })
+  },
+  changePassword: (data) => {
+    return api.post('/accounts/change-password/', data)
   }
 }
 
@@ -161,6 +164,7 @@ export const CatalogAPI = {
 // =============================================================================
 export const CartAPI = {
   getCart: () => api.get('/cart/'),
+  getCount: () => api.get('/cart/count/'),
   addItem: ({ menu_item_id, quantity = 1, option_ids = [] }) =>
     api.post('/cart/items/', {
       menu_item_id,
@@ -236,7 +240,9 @@ export const OrderAPI = {
       api.get(`/orders/stats/export/${format}/`, {
         params,
         responseType: 'blob'
-      })
+      }),
+    getRevenueChart: (params) => api.get('/orders/stats/chart/', { params }),
+    getStatusStats: (params) => api.get('/orders/stats/status/', { params })
   }
 }
 

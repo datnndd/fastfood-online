@@ -46,7 +46,7 @@ class ContentItem(models.Model):
     
     page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name='content_items')
     type = models.CharField(max_length=50, choices=CONTENT_TYPE_CHOICES, default='card')
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     eyebrow = models.CharField(max_length=100, blank=True, help_text="Small tag/label above title")
     tag = models.CharField(max_length=100, blank=True)

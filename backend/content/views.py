@@ -1,6 +1,6 @@
 # content/views.py
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -87,6 +87,14 @@ class ContentItemViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated or not (hasattr(user, 'role') and user.role == 'manager'):
             queryset = queryset.filter(is_active=True)
         return queryset.select_related('page')
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to log validation errors"""
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print(f"Validation errors: {serializer.errors}")
+            print(f"Request data: {request.data}")
+        return super().create(request, *args, **kwargs)
 
 
 class StoreViewSet(viewsets.ModelViewSet):
@@ -122,6 +130,7 @@ class StoreViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def upload_image(request):
     """
     Upload image to Supabase Storage (S3-compatible)
@@ -187,6 +196,10 @@ def upload_image(request):
         }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
+        # Log S3 upload errors for debugging
+        import traceback
+        print(f"[ERROR] Image upload failed: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
         return Response(
             {'error': f'Upload failed: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -14,7 +14,7 @@ const unwrapList = (response) => {
 }
 
 export default function ProfilePage() {
-  const { user, logout, refreshProfile } = useAuth()
+  const { user, logout, refreshProfile, changePasswordWithSync } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('profile')
@@ -27,6 +27,15 @@ export default function ProfilePage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [editingAddress, setEditingAddress] = useState(null)
   const [showAddAddress, setShowAddAddress] = useState(false)
+
+  // Change Password States
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    old_password: '',
+    new_password: '',
+    confirm_password: ''
+  })
+  const [passwordErrors, setPasswordErrors] = useState({})
   // Sync tab with query param (?tab=...)
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -251,6 +260,50 @@ export default function ProfilePage() {
     }
   }
 
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    setPasswordErrors({})
+
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordErrors({ confirm_password: 'Mật khẩu xác nhận không khớp' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      // If user has no password, we don't send old_password
+      const payload = { ...passwordForm }
+      if (!user?.has_usable_password) {
+        delete payload.old_password
+      }
+
+      await changePasswordWithSync({ old_password: payload.old_password, new_password: payload.new_password })
+      alert(user?.has_usable_password ? 'Đổi mật khẩu thành công!' : 'Tạo mật khẩu thành công!')
+      setShowChangePassword(false)
+      setPasswordForm({ old_password: '', new_password: '', confirm_password: '' })
+      // Refresh profile to update has_usable_password status
+      await refreshProfile()
+    } catch (error) {
+      console.error('Failed to change password:', error)
+      const data = error.response?.data || {}
+
+      // Parse specific field errors
+      const errors = {}
+      if (data.old_password) errors.old_password = data.old_password[0]
+      if (data.new_password) errors.new_password = data.new_password[0]
+      if (data.confirm_password) errors.confirm_password = data.confirm_password[0]
+
+      // Fallback for general errors
+      if (!Object.keys(errors).length) {
+        errors.detail = data.detail || 'Đổi mật khẩu thất bại'
+      }
+
+      setPasswordErrors(errors)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getTabIcon = (tabName) => {
     const icons = {
       profile: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
@@ -277,6 +330,124 @@ export default function ProfilePage() {
           {editingProfile ? 'Hủy chỉnh sửa' : 'Chỉnh sửa'}
         </button>
       </div>
+
+      {showChangePassword ? (
+        <div className="vn-card border-2 vn-border-gold p-8 mb-8">
+          <h3 className="text-xl font-black vn-text-red-primary mb-6 vn-heading-display">
+            {user?.has_usable_password ? 'Đổi mật khẩu' : 'Tạo mật khẩu mới'}
+          </h3>
+          <form onSubmit={handleChangePassword} className="space-y-6">
+            {user?.has_usable_password && (
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-gray-700">Mật khẩu hiện tại</label>
+                <input
+                  type="password"
+                  value={passwordForm.old_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
+                  required
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all font-medium ${passwordErrors.old_password
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50'
+                    : 'border-gray-200 focus:border-red-500 focus:ring-red-100'
+                    }`}
+                />
+                {passwordErrors.old_password && (
+                  <p className="text-sm font-bold text-red-600 flex items-center mt-1">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {passwordErrors.old_password}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-gray-700">Mật khẩu mới</label>
+                <input
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                  required
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all font-medium ${passwordErrors.new_password
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50'
+                    : 'border-gray-200 focus:border-red-500 focus:ring-red-100'
+                    }`}
+                />
+                {passwordErrors.new_password && (
+                  <p className="text-sm font-bold text-red-600 flex items-center mt-1">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {passwordErrors.new_password}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-gray-700">Xác nhận mật khẩu mới</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirm_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                  required
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all font-medium ${passwordErrors.confirm_password
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-100 bg-red-50'
+                    : 'border-gray-200 focus:border-red-500 focus:ring-red-100'
+                    }`}
+                />
+                {passwordErrors.confirm_password && (
+                  <p className="text-sm font-bold text-red-600 flex items-center mt-1">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {passwordErrors.confirm_password}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {passwordErrors.detail && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-xl font-bold border border-red-100 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {passwordErrors.detail}
+              </div>
+            )}
+
+            <div className="flex space-x-4 pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 vn-btn-primary rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+              >
+                {loading ? 'Đang xử lý...' : (user?.has_usable_password ? 'Xác nhận đổi mật khẩu' : 'Tạo mật khẩu')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowChangePassword(false)
+                  setPasswordErrors({})
+                  setPasswordForm({ old_password: '', new_password: '', confirm_password: '' })
+                }}
+                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-bold transition-all duration-200"
+              >
+                Hủy
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowChangePassword(true)}
+          className="mb-8 px-6 py-3 border-2 border-red-100 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-all duration-200 flex items-center"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          {user?.has_usable_password ? 'Đổi mật khẩu' : 'Tạo mật khẩu'}
+        </button>
+      )}
 
       <form onSubmit={handleProfileUpdate} className="space-y-6">
         <div className="space-y-6">

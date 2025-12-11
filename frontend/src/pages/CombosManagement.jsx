@@ -14,6 +14,7 @@ export default function CombosManagement() {
     const [error, setError] = useState(null)
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
+    const [filterStock, setFilterStock] = useState('') // '', 'in_stock', 'out_of_stock'
     const [viewMode, setViewMode] = useState('grid')
     const [successMessage, setSuccessMessage] = useState(null)
     const [isFetchingComboDetail, setIsFetchingComboDetail] = useState(false)
@@ -28,7 +29,8 @@ export default function CombosManagement() {
                 page,
                 limit: PAGE_SIZE,
                 search: searchTerm,
-                category: filterCategory
+                category: filterCategory,
+                stock_status: filterStock
             }
             const response = await CatalogAPI.listCombos(params)
             let data = []
@@ -55,7 +57,7 @@ export default function CombosManagement() {
         } finally {
             setLoading(false)
         }
-    }, [page, searchTerm, filterCategory])
+    }, [page, searchTerm, filterCategory, filterStock])
 
     const loadCategories = useCallback(async () => {
         try {
@@ -78,7 +80,7 @@ export default function CombosManagement() {
     // Reset page when filters change
     useEffect(() => {
         setPage(1)
-    }, [searchTerm, filterCategory])
+    }, [searchTerm, filterCategory, filterStock])
 
     const handleAdd = () => {
         setSelectedCombo(null)
@@ -261,6 +263,15 @@ export default function CombosManagement() {
                                     {cat.name}
                                 </option>
                             ))}
+                        </select>
+                        <select
+                            value={filterStock}
+                            onChange={(e) => setFilterStock(e.target.value)}
+                            className="px-6 py-4 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
+                        >
+                            <option value="">📦 Tất cả trạng thái</option>
+                            <option value="in_stock">✅ Còn hàng</option>
+                            <option value="out_of_stock">🚫 Hết hàng</option>
                         </select>
                         <div className="flex gap-2 bg-gray-100 p-2 rounded-xl">
                             <button

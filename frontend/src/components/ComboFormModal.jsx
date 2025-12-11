@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CatalogAPI } from '../lib/api'
+import MenuItemPicker from './MenuItemPicker'
 
 const buildEmptyFormState = () => ({
     name: '',
@@ -17,6 +18,8 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
     const [menuItems, setMenuItems] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+    const [showItemPicker, setShowItemPicker] = useState(false)
+    const [validationErrors, setValidationErrors] = useState([])
 
     useEffect(() => {
         loadMenuItems()
@@ -50,21 +53,86 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         setImageFile(null)
     }, [combo])
 
+    // Validate all item rules whenever items change
+    useEffect(() => {
+        const errors = validateItems(formData.items, menuItems)
+        setValidationErrors(errors)
+    }, [formData.items, menuItems])
+
     const loadMenuItems = async () => {
         try {
-            const response = await CatalogAPI.listItems()
-            const data = response.data.results || response.data
-            setMenuItems(Array.isArray(data) ? data : [])
+            const response = await CatalogAPI.listAllItems()
+            const data = Array.isArray(response) ? response : (response.data?.results || response.data || [])
+            setMenuItems(data)
         } catch (err) {
             console.error('Load menu items error:', err)
         }
     }
 
+    // Validate all item rules: quantity vs stock AND option selection
+    const validateItems = (items, menuItemsList) => {
+        const errors = []
+        items.forEach((item, index) => {
+            const menuItem = menuItemsList.find(mi => mi.id === parseInt(item.menu_item_id))
+            if (!menuItem) return
+
+            const quantity = parseInt(item.quantity) || 0
+
+            // 1. Validate quantity vs stock
+            if (quantity > menuItem.stock) {
+                errors.push({
+                    type: 'stock',
+                    itemIndex: index,
+                    message: `Số lượng (${quantity}) vượt quá tồn kho (${menuItem.stock})`
+                })
+            }
+
+            // 2. Validate option groups
+            menuItem.option_groups?.forEach(group => {
+                const selectedCount = group.options.filter(opt =>
+                    item.option_ids?.includes(opt.id)
+                ).length
+
+                const minSelect = group.min_select || 0
+                const maxSelect = group.max_select || group.options.length
+
+                // Check minimum selection (only for required groups or if min_select > 0)
+                if (group.required && selectedCount < Math.max(minSelect, 1)) {
+                    errors.push({
+                        type: 'option_min',
+                        itemIndex: index,
+                        groupId: group.id,
+                        groupName: group.name,
+                        message: `"${group.name}" cần chọn ít nhất ${Math.max(minSelect, 1)} tùy chọn`
+                    })
+                } else if (minSelect > 0 && selectedCount < minSelect) {
+                    errors.push({
+                        type: 'option_min',
+                        itemIndex: index,
+                        groupId: group.id,
+                        groupName: group.name,
+                        message: `"${group.name}" cần chọn ít nhất ${minSelect} tùy chọn`
+                    })
+                }
+
+                // Check maximum selection
+                if (selectedCount > maxSelect) {
+                    errors.push({
+                        type: 'option_max',
+                        itemIndex: index,
+                        groupId: group.id,
+                        groupName: group.name,
+                        message: `"${group.name}" chỉ được chọn tối đa ${maxSelect} tùy chọn (đang chọn ${selectedCount})`
+                    })
+                }
+            })
+        })
+        return errors
+    }
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target
         let newValue = type === 'checkbox' ? checked : value
-
-
 
         setFormData(prev => ({
             ...prev,
@@ -84,11 +152,17 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         }
     }
 
-    const handleAddItem = () => {
+    const handleAddItemFromPicker = (menuItem) => {
+        // Add the selected item to form
         setFormData(prev => ({
             ...prev,
-            items: [...prev.items, { menu_item_id: '', quantity: 1, option_ids: [] }]
+            items: [...prev.items, {
+                menu_item_id: menuItem.id,
+                quantity: 1,
+                option_ids: []
+            }]
         }))
+        setShowItemPicker(false)
     }
 
     const handleRemoveItem = (index) => {
@@ -114,16 +188,36 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         }))
     }
 
-    const handleOptionToggle = (itemIndex, optionId) => {
+    const handleOptionToggle = (itemIndex, optionId, group) => {
         setFormData(prev => ({
             ...prev,
             items: prev.items.map((item, i) => {
                 if (i !== itemIndex) return item
 
                 const optionIds = item.option_ids || []
-                const newOptionIds = optionIds.includes(optionId)
-                    ? optionIds.filter(id => id !== optionId)
-                    : [...optionIds, optionId]
+                const isCurrentlySelected = optionIds.includes(optionId)
+
+                // Get options that belong to this group
+                const groupOptionIds = group.options.map(opt => opt.id)
+                const selectedInGroup = optionIds.filter(id => groupOptionIds.includes(id))
+
+                let newOptionIds
+
+                if (isCurrentlySelected) {
+                    // Remove the option
+                    newOptionIds = optionIds.filter(id => id !== optionId)
+                } else {
+                    // Check if adding would exceed max_select
+                    const maxSelect = group.max_select || group.options.length
+                    if (selectedInGroup.length >= maxSelect) {
+                        // Remove the first selected option from this group and add the new one
+                        const firstSelectedInGroup = selectedInGroup[0]
+                        newOptionIds = optionIds.filter(id => id !== firstSelectedInGroup)
+                        newOptionIds.push(optionId)
+                    } else {
+                        newOptionIds = [...optionIds, optionId]
+                    }
+                }
 
                 return { ...item, option_ids: newOptionIds }
             })
@@ -135,6 +229,35 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
         if (!item.menu_item_id) return null
         return menuItems.find(mi => mi.id === parseInt(item.menu_item_id))
     }
+
+    const getItemErrors = (itemIndex) => {
+        return validationErrors.filter(err => err.itemIndex === itemIndex)
+    }
+
+    const getGroupErrors = (itemIndex, groupId) => {
+        return validationErrors.filter(err => err.itemIndex === itemIndex && err.groupId === groupId)
+    }
+
+    const selectedItemIds = useMemo(() => {
+        return formData.items.map(item => parseInt(item.menu_item_id)).filter(id => !isNaN(id))
+    }, [formData.items])
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value)
+    }
+
+    const getStockBadge = (stock, quantity = 1) => {
+        const qty = parseInt(quantity) || 0
+        if (qty > stock) return { color: 'bg-red-100 text-red-800 border-red-300', text: `Vượt kho! (${stock})`, hasError: true }
+        if (stock <= 0) return { color: 'bg-red-100 text-red-800', text: `Hết hàng`, hasError: true }
+        if (stock <= 10) return { color: 'bg-yellow-100 text-yellow-800', text: `Còn ${stock}`, hasError: false }
+        return { color: 'bg-green-100 text-green-800', text: `Còn ${stock}`, hasError: false }
+    }
+
+    const hasValidationErrors = validationErrors.length > 0
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -150,6 +273,12 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
             }
             if (formData.items.length === 0) {
                 throw new Error('Combo phải có ít nhất 1 món')
+            }
+
+            // Check all validation errors
+            if (hasValidationErrors) {
+                const errorMessages = validationErrors.map(err => err.message)
+                throw new Error(`Vui lòng sửa các lỗi sau:\n• ${errorMessages.join('\n• ')}`)
             }
 
             const categoryId = parseInt(formData.category, 10)
@@ -181,8 +310,6 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         .filter((id) => !Number.isNaN(id))
                 }
             })
-
-
 
             const dataToSubmit = {
                 name: formData.name.trim(),
@@ -260,7 +387,7 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         <span className="text-2xl">⚠️</span>
                         <div>
                             <p className="font-bold text-red-800 mb-1">Có lỗi xảy ra!</p>
-                            <p className="text-red-700 text-sm">{error}</p>
+                            <p className="text-red-700 text-sm whitespace-pre-line">{error}</p>
                         </div>
                     </div>
                 )}
@@ -385,17 +512,22 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         </div>
 
 
-                        {/* Items List with Option Groups */}
+                        {/* Items List with Option Groups - REDESIGNED */}
                         <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-orange-200">
                             <div className="flex items-center justify-between mb-4">
                                 <label className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                     <span className="text-2xl">🍔</span>
                                     Món ăn trong combo *
+                                    {hasValidationErrors && (
+                                        <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+                                            {validationErrors.length} lỗi
+                                        </span>
+                                    )}
                                 </label>
                                 <button
                                     type="button"
-                                    onClick={handleAddItem}
-                                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2"
+                                    onClick={() => setShowItemPicker(true)}
+                                    className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 transform"
                                 >
                                     <span className="text-xl">+</span>
                                     Thêm món
@@ -403,120 +535,169 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                             </div>
 
                             {formData.items.length === 0 ? (
-                                <p className="text-center text-gray-500 py-8">
-                                    Chưa có món nào. Nhấn "Thêm món" để bắt đầu.
-                                </p>
+                                <div className="text-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-orange-300">
+                                    <div className="text-6xl mb-4">🍽️</div>
+                                    <p className="text-gray-500 font-semibold">Chưa có món nào trong combo</p>
+                                    <p className="text-gray-400 text-sm mt-2">Nhấn "Thêm món" để bắt đầu chọn món ăn</p>
+                                </div>
                             ) : (
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     {formData.items.map((item, index) => {
                                         const selectedMenuItem = getSelectedMenuItem(index)
+                                        const itemErrors = getItemErrors(index)
+                                        const stockBadge = selectedMenuItem ? getStockBadge(selectedMenuItem.stock, item.quantity) : null
 
                                         return (
-                                            <div key={index} className="bg-white rounded-xl p-5 border-2 border-orange-200">
-                                                <div className="flex items-start gap-4 mb-4">
-                                                    <div className="flex-1 space-y-4">
-                                                        {/* Menu Item & Quantity */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                            <div className="md:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                                    Món ăn *
-                                                                </label>
-                                                                <select
-                                                                    value={item.menu_item_id}
-                                                                    onChange={(e) => handleItemChange(index, 'menu_item_id', e.target.value)}
-                                                                    required
-                                                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg font-semibold focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                                                                >
-                                                                    <option value="">-- Chọn món --</option>
-                                                                    {menuItems.map((menuItem) => (
-                                                                        <option key={menuItem.id} value={menuItem.id}>
-                                                                            {menuItem.name} - {menuItem.price.toLocaleString('vi-VN')}₫
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
+                                            <div
+                                                key={index}
+                                                className={`bg-white rounded-xl p-5 border-2 transition-all ${itemErrors.length > 0 ? 'border-red-300 shadow-red-100' : 'border-orange-200'
+                                                    } shadow-lg`}
+                                            >
+                                                <div className="flex gap-4">
+                                                    {/* Item Icon (no image to reduce load) */}
+                                                    <div className="flex-shrink-0">
+                                                        <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
+                                                            <span className="text-2xl">🍽️</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Item Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="flex-1">
+                                                                <h4 className="font-bold text-gray-900 text-lg">
+                                                                    {selectedMenuItem?.name || 'Chưa chọn món'}
+                                                                </h4>
+                                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                                    <span className="text-orange-600 font-bold">
+                                                                        {selectedMenuItem ? formatCurrency(selectedMenuItem.price) : '--'}
+                                                                    </span>
+                                                                    {stockBadge && (
+                                                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${stockBadge.color}`}>
+                                                                            📦 {stockBadge.text}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
 
-                                                            <div>
-                                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                                    Số lượng *
-                                                                </label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={item.quantity}
-                                                                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                                                    required
-                                                                    min="1"
-                                                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg font-bold focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
-                                                                />
+                                                            {/* Quantity & Delete */}
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <label className="text-sm font-semibold text-gray-600">SL:</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                                                        required
+                                                                        min="1"
+                                                                        max={selectedMenuItem?.stock || 999}
+                                                                        className={`w-20 px-3 py-2 border-2 rounded-lg font-bold text-center focus:border-orange-500 ${stockBadge?.hasError ? 'border-red-400 bg-red-50' : 'border-gray-200'
+                                                                            }`}
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveItem(index)}
+                                                                    className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-all"
+                                                                >
+                                                                    🗑️
+                                                                </button>
                                                             </div>
                                                         </div>
 
+                                                        {/* Item Errors (stock) */}
+                                                        {itemErrors.filter(err => err.type === 'stock').map((err, errIdx) => (
+                                                            <div key={`stock-${errIdx}`} className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                                                <p className="text-red-600 text-sm flex items-center gap-1">
+                                                                    <span>⚠️</span> {err.message}
+                                                                </p>
+                                                            </div>
+                                                        ))}
+
                                                         {/* Option Groups */}
                                                         {selectedMenuItem && selectedMenuItem.option_groups && selectedMenuItem.option_groups.length > 0 && (
-                                                            <div className="border-t-2 border-orange-100 pt-4">
+                                                            <div className="mt-4 border-t border-orange-100 pt-4">
                                                                 <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                                                    <span className="text-xl">🎨</span>
+                                                                    <span>🎨</span>
                                                                     Tùy chọn cho món này:
                                                                 </label>
-                                                                <div className="space-y-4">
-                                                                    {selectedMenuItem.option_groups.map((group) => (
-                                                                        <div key={group.id} className="bg-purple-50 rounded-lg p-4">
-                                                                            <div className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                                                                                {group.name}
-                                                                                {group.required && (
-                                                                                    <span className="text-xs bg-red-500 text-white px-2 py-1 rounded-full">
-                                                                                        Bắt buộc
+                                                                <div className="space-y-3">
+                                                                    {selectedMenuItem.option_groups.map((group) => {
+                                                                        const groupErrors = getGroupErrors(index, group.id)
+                                                                        const hasError = groupErrors.length > 0
+                                                                        const selectedInGroup = group.options.filter(opt => item.option_ids?.includes(opt.id)).length
+                                                                        const maxSelect = group.max_select || group.options.length
+                                                                        const minSelect = group.min_select || 0
+
+                                                                        return (
+                                                                            <div
+                                                                                key={group.id}
+                                                                                className={`rounded-lg p-3 ${hasError ? 'bg-red-50 border border-red-200' : 'bg-purple-50'
+                                                                                    }`}
+                                                                            >
+                                                                                <div className="font-semibold text-gray-900 mb-2 flex items-center gap-2 flex-wrap">
+                                                                                    {group.name}
+                                                                                    {group.required && (
+                                                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${hasError
+                                                                                                ? 'bg-red-500 text-white animate-pulse'
+                                                                                                : 'bg-red-500 text-white'
+                                                                                            }`}>
+                                                                                            Bắt buộc
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${selectedInGroup > maxSelect ? 'bg-red-100 text-red-800' :
+                                                                                            selectedInGroup >= (group.required ? Math.max(minSelect, 1) : minSelect) ? 'bg-green-100 text-green-800' :
+                                                                                                'bg-gray-100 text-gray-600'
+                                                                                        }`}>
+                                                                                        {selectedInGroup}/{maxSelect}
                                                                                     </span>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="text-xs text-gray-600 mb-3">
-                                                                                Chọn từ {group.min_select} đến {group.max_select} tùy chọn
-                                                                            </div>
-                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                                {group.options.map((option) => {
-                                                                                    const isSelected = item.option_ids?.includes(option.id)
-                                                                                    return (
-                                                                                        <label
-                                                                                            key={option.id}
-                                                                                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected
-                                                                                                ? 'border-purple-500 bg-purple-100'
-                                                                                                : 'border-gray-200 hover:border-purple-300'
-                                                                                                }`}
-                                                                                        >
-                                                                                            <input
-                                                                                                type="checkbox"
-                                                                                                checked={isSelected}
-                                                                                                onChange={() => handleOptionToggle(index, option.id)}
-                                                                                                className="w-5 h-5 text-purple-600 rounded"
-                                                                                            />
-                                                                                            <div className="flex-1">
-                                                                                                <div className="font-medium text-gray-900">
-                                                                                                    {option.name}
+                                                                                </div>
+
+                                                                                {/* Group errors */}
+                                                                                {groupErrors.map((err, errIdx) => (
+                                                                                    <p key={errIdx} className="text-red-600 text-xs mb-2 flex items-center gap-1">
+                                                                                        <span>⚠️</span> {err.message}
+                                                                                    </p>
+                                                                                ))}
+
+                                                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                                                    {group.options.map((option) => {
+                                                                                        const isSelected = item.option_ids?.includes(option.id)
+                                                                                        return (
+                                                                                            <label
+                                                                                                key={option.id}
+                                                                                                className={`flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-all text-sm ${isSelected
+                                                                                                        ? 'border-purple-500 bg-purple-100'
+                                                                                                        : 'border-gray-200 hover:border-purple-300 bg-white'
+                                                                                                    }`}
+                                                                                            >
+                                                                                                <input
+                                                                                                    type="checkbox"
+                                                                                                    checked={isSelected}
+                                                                                                    onChange={() => handleOptionToggle(index, option.id, group)}
+                                                                                                    className="w-4 h-4 text-purple-600 rounded"
+                                                                                                />
+                                                                                                <div className="flex-1 min-w-0">
+                                                                                                    <span className="font-medium text-gray-900 truncate block">
+                                                                                                        {option.name}
+                                                                                                    </span>
+                                                                                                    {option.price_delta > 0 && (
+                                                                                                        <span className="text-xs text-green-600 font-semibold">
+                                                                                                            +{formatCurrency(option.price_delta)}
+                                                                                                        </span>
+                                                                                                    )}
                                                                                                 </div>
-                                                                                                {option.price_delta > 0 && (
-                                                                                                    <div className="text-xs text-green-600 font-semibold">
-                                                                                                        +{option.price_delta.toLocaleString('vi-VN')}₫
-                                                                                                    </div>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </label>
-                                                                                    )
-                                                                                })}
+                                                                                            </label>
+                                                                                        )
+                                                                                    })}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    ))}
+                                                                        )
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         )}
                                                     </div>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveItem(index)}
-                                                        className="mt-8 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-bold transition-all"
-                                                    >
-                                                        🗑️
-                                                    </button>
                                                 </div>
                                             </div>
                                         )
@@ -562,13 +743,21 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 transform"
+                            disabled={loading || hasValidationErrors}
+                            className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-2 ${hasValidationErrors
+                                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-xl hover:scale-105 transform'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             {loading ? (
                                 <>
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                     Đang lưu...
+                                </>
+                            ) : hasValidationErrors ? (
+                                <>
+                                    <span>⚠️</span>
+                                    Có {validationErrors.length} lỗi cần sửa
                                 </>
                             ) : (
                                 <>
@@ -580,6 +769,17 @@ export default function ComboFormModal({ combo, categories, onClose, onSave }) {
                     </div>
                 </form>
             </div >
+
+            {/* Menu Item Picker Modal */}
+            {showItemPicker && (
+                <MenuItemPicker
+                    items={menuItems}
+                    categories={categories}
+                    onSelect={handleAddItemFromPicker}
+                    onClose={() => setShowItemPicker(false)}
+                    excludeIds={selectedItemIds}
+                />
+            )}
 
             <style>{`
                 @keyframes fadeIn {

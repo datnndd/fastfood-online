@@ -158,7 +158,7 @@ export default function About() {
                   </div>
                   {item.stat && (
                     <div className="mt-4 flex items-center gap-2 border-t-2 vn-border-gold pt-4 w-full">
-                      <span className="text-sm font-bold vn-text-gold-primary vn-gradient-lotus px-3 py-1.5 rounded-full">
+                      <span className="text-sm font-bold text-[#4A2E0F] vn-gradient-lotus px-3 py-1.5 rounded-full">
                         🔥 {item.stat}
                       </span>
                     </div>
@@ -274,7 +274,10 @@ export default function About() {
         <div className="absolute bottom-10 right-10 text-6xl opacity-20 vn-animate-lantern-sway" style={{ animationDelay: '1s' }}>🏮</div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-6">
-          <h2 className="text-4xl font-black mb-8 vn-heading-display">
+          <h2
+            className="text-4xl font-black mb-8 vn-heading-display"
+            style={{ color: '#4A2E0F' }}
+          >
             Ghé McDono để tận hưởng hương vị tuyệt vời ngay hôm nay! 🍟
           </h2>
           <a

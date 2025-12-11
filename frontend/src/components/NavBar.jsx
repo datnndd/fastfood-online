@@ -57,11 +57,10 @@ export default function NavBar() {
     }
 
     const refreshCartCount = () => {
-      CartAPI.getCart()
+      // Use lightweight count endpoint instead of fetching full cart
+      CartAPI.getCount()
         .then(({ data }) => {
-          const itemsTotal = (data.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0)
-          const combosTotal = (data.combos || []).reduce((sum, combo) => sum + (combo.quantity || 0), 0)
-          setCartCount(itemsTotal + combosTotal)
+          setCartCount(data.count || 0)
         })
         .catch(() => setCartCount(0))
     }
@@ -115,7 +114,9 @@ export default function NavBar() {
     const fetchLogo = async () => {
       try {
         const items = await ContentAPI.getContentItems('global')
-        const logoItem = items.find(i => i.type === 'logo')
+        const logoItems = items.filter(i => i.type === 'logo')
+        // Find selected logo first, otherwise use the first active one
+        const logoItem = logoItems.find(i => i.metadata?.selected === true) || logoItems[0]
         if (logoItem && logoItem.image_url) {
           setLogoUrl(logoItem.image_url)
         }
@@ -124,6 +125,11 @@ export default function NavBar() {
       }
     }
     fetchLogo()
+
+    // Listen for logo updates
+    const handleLogoUpdate = () => fetchLogo()
+    window.addEventListener('logoUpdated', handleLogoUpdate)
+    return () => window.removeEventListener('logoUpdated', handleLogoUpdate)
   }, [])
 
   return (
@@ -140,11 +146,11 @@ export default function NavBar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center group">
-            <div className="bg-white p-1.5 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300 h-[50px] w-[50px] flex items-center justify-center">
+            <div className="bg-white p-1.5 rounded-full overflow-hidden shadow-md group-hover:scale-105 transition-transform duration-300 h-[50px] w-[50px] flex items-center justify-center">
               <img
                 src={logoUrl}
                 alt="Mc Dono Logo"
-                className="max-h-full max-w-full object-contain"
+                className="h-full w-full object-cover"
               />
             </div>
           </Link>

@@ -244,11 +244,10 @@ export default function ManagerAccountsPage() {
                     <button
                       key={filter.value}
                       onClick={() => setRoleFilter(filter.value)}
-                      className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-all ${
-                        isActive
-                          ? 'bg-white text-blue-700 shadow-lg ring-2 ring-white ring-offset-2 ring-offset-blue-500'
-                          : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'
-                      }`}
+                      className={`flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-all ${isActive
+                        ? 'bg-white text-blue-700 shadow-lg ring-2 ring-white ring-offset-2 ring-offset-blue-500'
+                        : 'bg-white bg-opacity-10 text-white hover:bg-opacity-20'
+                        }`}
                     >
                       <span className="text-base">{filter.icon}</span>
                       <span>{filter.label}</span>

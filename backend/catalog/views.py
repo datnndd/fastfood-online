@@ -9,6 +9,7 @@ from core.utils.supabase_storage import upload_and_get_public_url
 from rest_framework import viewsets, permissions, filters
 from accounts.permissions import IsManager
 from .models import Category, MenuItem, Combo
+from django.db.models import ProtectedError
 from .serializers import (
     CategorySerializer, MenuItemSerializer,
     ComboListSerializer, ComboDetailSerializer, ComboCreateUpdateSerializer,
@@ -20,6 +21,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
+
+    def get_queryset(self):
+        from django.db.models import Count
+        return Category.objects.annotate(
+            items_count=Count('items', distinct=True),
+            combos_count=Count('combos', distinct=True)
+        )
 
     def get_permissions(self):
         if self.action in {"list","retrieve"}:
@@ -59,10 +67,19 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     search_fields = ["name","description","category__name"]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().prefetch_related('option_groups__options')
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        
+        # Stock status filter for management pages
+        stock_status = self.request.query_params.get('stock_status')
+        if stock_status == 'in_stock':
+            queryset = queryset.filter(stock__gt=0, is_available=True)
+        elif stock_status == 'out_of_stock':
+            from django.db.models import Q
+            queryset = queryset.filter(Q(stock__lte=0) | Q(is_available=False))
+        
         return queryset
 
     def get_serializer_class(self):
@@ -94,7 +111,40 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         public_url = upload_and_get_public_url(f, dest_path, f.content_type or "image/jpeg")
         obj.image_url = public_url
         obj.save(update_fields=["image_url"])
+        obj.save(update_fields=["image_url"])
         return Response({"image_url": public_url}, status=200)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError as e:
+            protected_objects = list(e.protected_objects)
+            combo_names = set()
+            has_orders = False
+            
+            # Local import to avoid circular dependency if needed, 
+            # though checking class name is safer for loose coupling
+            for obj in protected_objects:
+                # Check for ComboItem
+                if hasattr(obj, 'combo') and hasattr(obj.combo, 'name'):
+                    combo_names.add(obj.combo.name)
+                # Check for OrderItem (has 'order' attribute)
+                elif hasattr(obj, 'order'):
+                    has_orders = True
+            
+            details = []
+            if combo_names:
+                details.append(f"đang có trong các Combo: {', '.join(combo_names)}")
+            if has_orders:
+                details.append("đã có trong đơn hàng")
+            
+            reason = " và ".join(details)
+            message = f"Không thể xóa món ăn này vì {reason}." if reason else "Không thể xóa món ăn này vì nó đang được sử dụng."
+            
+            return Response(
+                {"detail": message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
 class ComboViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
@@ -119,6 +169,14 @@ class ComboViewSet(viewsets.ModelViewSet):
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        
+        # Stock status filter for management pages
+        stock_status = self.request.query_params.get('stock_status')
+        if stock_status == 'in_stock':
+            queryset = queryset.filter(stock__gt=0, is_available=True)
+        elif stock_status == 'out_of_stock':
+            from django.db.models import Q
+            queryset = queryset.filter(Q(stock__lte=0) | Q(is_available=False))
         
         return queryset.order_by('-created_at')
     

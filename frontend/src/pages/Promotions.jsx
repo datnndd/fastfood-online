@@ -89,12 +89,26 @@ export default function Promotions() {
   const navigate = useNavigate();
 
   const [instoreBillboards, setInstoreBillboards] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-slide effect
+  useEffect(() => {
+    if (instoreBillboards.length <= 4) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => {
+        const totalPages = Math.ceil(instoreBillboards.length / 4);
+        return (prev + 1) % totalPages;
+      });
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(interval);
+  }, [instoreBillboards.length]);
 
   useEffect(() => {
     // Fetch billboards from API
     const fetchBillboards = async () => {
       try {
-        const { ContentAPI } = await import('../lib/api');
         const data = await ContentAPI.getContentItems('promotions');
 
         // Handle paginated response
@@ -234,62 +248,101 @@ export default function Promotions() {
               Xem trước các banner được treo tại cửa hàng để chuẩn bị lịch ghé quầy.
             </p>
           </div>
-          <button
-            onClick={handleOrderNow}
-            className="vn-btn-primary px-6 py-3 shadow-md hover:shadow-lg"
-          >
-            Đặt hàng
-          </button>
+          <div className="flex gap-4">
+            {/* Navigation Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
+                disabled={currentSlide === 0}
+                className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all"
+              >
+                ←
+              </button>
+              <button
+                onClick={() => setCurrentSlide(prev => Math.min(Math.ceil(instoreBillboards.length / 4) - 1, prev + 1))}
+                disabled={currentSlide >= Math.ceil(instoreBillboards.length / 4) - 1}
+                className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-all"
+              >
+                →
+              </button>
+            </div>
+            <button
+              onClick={handleOrderNow}
+              className="vn-btn-primary px-6 py-3 shadow-md hover:shadow-lg hidden md:block"
+            >
+              Đặt hàng
+            </button>
+          </div>
         </div>
+
         {instoreBillboards.length === 0 ? (
           <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-3xl">
             <p className="text-gray-500 text-lg font-medium">🪷 Chưa có banner nào</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {instoreBillboards.map((banner) => (
-              <div
-                key={banner.id}
-                className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg group vn-card border-0"
-              >
-                <img
-                  src={banner.image}
-                  alt={banner.title}
-                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                {/* lớp nền tối mạnh hơn */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-
-                <div className="relative z-10 h-full p-8 flex flex-col justify-end text-white">
-                  {/* eyebrow có nền riêng, bo nhẹ */}
-                  <span className="self-start bg-red-600/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.25em] text-white shadow-md border border-white/20">
-                    {banner.eyebrow}
-                  </span>
-
-                  {/* tiêu đề sáng hơn, có viền bóng */}
-                  <h3 className="text-2xl font-black mt-3 text-white drop-shadow-lg vn-heading-display-white">
-                    {banner.title}
-                  </h3>
-
-                  {/* mô tả có nền bán trong suốt */}
-                  <div className="mt-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-                    <p className="text-white/95 text-sm leading-relaxed font-medium">
-                      {banner.description}
-                    </p>
-                    <p className="mt-3 text-[11px] uppercase tracking-[0.35em] vn-text-gold-primary font-bold">
-                      {banner.note}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleOrderNow}
-                    className="mt-6 self-start vn-btn-gold px-6 py-2 text-sm shadow-lg"
+          <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[500px]">
+              {instoreBillboards
+                .slice(currentSlide * 4, (currentSlide + 1) * 4)
+                .map((banner) => (
+                  <div
+                    key={banner.id}
+                    className="relative h-[320px] rounded-[34px] overflow-hidden shadow-lg group vn-card border-0 animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both"
                   >
-                    Đặt hàng
-                  </button>
-                </div>
+                    <img
+                      src={banner.image}
+                      alt={banner.title}
+                      className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    {/* lớp nền tối mạnh hơn */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+
+                    <div className="relative z-10 h-full p-8 flex flex-col justify-end text-white">
+                      {/* eyebrow có nền riêng, bo nhẹ */}
+                      <span className="self-start bg-red-600/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.25em] text-white shadow-md border border-white/20">
+                        {banner.eyebrow}
+                      </span>
+
+                      {/* tiêu đề sáng hơn, có viền bóng */}
+                      <h3 className="text-2xl font-black mt-3 text-white drop-shadow-lg vn-heading-display-white">
+                        {banner.title}
+                      </h3>
+
+                      {/* mô tả có nền bán trong suốt */}
+                      <div className="mt-3 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                        <p className="text-white/95 text-sm leading-relaxed font-medium">
+                          {banner.description}
+                        </p>
+                        <p className="mt-3 text-[11px] uppercase tracking-[0.35em] vn-text-gold-primary font-bold">
+                          {banner.note}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={handleOrderNow}
+                        className="mt-6 self-start vn-btn-gold px-6 py-2 text-sm shadow-lg"
+                      >
+                        Đặt hàng
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {/* Pagination Dots */}
+            {instoreBillboards.length > 4 && (
+              <div className="flex justify-center gap-2 mt-8">
+                {Array.from({ length: Math.ceil(instoreBillboards.length / 4) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${currentSlide === idx ? "w-8 bg-red-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                      }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </section>
@@ -317,20 +370,33 @@ export default function Promotions() {
             {digitalBanners.map((banner) => (
               <div
                 key={banner.id}
-                className={`rounded - 3xl p - 6 shadow - xl border - 0 text - white ${banner.accent.includes('gradient') ? banner.accent : 'bg-gray-800'} `}
+                className="group relative bg-white rounded-[2rem] p-8 shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full"
               >
-                <p className="text-xs uppercase tracking-[0.4em] text-white/80 font-bold">
-                  {banner.eyebrow}
-                </p>
-                <h4 className="text-2xl font-black mt-2 drop-shadow-md vn-heading-display-white">
-                  {banner.title}
-                </h4>
-                <p className="mt-3 text-sm text-white/90 font-medium">{banner.body}</p>
+                {/* Accent Top Bar */}
+                <div className={`absolute top-0 left-0 right-0 h-2 ${banner.accent}`} />
+
+                {/* Content */}
+                <div className="flex-1">
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-bold mb-4 flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${banner.accent}`}></span>
+                    {banner.eyebrow}
+                  </p>
+
+                  <h4 className="text-2xl font-bold text-gray-900 mb-4 leading-tight group-hover:text-red-700 transition-colors">
+                    {banner.title}
+                  </h4>
+
+                  <p className="text-gray-600 font-medium leading-relaxed">
+                    {banner.body}
+                  </p>
+                </div>
+
                 <button
                   onClick={handleOrderNow}
-                  className="mt-6 inline-flex items-center gap-2 text-sm font-bold hover:underline underline-offset-4"
+                  className="mt-8 self-start inline-flex items-center gap-3 text-sm font-bold text-red-700 uppercase tracking-wider group-hover:gap-5 transition-all"
                 >
-                  Đặt hàng →
+                  Đặt hàng
+                  <span className="text-lg transition-transform group-hover:translate-x-1">→</span>
                 </button>
               </div>
             ))}

@@ -20,6 +20,7 @@ from .serializers import (
     WardSerializer,
     DeliveryAddressSerializer,
     ManageUserListSerializer,
+    ChangePasswordSerializer,
 )
 
 class RegisterView(generics.CreateAPIView):
@@ -58,9 +59,32 @@ class MeView(generics.RetrieveUpdateAPIView):
         self.perform_update(serializer)
         return Response(ProfileSerializer(instance).data)
 
+from .utils import create_supabase_user
+from rest_framework import exceptions
+
 class CreateStaffView(generics.CreateAPIView):
     serializer_class = CreateStaffSerializer
     permission_classes = [permissions.IsAuthenticated, IsManager]
+
+    def perform_create(self, serializer):
+        email = serializer.validated_data.get("email")
+        password = serializer.validated_data.get("password")
+        role = serializer.validated_data.get("role")
+        username = serializer.validated_data.get("username")
+
+        # 1. Create user in Supabase (Admin API)
+        try:
+            supabase_user = create_supabase_user(
+                email=email, 
+                password=password,
+                user_metadata={"username": username, "role": role}
+            )
+        except Exception as e:
+            raise exceptions.APIException(f"Supabase Error: {str(e)}")
+
+        # 2. Create user in Django
+        serializer.save(supabase_id=supabase_user.id)
+
 
 class UpdateUserRoleView(generics.UpdateAPIView):
     queryset = User.objects.all()
@@ -173,3 +197,37 @@ def set_password(request):
     user.set_password(password) # Hash và set mật khẩu
     user.save()
     return Response({'detail': 'Password set successfully in Django.'}, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    Endpoint for changing password.
+    """
+    serializer_class = ChangePasswordSerializer
+    model = User
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def post(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            # Check old password only if user has a usable password
+            if self.object.has_usable_password():
+                if not serializer.data.get("old_password"):
+                     return Response({"old_password": ["Mật khẩu cũ là bắt buộc."]}, status=status.HTTP_400_BAD_REQUEST)
+                if not self.object.check_password(serializer.data.get("old_password")):
+                    return Response({"old_password": ["Mật khẩu hiện tại không đúng."]}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # set_password also hashes the password that the user will get
+            self.object.set_password(serializer.data.get("new_password"))
+            self.object.save()
+            return Response({"detail": "Đổi mật khẩu thành công."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

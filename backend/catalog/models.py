@@ -36,7 +36,7 @@ class MenuItem(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_available = models.BooleanField(default=True)
     stock = models.PositiveIntegerField(default=0)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="items")
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="items", null=True, blank=True)
     image_url = models.URLField(blank=True)
 
     def _sync_availability_with_stock(self):
@@ -49,6 +49,10 @@ class MenuItem(models.Model):
     def save(self,*a,**kw):
         self.slug = generate_unique_slug(self, self.name, "menu-item")
         self._sync_availability_with_stock()
+        if kw.get("update_fields") is not None:
+            update_fields = set(kw["update_fields"])
+            update_fields.add("is_available")
+            kw["update_fields"] = list(update_fields)
         return super().save(*a,**kw)
 
     def __str__(self): return self.name
@@ -86,8 +90,10 @@ class Combo(models.Model):
     
     category = models.ForeignKey(
         Category,
-        on_delete=models.PROTECT,
-        related_name="combos"
+        on_delete=models.SET_NULL,
+        related_name="combos",
+        null=True,
+        blank=True
     )
     image_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -117,6 +123,11 @@ class Combo(models.Model):
 
     def save(self, *args, **kwargs):
         self.slug = generate_unique_slug(self, self.name, "combo")
+        self._sync_availability_with_stock()
+        if kwargs.get("update_fields") is not None:
+            update_fields = set(kwargs["update_fields"])
+            update_fields.add("is_available")
+            kwargs["update_fields"] = list(update_fields)
         # Note: We cannot calculate stock/price here if items are not yet saved (e.g. on create)
         # So we expect a separate update call or signal to update these fields after items are added.
         # However, for updates, we can try to recalculate if items exist.
@@ -144,7 +155,8 @@ class Combo(models.Model):
         self.stock = self.calculate_stock()
         self.original_price = self.calculate_original_price()
         self.final_price = self.calculate_final_price()
-        self.save(update_fields=['stock', 'original_price', 'final_price'])
+        self._sync_availability_with_stock()
+        self.save(update_fields=['stock', 'original_price', 'final_price', 'is_available'])
 
     def __str__(self):
         return self.name

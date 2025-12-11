@@ -263,13 +263,21 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "slug", "image_url", "items", "combos"]
 
 class CategoryListSerializer(serializers.ModelSerializer):
+    items_count = serializers.IntegerField(read_only=True)
+    combos_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Category
-        fields = ["id", "name", "slug", "image_url"]
+        fields = ["id", "name", "slug", "image_url", "items_count", "combos_count"]
 
 class MenuItemListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_id = serializers.IntegerField(source='category.id', read_only=True)
+    option_groups_display = OptionGroupSerializer(
+        source='option_groups',
+        many=True,
+        read_only=True
+    )
 
     class Meta:
         model = MenuItem
@@ -284,4 +292,13 @@ class MenuItemListSerializer(serializers.ModelSerializer):
             "category_id",
             "category_name",
             "image_url",
+            "option_groups_display",
         ]
+    
+    def to_representation(self, instance):
+        """Customize output to use option_groups instead of option_groups_display"""
+        ret = super().to_representation(instance)
+        # Move option_groups_display to option_groups for frontend
+        if 'option_groups_display' in ret:
+            ret['option_groups'] = ret.pop('option_groups_display')
+        return ret

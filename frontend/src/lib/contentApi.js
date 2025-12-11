@@ -64,11 +64,8 @@ export const ContentAPI = {
         const formData = new FormData()
         formData.append('image', file)
 
-        const response = await api.post('/content/upload-image/', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
+        // Don't set Content-Type manually - axios will auto-set it with correct boundary for FormData
+        const response = await api.post('/content/upload-image/', formData)
         return response.data
     }
 }

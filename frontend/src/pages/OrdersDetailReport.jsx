@@ -35,7 +35,9 @@ export default function OrdersDetailReport() {
 
   const summary = useMemo(() => {
     const totalOrders = orders.length
-    const totalAmount = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0)
+    const totalAmount = orders.reduce((sum, order) => {
+      return order.status === 'COMPLETED' ? sum + Number(order.total_amount || 0) : sum
+    }, 0)
     const averageTicket = totalOrders ? totalAmount / totalOrders : 0
     return { totalOrders, totalAmount, averageTicket }
   }, [orders])
