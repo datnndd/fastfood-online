@@ -130,7 +130,7 @@ def create_order_from_cart(
         if cart_item.selected_options.exists():
             for option in cart_item.selected_options.all():
                 options_price += option.price_delta
-                selected_options_names.append(option.name)
+                selected_options_names.append(f"{option.name} ({option.price_delta:,.0f}đ)")
         
         unit_price = base_price + options_price
         
@@ -158,7 +158,7 @@ def create_order_from_cart(
             item_desc = f"{combo_item.menu_item.name} x{combo_item.quantity}"
             
             if combo_item.selected_options.exists():
-                opts = [opt.name for opt in combo_item.selected_options.all()]
+                opts = [f"{opt.name} ({opt.price_delta:,.0f}đ)" for opt in combo_item.selected_options.all()]
                 item_desc += f" ({', '.join(opts)})"
             
             combo_items_list.append(item_desc)
