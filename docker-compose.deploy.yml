@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: fastfood
+      POSTGRES_USER: fastfood
+      POSTGRES_PASSWORD: fastfood
+    volumes:
+      - fastfood_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastfood -d fastfood"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: always
+    command: gunicorn --bind 0.0.0.0:8000 backend.wsgi:application
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_DB=fastfood
+      - POSTGRES_USER=fastfood
+      - POSTGRES_PASSWORD=fastfood
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      # Add other env vars here or use env_file
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  fastfood_db:

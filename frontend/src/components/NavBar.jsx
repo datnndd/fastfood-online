@@ -104,7 +104,7 @@ export default function NavBar() {
     { path: '/', label: 'Trang chủ' },
     { path: '/about', label: 'Về Mc Dono' },
     { path: '/menu', label: 'Thực đơn', dropdown: categories },
-    { path: '/promotions', label: 'Khuyến mãi' },
+    { path: '/promotions', label: 'Tin Tức' },
     { path: '/contact', label: 'Liên hệ' },
   ]
 

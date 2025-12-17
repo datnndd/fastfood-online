@@ -9,5 +9,47 @@ services:
       - "5432:5432"
     volumes:
       - fastfood_db:/var/lib/postgresql/data
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U fastfood -d fastfood"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+
+  backend:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_DB=fastfood
+      - POSTGRES_USER=fastfood
+      - POSTGRES_PASSWORD=fastfood
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: build # Use build stage (or just node image) for dev if we want hot reload, but mostly users run npm run dev locally. 
+                    # Actually, for local dev with docker, we typically mount source and run dev server.
+                    # Let's use node image for dev service to support hot reload if they really want dockerized dev.
+    image: node:20-alpine
+    working_dir: /app
+    command: npm run dev -- --host
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE=http://localhost:8000/api 
+    # Note: VITE_ variables often need to be set at build time or runtime. For dev, runtime is fine.
+
 volumes:
   fastfood_db:

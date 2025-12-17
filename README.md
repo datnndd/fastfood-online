@@ -1,119 +1,103 @@
-# FastFoodOnline Setup Guide
+# FastFood Online 🍔
 
-## 1. Khởi động Docker
-Tại thư mục gốc dự án, chạy:
-```bash
-docker compose up -d
-```
+## Introduction
+FastFood Online is a modern, responsive web application designed to streamline the food ordering process and enhance the customer experience. Built with a robust **Django** backend and a dynamic **React** frontend, it offers a seamless interface for customers to browse menus, customize orders, and make payments, while providing administrators with powerful tools for managing products, orders, and users.
 
-## 2. Backend Setup
-```bash
-cd backend
-python -m venv .venv
-```
-Kích hoạt môi trường ảo:
-- **Ubuntu/Mac:**  
-  ```bash
-  source .venv/bin/activate
-  ```
-- **Windows:**  
-  ```powershell
-  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-  .venv\Scripts\activate
-  ```
+## Key Features
+- **User-Friendly Interface**: An intuitive, responsive design that works perfectly across desktop and mobile devices.
+- **Dynamic Menu**: Real-time updates for products, categories, and inventory.
+- **Customizable Orders**: Flexible options for toppings, sizes, and special requests.
+- **Secure Authentication**: Integrated with **Supabase** for reliable and secure user management.
+- **Cart & Checkout**: A smooth shopping cart experience with instant price calculations.
+- **Admin Dashboard**: A comprehensive dashboard for managing business operations.
 
-Cài đặt thư viện:
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+## Tech Stack
+- **Backend**: Django, Django REST Framework, PostgreSQL
+- **Frontend**: React, Vite, TailwindCSS
+- **Infrastructure**: Docker, Nginx, Gunicorn
 
-Khởi tạo database và tài khoản admin:
-```bash
-python manage.py makemigrations
-python manage.py migrate
-python manage.py createsuperuser
-```
+## Screenshots
 
-Chạy server backend:
-```bash
-python manage.py runserver 8000
-```
+### Homepage
+![Homepage](screenshots/homepage.png)
 
-### Supabase Auth
+### Product Detail
+![Product Detail](screenshots/product_detail.png)
 
-Backend hiện xác thực thông qua Supabase JWT. Trong file `.env` của backend bổ sung:
-
-```
-SUPABASE_PROJECT_ID=<ma-project>
-```
-
-Giá trị `<ma-project>` chính là phần subdomain trong `https://<ma-project>.supabase.co`. Biến này được dùng để lấy khóa JWKS phục vụ việc verify token.
-
-## 3. Frontend Setup
-Cài đặt Node.js nếu chưa có.
-
-```bash
-cd frontend
-npm install
-```
-**Lưu ý:** Nếu gặp lỗi về `Path` trên Windows, chạy:
-```powershell
-$env:Path += ';C:\Program Files\nodejs;C:\Users\<username>\AppData\Roaming\npm'
-```
-Thay `<username>` bằng tên user của bạn.
-
-Tạo file môi trường cho frontend (`frontend/.env.local` hoặc `.env`) với các biến:
-
-```
-VITE_API_BASE=http://localhost:8000/api
-VITE_SUPABASE_URL=https://<ma-project>.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon-key>
-```
-
-`<anon-key>` lấy trong Supabase dashboard (Project Settings → API).
-
-Chạy frontend (dùng 2 terminal):
-```bash
-npm run css:dev
-npm run dev
-```
-
-- Backend: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-- Frontend: [http://localhost:5173/](http://localhost:5173/)
+### Shopping Cart
+![Shopping Cart](screenshots/cart.png)
 
 ---
 
-## Các lần chạy sau
+## 🚀 Getting Started
+
+You can run FastFood Online locally for development or deploy it to a production server with ease.
+
+### Prerequisites
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine.
+
+### 1. Configuration
+Create environment files from the example template:
+
+```bash
+cp .env.example .env
+# Edit .env with your credentials if necessary
+```
+
+### 2. Local Development (Recommended)
+This method runs the full stack (Frontend, Backend, Database) in Docker containers with hot-reloading enabled for development.
+
+1. Start the application:
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. Access the services:
+   - **Frontend**: [http://localhost:5173](http://localhost:5173)
+   - **Backend API**: [http://localhost:8000](http://localhost:8000)
+
+3. Stop the application:
+   ```bash
+   docker compose down
+   ```
+
+### 3. Production Deployment (1-Click)
+For production environments, use the deployment configuration which utilizes optimized images and restart policies.
+
+1. Run the deployment stack:
+   ```bash
+   docker compose -f docker-compose.deploy.yml up -d --build
+   ```
+
+2. The application will be available on port `80` (HTTP):
+   - **Web App**: `http://<your-server-ip>`
+
+---
+
+## Manual Setup (Legacy)
+If you prefer to run services manually without Docker types:
 
 ### Backend
 ```bash
 cd backend
-# Kích hoạt môi trường ảo như trên
-python manage.py runserver 8000
-```
-Nếu có thay đổi backend:
-```bash
-python manage.py makemigrations
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 python manage.py migrate
+python manage.py runserver 8000
 ```
 
 ### Frontend
 ```bash
 cd frontend
-npm run css:dev
+npm install
 npm run dev
 ```
-Nếu lỗi Path, chỉnh lại `$env:Path` như hướng dẫn trên.
 
 ---
 
-## Nhiệm vụ cần thực hiện
-
-- Xây dựng dashboard cho quản lý
-- Xây dựng navBar và các trang tĩnh (tham khảo Jolibe)
-- Thêm tính năng quản lý địa chỉ khi đặt hàng, phát triển chức năng thanh toán bằng thẻ
-- Xây dựng dashboard hồ sơ cá nhân cho user
-
-**Lưu ý:**  
-Ảnh logo, banner lưu trong thư mục `frontend/src/assets`.
+## Project Structure
+- `backend/`: Django project source code.
+- `frontend/`: React application source code.
+- `docker-compose.yml`: Local development configuration.
+- `docker-compose.deploy.yml`: Production deployment configuration.
