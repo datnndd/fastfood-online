@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
 from core.utils.supabase_storage import upload_and_get_public_url
 from rest_framework import viewsets, permissions, filters
@@ -13,14 +14,23 @@ from django.db.models import ProtectedError
 from .serializers import (
     CategorySerializer, MenuItemSerializer,
     ComboListSerializer, ComboDetailSerializer, ComboCreateUpdateSerializer,
-    CategoryListSerializer, MenuItemListSerializer
+    CategoryListSerializer, MenuItemMinimalSerializer
 )
+
+
+class LargePagination(PageNumberPagination):
+    """Pagination class with larger page size for catalog endpoints"""
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name"]
+    pagination_class = None  # Categories are small, no pagination needed
 
     def get_queryset(self):
         from django.db.models import Count
@@ -65,9 +75,14 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     serializer_class = MenuItemSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name","description","category__name"]
+    pagination_class = LargePagination  # Use larger pagination for menu items
 
     def get_queryset(self):
-        queryset = super().get_queryset().prefetch_related('option_groups__options')
+        queryset = super().get_queryset()
+        # Only prefetch option_groups for retrieve action (detail view)
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related('option_groups__options')
+        
         category_id = self.request.query_params.get('category')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
@@ -84,7 +99,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return MenuItemListSerializer
+            return MenuItemMinimalSerializer  # Lightweight serializer for list
         return MenuItemSerializer
 
     def get_permissions(self):
@@ -149,6 +164,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 class ComboViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "description"]
+    pagination_class = LargePagination  # Use larger pagination for combos
 
     def get_queryset(self):
         queryset = Combo.objects.select_related("category")

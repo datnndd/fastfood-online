@@ -270,6 +270,29 @@ class CategoryListSerializer(serializers.ModelSerializer):
         model = Category
         fields = ["id", "name", "slug", "image_url", "items_count", "combos_count"]
 
+class MenuItemMinimalSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for list view - without option_groups for better performance"""
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_slug = serializers.CharField(source='category.slug', read_only=True)
+    category_id = serializers.IntegerField(source='category.id', read_only=True)
+
+    class Meta:
+        model = MenuItem
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "price",
+            "is_available",
+            "stock",
+            "category_id",
+            "category_name",
+            "category_slug",
+            "image_url",
+        ]
+
+
 class MenuItemListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_id = serializers.IntegerField(source='category.id', read_only=True)

@@ -236,13 +236,22 @@ export default function MenuPage() {
     setSelectedCategorySlug(categoryFromURL || null)
 
     setLoading(true)
+    // Use single requests with large page_size instead of fetchAllPages loop
+    const itemParams = { page_size: 100 }
+    if (categoryFromURL) {
+      itemParams.category = categoryFromURL
+    }
+
     Promise.all([
-      CatalogAPI.listAllCategories(),
-      CatalogAPI.listAllItems(categoryFromURL ? { catalog: categoryFromURL } : {}),
-      CatalogAPI.listAllCombos({ available: true })
+      CatalogAPI.listAllCategories(),  // Categories are small, no pagination now
+      CatalogAPI.listItems(itemParams),  // Single request with large page_size
+      CatalogAPI.listCombos({ available: true, page_size: 100 })  // Single request
     ])
-      .then(([cats, itemsData, combosData]) => {
+      .then(([cats, itemsResponse, combosResponse]) => {
         setCategories(Array.isArray(cats) ? cats : [])
+        // Handle paginated response - extract results array
+        const itemsData = itemsResponse?.data?.results || itemsResponse?.data || []
+        const combosData = combosResponse?.data?.results || combosResponse?.data || []
         setItems(Array.isArray(itemsData) ? itemsData : [])
         setCombos(Array.isArray(combosData) ? combosData : [])
       })
