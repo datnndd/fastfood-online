@@ -461,3 +461,109 @@ def status_statistics(request):
     result['total'] = total
     
     return Response(result)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def inventory_statistics(request):
+    """Thống kê tồn kho sản phẩm"""
+    if request.user.role not in ['manager', 'staff']:
+        return Response(
+            {'detail': 'Bạn không có quyền truy cập'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Threshold để coi là "sắp hết hàng" - có thể cấu hình
+    LOW_STOCK_THRESHOLD = int(request.GET.get('low_stock_threshold', 10))
+    
+    # === THỐNG KÊ MÓN LẺ (MenuItem) ===
+    all_items = MenuItem.objects.all()
+    items_total = all_items.count()
+    items_in_stock = all_items.filter(stock__gt=LOW_STOCK_THRESHOLD, is_available=True).count()
+    items_low_stock = all_items.filter(stock__gt=0, stock__lte=LOW_STOCK_THRESHOLD, is_available=True).count()
+    items_out_of_stock = all_items.filter(Q(stock__lte=0) | Q(is_available=False)).count()
+    
+    # Danh sách món lẻ sắp hết hàng
+    low_stock_items = MenuItem.objects.filter(
+        stock__gt=0, 
+        stock__lte=LOW_STOCK_THRESHOLD,
+        is_available=True
+    ).select_related('category').order_by('stock')[:10]
+    
+    low_stock_items_data = [{
+        'id': item.id,
+        'name': item.name,
+        'stock': item.stock,
+        'category': item.category.name if item.category else None,
+        'image_url': item.image_url
+    } for item in low_stock_items]
+    
+    # Danh sách món lẻ hết hàng
+    out_of_stock_items = MenuItem.objects.filter(
+        Q(stock__lte=0) | Q(is_available=False)
+    ).select_related('category').order_by('name')[:10]
+    
+    out_of_stock_items_data = [{
+        'id': item.id,
+        'name': item.name,
+        'stock': item.stock,
+        'is_available': item.is_available,
+        'category': item.category.name if item.category else None,
+        'image_url': item.image_url
+    } for item in out_of_stock_items]
+    
+    # === THỐNG KÊ COMBO ===
+    all_combos = Combo.objects.all()
+    combos_total = all_combos.count()
+    combos_in_stock = all_combos.filter(stock__gt=LOW_STOCK_THRESHOLD, is_available=True).count()
+    combos_low_stock = all_combos.filter(stock__gt=0, stock__lte=LOW_STOCK_THRESHOLD, is_available=True).count()
+    combos_out_of_stock = all_combos.filter(Q(stock__lte=0) | Q(is_available=False)).count()
+    
+    # Danh sách combo sắp hết hàng
+    low_stock_combos = Combo.objects.filter(
+        stock__gt=0, 
+        stock__lte=LOW_STOCK_THRESHOLD,
+        is_available=True
+    ).select_related('category').order_by('stock')[:10]
+    
+    low_stock_combos_data = [{
+        'id': combo.id,
+        'name': combo.name,
+        'stock': combo.stock,
+        'category': combo.category.name if combo.category else None,
+        'image_url': combo.image_url
+    } for combo in low_stock_combos]
+    
+    # Danh sách combo hết hàng
+    out_of_stock_combos = Combo.objects.filter(
+        Q(stock__lte=0) | Q(is_available=False)
+    ).select_related('category').order_by('name')[:10]
+    
+    out_of_stock_combos_data = [{
+        'id': combo.id,
+        'name': combo.name,
+        'stock': combo.stock,
+        'is_available': combo.is_available,
+        'category': combo.category.name if combo.category else None,
+        'image_url': combo.image_url
+    } for combo in out_of_stock_combos]
+    
+    return Response({
+        'low_stock_threshold': LOW_STOCK_THRESHOLD,
+        'items': {
+            'total': items_total,
+            'in_stock': items_in_stock,
+            'low_stock': items_low_stock,
+            'out_of_stock': items_out_of_stock,
+            'low_stock_list': low_stock_items_data,
+            'out_of_stock_list': out_of_stock_items_data
+        },
+        'combos': {
+            'total': combos_total,
+            'in_stock': combos_in_stock,
+            'low_stock': combos_low_stock,
+            'out_of_stock': combos_out_of_stock,
+            'low_stock_list': low_stock_combos_data,
+            'out_of_stock_list': out_of_stock_combos_data
+        }
+    })

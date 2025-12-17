@@ -403,10 +403,20 @@ export default function MenuPage() {
     setViewMode(mode)
   }
 
-  const handleShowItemDetail = (item) => {
+  const handleShowItemDetail = async (item) => {
     if (!item) return
-    setSelectedItem(item)
-    setShowPopup(true)
+    // Fetch full item details with option_groups from API
+    try {
+      const response = await CatalogAPI.getItem(item.id)
+      const fullItem = response?.data || response
+      setSelectedItem(fullItem)
+      setShowPopup(true)
+    } catch (error) {
+      console.error('Failed to fetch item details:', error)
+      // Fallback to list data if fetch fails
+      setSelectedItem(item)
+      setShowPopup(true)
+    }
   }
 
   const handleCloseItemDetail = () => {

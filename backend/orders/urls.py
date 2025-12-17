@@ -37,4 +37,5 @@ urlpatterns = [
     path("stats/export/<str:format>/", statistics.export_report, name="stats-export"),
     path("stats/chart/", statistics.revenue_chart_statistics, name="stats-chart"),
     path("stats/status/", statistics.status_statistics, name="stats-status"),
+    path("stats/inventory/", statistics.inventory_statistics, name="stats-inventory"),
 ]

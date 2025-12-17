@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
@@ -135,6 +135,7 @@ export default function ManagerDashboard() {
   const [topItems, setTopItems] = useState([])
   const [topCombos, setTopCombos] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
+  const [inventoryStats, setInventoryStats] = useState(null)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -163,12 +164,13 @@ export default function ManagerDashboard() {
       // Now fetch other stats using the range returned by chart API
       const rangeParams = { from_date: start_date, to_date: end_date }
 
-      const [revenueRes, statusRes, topItemsRes, topCombosRes, feedbackRes] = await Promise.all([
+      const [revenueRes, statusRes, topItemsRes, topCombosRes, feedbackRes, inventoryRes] = await Promise.all([
         OrderAPI.stats.getRevenue({ ...rangeParams }),
         OrderAPI.stats.getStatusStats({ ...rangeParams }),
         OrderAPI.stats.getTopItems({ ...rangeParams }),
         OrderAPI.stats.getTopCombos({ ...rangeParams }),
-        FeedbackAPI.list({ limit: 5 })
+        FeedbackAPI.list({ limit: 5 }),
+        OrderAPI.stats.getInventory()
       ])
 
       setSummary({
@@ -182,6 +184,7 @@ export default function ManagerDashboard() {
       setTopItems((topItemsRes.data?.items || []).slice(0, 5))
       setTopCombos((topCombosRes.data?.combos || []).slice(0, 5))
       setFeedbacks(feedbackRes.data?.results || feedbackRes.data || [])
+      setInventoryStats(inventoryRes.data)
 
     } catch (err) {
       console.error('Load dashboard error:', err)
@@ -295,31 +298,6 @@ export default function ManagerDashboard() {
             <h1 className="text-2xl font-bold text-stone-800">Bếp Trưởng Dashboard</h1>
             <p className="text-stone-500 mt-1">Chào mừng trở lại! Hôm nay bếp có gì vui?</p>
           </div>
-          <div className="flex items-center gap-3 bg-white p-1.5 rounded-xl border border-stone-200 shadow-sm">
-            <div className="flex bg-stone-100 rounded-lg p-1">
-              {TIMEFRAME_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => handleTimeframeChange(tab.value)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${timeframe === tab.value
-                    ? 'bg-white text-orange-700 shadow-sm'
-                    : 'text-stone-500 hover:text-stone-700'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="h-8 w-px bg-stone-200 mx-1"></div>
-            <input
-              type={inputType}
-              min="2020"
-              max="2100"
-              value={filterValue}
-              onChange={(e) => setFilterValue(e.target.value)}
-              className="border-none bg-transparent text-sm font-medium text-stone-700 focus:ring-0 p-0 pr-2"
-            />
-          </div>
         </header>
 
         {loading && !chartData.labels.length ? (
@@ -328,7 +306,26 @@ export default function ManagerDashboard() {
           </div>
         ) : (
           <>
-            {/* Summary Cards */}
+            {/* Quick Access - Management Links */}
+            <section>
+              <h3 className="text-lg font-bold text-stone-800 mb-4">Quản lý nhanh</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                {MANAGEMENT_LINKS.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all text-center group"
+                  >
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br ${link.accent} text-xl mb-3 group-hover:scale-110 transition-transform`}>
+                      {link.icon}
+                    </div>
+                    <span className="text-xs font-medium text-stone-700 group-hover:text-stone-900">{link.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* Revenue Summary Cards */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between">
@@ -382,7 +379,32 @@ export default function ManagerDashboard() {
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Revenue Chart */}
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
-                <h3 className="text-lg font-bold text-stone-800 mb-6">Biểu đồ doanh thu</h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <h3 className="text-lg font-bold text-stone-800">Biểu đồ doanh thu</h3>
+                  <div className="flex items-center gap-2 bg-stone-50 p-1 rounded-lg">
+                    {TIMEFRAME_TABS.map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => handleTimeframeChange(tab.value)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeframe === tab.value
+                          ? 'bg-white text-orange-700 shadow-sm'
+                          : 'text-stone-500 hover:text-stone-700'
+                          }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                    <div className="h-5 w-px bg-stone-200 mx-1"></div>
+                    <input
+                      type={inputType}
+                      min="2020"
+                      max="2100"
+                      value={filterValue}
+                      onChange={(e) => setFilterValue(e.target.value)}
+                      className="border-none bg-transparent text-xs font-medium text-stone-700 focus:ring-0 p-0 w-24"
+                    />
+                  </div>
+                </div>
                 <div className="h-80">
                   <Line data={lineChartData} options={lineChartOptions} />
                 </div>
@@ -413,6 +435,146 @@ export default function ManagerDashboard() {
                 </div>
               </div>
             </section>
+
+            {/* Inventory Statistics - Moved after charts */}
+            {inventoryStats && (
+              <section className="space-y-6">
+                <h3 className="text-lg font-bold text-stone-800">Thống kê tồn kho</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Món lẻ Inventory */}
+                  <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 bg-red-50 rounded-lg">
+                        <span className="text-xl">🍜</span>
+                      </div>
+                      <h4 className="text-base font-bold text-stone-800">Món lẻ</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+                        <p className="text-xs text-stone-500 mb-1">Tổng số</p>
+                        <p className="text-xl font-bold text-stone-800">{inventoryStats.items?.total || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p className="text-xs text-green-600 mb-1">Còn hàng</p>
+                        <p className="text-xl font-bold text-green-700">{inventoryStats.items?.in_stock || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <p className="text-xs text-amber-600 mb-1">Sắp hết</p>
+                        <p className="text-xl font-bold text-amber-700">{inventoryStats.items?.low_stock || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                        <p className="text-xs text-red-600 mb-1">Hết hàng</p>
+                        <p className="text-xl font-bold text-red-700">{inventoryStats.items?.out_of_stock || 0}</p>
+                      </div>
+                    </div>
+                    {inventoryStats.items?.low_stock_list?.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-amber-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                          Món sắp hết ({inventoryStats.items.low_stock_list.length}):
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {inventoryStats.items.low_stock_list.map((item) => (
+                            <Link key={item.id} to="/manager/menu" className="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-50 transition-colors">
+                              <div className="w-7 h-7 rounded bg-stone-100 flex-shrink-0 overflow-hidden">
+                                {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center text-xs">🍜</span>}
+                              </div>
+                              <span className="text-sm text-stone-800 truncate flex-1">{item.name}</span>
+                              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">{item.stock}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {inventoryStats.items?.out_of_stock_list?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-red-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                          Món hết hàng ({inventoryStats.items.out_of_stock_list.length}):
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {inventoryStats.items.out_of_stock_list.map((item) => (
+                            <Link key={item.id} to="/manager/menu" className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                              <div className="w-7 h-7 rounded bg-stone-100 flex-shrink-0 overflow-hidden opacity-60">
+                                {item.image_url ? <img src={item.image_url} alt="" className="w-full h-full object-cover grayscale" /> : <span className="w-full h-full flex items-center justify-center text-xs">🍜</span>}
+                              </div>
+                              <span className="text-sm text-stone-600 truncate flex-1">{item.name}</span>
+                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">{!item.is_available ? 'Ẩn' : item.stock}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Combo Inventory */}
+                  <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 bg-amber-50 rounded-lg">
+                        <span className="text-xl">🍱</span>
+                      </div>
+                      <h4 className="text-base font-bold text-stone-800">Combo</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-100">
+                        <p className="text-xs text-stone-500 mb-1">Tổng số</p>
+                        <p className="text-xl font-bold text-stone-800">{inventoryStats.combos?.total || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p className="text-xs text-green-600 mb-1">Còn hàng</p>
+                        <p className="text-xl font-bold text-green-700">{inventoryStats.combos?.in_stock || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <p className="text-xs text-amber-600 mb-1">Sắp hết</p>
+                        <p className="text-xl font-bold text-amber-700">{inventoryStats.combos?.low_stock || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                        <p className="text-xs text-red-600 mb-1">Hết hàng</p>
+                        <p className="text-xl font-bold text-red-700">{inventoryStats.combos?.out_of_stock || 0}</p>
+                      </div>
+                    </div>
+                    {inventoryStats.combos?.low_stock_list?.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-amber-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                          Combo sắp hết ({inventoryStats.combos.low_stock_list.length}):
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {inventoryStats.combos.low_stock_list.map((combo) => (
+                            <Link key={combo.id} to="/manager/combos" className="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-50 transition-colors">
+                              <div className="w-7 h-7 rounded bg-stone-100 flex-shrink-0 overflow-hidden">
+                                {combo.image_url ? <img src={combo.image_url} alt="" className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center text-xs">🍱</span>}
+                              </div>
+                              <span className="text-sm text-stone-800 truncate flex-1">{combo.name}</span>
+                              <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">{combo.stock}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {inventoryStats.combos?.out_of_stock_list?.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-red-600 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                          Combo hết hàng ({inventoryStats.combos.out_of_stock_list.length}):
+                        </p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {inventoryStats.combos.out_of_stock_list.map((combo) => (
+                            <Link key={combo.id} to="/manager/combos" className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                              <div className="w-7 h-7 rounded bg-stone-100 flex-shrink-0 overflow-hidden opacity-60">
+                                {combo.image_url ? <img src={combo.image_url} alt="" className="w-full h-full object-cover grayscale" /> : <span className="w-full h-full flex items-center justify-center text-xs">🍱</span>}
+                              </div>
+                              <span className="text-sm text-stone-600 truncate flex-1">{combo.name}</span>
+                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">{!combo.is_available ? 'Ẩn' : combo.stock}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Top Items & Combos */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -528,25 +690,6 @@ export default function ManagerDashboard() {
                     ))}
                   </div>
                 )}
-              </div>
-            </section>
-
-            {/* Quick Links */}
-            <section>
-              <h3 className="text-lg font-bold text-stone-800 mb-4">Truy cập nhanh</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                {MANAGEMENT_LINKS.map((link) => (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all text-center group"
-                  >
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br ${link.accent} text-xl mb-3 group-hover:scale-110 transition-transform`}>
-                      {link.icon}
-                    </div>
-                    <span className="text-xs font-medium text-stone-700 group-hover:text-stone-900">{link.title}</span>
-                  </Link>
-                ))}
               </div>
             </section>
           </>
